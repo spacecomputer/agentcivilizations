@@ -1,0 +1,27 @@
+rules_version = '2';
+
+// Public-read, admin-only-write. All mutations happen from Cloud Functions
+// using the Firebase Admin SDK, which bypasses these rules.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /civilizations/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /events/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /roots/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /scanRuns/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

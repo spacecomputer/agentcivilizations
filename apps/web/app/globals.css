@@ -1,0 +1,138 @@
+:root {
+  --bg: #0b0d10;
+  --bg-elev: #12161b;
+  --border: #1e242c;
+  --fg: #e7ecf1;
+  --fg-dim: #99a3ad;
+  --accent: #6ee7b7;
+  --accent-dim: #34d39955;
+  --warn: #fbbf24;
+  --danger: #f87171;
+  --cat-coordination: #60a5fa;
+  --cat-security: #f87171;
+  --cat-community: #a78bfa;
+  --cat-speculative: #fbbf24;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  line-height: 1.55;
+  min-height: 100vh;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.site-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  position: sticky; top: 0; z-index: 10;
+}
+.brand { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; color: var(--fg); }
+.brand-mark { color: var(--accent); font-size: 1.25rem; }
+.site-header nav { display: flex; gap: 1.25rem; }
+.site-header nav a { color: var(--fg-dim); font-size: 0.9rem; }
+.site-header nav a:hover { color: var(--fg); }
+
+main { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+h1 { font-size: 1.75rem; margin: 0 0 0.5rem; letter-spacing: -0.01em; }
+h2 { font-size: 1.25rem; margin: 2rem 0 0.75rem; }
+p.lede { color: var(--fg-dim); margin: 0 0 2rem; font-size: 1.05rem; }
+
+.event-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+.event-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  transition: border-color 120ms ease;
+}
+.event-card:hover { border-color: var(--accent-dim); }
+.event-title { font-weight: 600; margin: 0 0 0.25rem; }
+.event-title a { color: var(--fg); }
+.event-title a:hover { color: var(--accent); }
+.event-summary { color: var(--fg-dim); margin: 0.25rem 0 0.5rem; font-size: 0.95rem; }
+.event-meta {
+  display: flex; flex-wrap: wrap; gap: 0.75rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--fg-dim);
+}
+.badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-family: var(--mono);
+  text-transform: lowercase;
+  border: 1px solid;
+}
+.badge.coordination { color: var(--cat-coordination); border-color: var(--cat-coordination); }
+.badge.security { color: var(--cat-security); border-color: var(--cat-security); }
+.badge.community { color: var(--cat-community); border-color: var(--cat-community); }
+.badge.speculative { color: var(--cat-speculative); border-color: var(--cat-speculative); }
+.badge.candidate { color: var(--fg-dim); border-color: var(--fg-dim); }
+.badge.confirmed { color: var(--accent); border-color: var(--accent); }
+
+.civ-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.75rem; }
+.civ-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+}
+.civ-card h3 { margin: 0 0 0.25rem; font-size: 1rem; }
+.civ-card p { margin: 0.25rem 0; color: var(--fg-dim); font-size: 0.85rem; }
+
+.hash { font-family: var(--mono); font-size: 0.75rem; color: var(--fg-dim); word-break: break-all; }
+.hash-full { display: inline-block; max-width: 100%; }
+
+.source-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.source-item { border-left: 2px solid var(--border); padding: 0.25rem 0.75rem; }
+.source-item .domain { color: var(--fg-dim); font-family: var(--mono); font-size: 0.75rem; }
+
+.site-footer {
+  border-top: 1px solid var(--border);
+  padding: 1.5rem;
+  font-size: 0.85rem;
+  color: var(--fg-dim);
+  text-align: center;
+  display: flex; flex-direction: column; gap: 0.5rem;
+}
+
+.verify-panel {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+}
+.verify-ok { color: var(--accent); }
+.verify-fail { color: var(--danger); }
+
+button {
+  background: var(--accent);
+  color: #0b0d10;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+input {
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  padding: 0.5rem;
+  border-radius: 6px;
+  font-family: var(--mono);
+}

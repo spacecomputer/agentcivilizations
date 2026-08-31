@@ -1,0 +1,23 @@
+{
+  "name": "@agent-civilizations/verify",
+  "version": "0.1.0",
+  "description": "Standalone hash-chain verifier for the Agent Civilizations ledger.",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "agent-civilizations-verify": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@agent-civilizations/schema": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0"
+  }
+}
