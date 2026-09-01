@@ -64,7 +64,7 @@ export default function CivilizationsPage() {
                           {c.name}
                         </a>
                         <br />
-                        <span className="mono dim" style={{ fontSize: "11.5px" }}>
+                        <span className="mono dim" style={{ fontSize: "12px" }}>
                           FILE {c.id.toUpperCase()}
                         </span>
                       </span>

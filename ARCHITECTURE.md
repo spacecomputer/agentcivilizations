@@ -68,7 +68,7 @@ Each `Event` is one entry in the ledger. Immutable after write.
 }
 ```
 
-`contentHash` is computed over a canonicalized JSON (sorted keys, no whitespace) of every field *except* `contentHash` itself. `prevHash` is included in the canonicalization, so a change anywhere in history invalidates every downstream hash.
+`contentHash` is computed over a canonicalized JSON (sorted keys, no whitespace) of every field *except* `contentHash` itself and `confidence`. Confidence is the one editorial field allowed to change after entry (`candidate` → `confirmed` when a second independent source appears), so it lives outside the hash preimage; everything else is frozen by the chain. The exclusion list is defined once, as `MUTABLE_FIELDS` in `packages/verify`, and both producers and verifiers derive the preimage through the same `hashPreimage()` helper. `prevHash` is inside the canonicalization, so a change anywhere in history invalidates every downstream hash.
 
 ### Collection: `roots`
 

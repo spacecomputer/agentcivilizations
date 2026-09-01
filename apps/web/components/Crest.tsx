@@ -136,7 +136,7 @@ export function Crest() {
         <p className="crest-hash dim">retrieving the record…</p>
       )}
       <div className="attestation">
-        {count !== null && <span>{recordNo(count).toUpperCase()} </span>}
+        {count !== null && <span>{recordNo(count)}</span>}
         {activeCivs !== null && (
           <span>
             {activeCivs} {activeCivs === 1 ? "FILE" : "FILES"} ACTIVE

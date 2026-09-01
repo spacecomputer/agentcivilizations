@@ -135,9 +135,9 @@ async function maybePromoteConfidence(
   for (const e of others) for (const s of e.sources) otherDomains.add(s.domain);
   const thisDomain = event.sources[0]?.domain;
   if (thisDomain && otherDomains.size > 0 && !otherDomains.has(thisDomain)) {
-    // We have an independent second source. Promote this event to confirmed
-    // WITHOUT rewriting its hash — confirmation is a derived view, tracked
-    // by a separate `confirmations` field written by this pass.
+    // We have an independent second source. `confidence` is outside the
+    // hash preimage (see MUTABLE_FIELDS in @agent-civilizations/verify), so
+    // promotion does not disturb the chain.
     await db
       .collection("events")
       .doc(event.id)
@@ -155,16 +155,23 @@ export async function computeDailyRoot(day: string): Promise<void> {
     .where("recordedAt", "<=", end)
     .get();
   const hashes = q.docs.map((d) => (d.data() as Event).contentHash);
+  // A day with no entries is not sealed — an empty root would serve
+  // sha256("") as the ledger's public face and prove nothing.
+  if (hashes.length === 0) return;
   const civs = new Set(q.docs.map((d) => (d.data() as Event).civilizationId));
   const merkleRoot = await computeMerkleRoot(hashes);
 
-  const prevDay = new Date(`${day}T00:00:00.000Z`);
-  prevDay.setUTCDate(prevDay.getUTCDate() - 1);
-  const prevId = prevDay.toISOString().slice(0, 10);
-  const prevSnap = await db.collection("roots").doc(prevId).get();
-  const prevRootHash = prevSnap.exists
-    ? (prevSnap.data() as { merkleRoot: string }).merkleRoot
-    : null;
+  // Link to the most recent existing root, not literally day-1 — quiet
+  // days are skipped, and the chain of roots must stay unbroken across them.
+  const prevQ = await db
+    .collection("roots")
+    .where("id", "<", day)
+    .orderBy("id", "desc")
+    .limit(1)
+    .get();
+  const prevRootHash = prevQ.empty
+    ? null
+    : (prevQ.docs[0].data() as { merkleRoot: string }).merkleRoot;
 
   await db.collection("roots").doc(day).set({
     id: day,

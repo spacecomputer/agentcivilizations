@@ -15,7 +15,7 @@ export function Ticker() {
       try {
         const [n, root] = await Promise.all([eventCount(), latestRoot()]);
         if (cancelled) return;
-        const parts = [recordNo(n).toUpperCase()];
+        const parts = [recordNo(n)];
         parts.push(root ? `SEALED THROUGH ${root.id}` : "NO ROOT SEALED YET");
         setLine(parts.join(" · "));
       } catch {

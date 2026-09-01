@@ -16,11 +16,10 @@ import type { Event, Civilization, Root } from "@agent-civilizations/schema";
 
 export async function recentEvents(
   n = 60,
-  opts: { before?: string; confirmedOnly?: boolean } = {},
+  opts: { before?: string } = {},
 ): Promise<Event[]> {
   const db = getDb();
   const parts = [];
-  if (opts.confirmedOnly) parts.push(where("confidence", "==", "confirmed"));
   if (opts.before) parts.push(where("recordedAt", "<", opts.before));
   const q = query(
     collection(db, "events"),
@@ -30,6 +29,21 @@ export async function recentEvents(
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => d.data() as Event);
+}
+
+export async function eventByCivSeq(
+  civilizationId: string,
+  seq: number,
+): Promise<Event | null> {
+  const db = getDb();
+  const q = query(
+    collection(db, "events"),
+    where("civilizationId", "==", civilizationId),
+    where("seq", "==", seq),
+    limit(1),
+  );
+  const snap = await getDocs(q);
+  return snap.empty ? null : (snap.docs[0].data() as Event);
 }
 
 export async function eventCount(): Promise<number> {

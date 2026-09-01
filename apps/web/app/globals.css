@@ -145,7 +145,8 @@ h3 {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  font-size: 20px;
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.1;
   color: var(--ink);
   text-decoration: none;
 }
@@ -220,7 +221,7 @@ main {
 .crest-hash {
   font-family: var(--face-mono);
   font-weight: 500;
-  font-size: clamp(17px, 2.9vw, 30px);
+  font-size: clamp(18px, 2.6vw, 30px);
   line-height: 1.5;
   letter-spacing: 0.02em;
   overflow-wrap: break-word;
@@ -262,8 +263,24 @@ main {
 
 /* ---------- activity strip ---------- */
 .activity-strip { margin: 0 0 var(--s6); }
-.activity-strip svg { width: 100%; height: 96px; display: block; }
-.activity-strip figcaption { font-size: 11px; letter-spacing: 0.08em; margin-top: 6px; }
+.activity-strip > svg { width: 100%; height: 96px; display: block; }
+.activity-strip figcaption {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px 24px;
+}
+.strip-caption { font-size: 12px; letter-spacing: 0.08em; }
+.strip-legend {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font-family: var(--face-mono);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
 
 /* ---------- the register ---------- */
 .register { border-top: 1px solid var(--ink); }
@@ -298,7 +315,8 @@ main {
 .dtitle a { color: var(--ink); text-decoration: none; }
 .dtitle a:hover { text-decoration: underline; text-decoration-thickness: 2px; }
 .dsummary { font-size: 15.5px; margin: 0 0 10px; max-width: 66ch; }
-.drow.candidate .dsummary { color: var(--ink-dim); }
+/* Candidate rows: the title AND summary stay at full ink — only the
+   metadata line reads penciled. Provisional is not disabled. */
 .dmeta {
   font-family: var(--face-mono);
   font-size: 12px;
@@ -359,6 +377,66 @@ main {
   word-spacing: 0.4em;
 }
 
+/* rail confidence marker: filled = inked (confirmed), hollow = penciled */
+.rail-marker {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid;
+  vertical-align: baseline;
+  margin-right: 4px;
+}
+
+/* filtered rows restyle to the dim token — never opacity, never removed */
+.drow.filtered .dtitle a,
+.drow.filtered .dsummary,
+.drow.filtered .dmeta,
+.drow.filtered .dmeta a,
+.drow.filtered .cat-label,
+.drow.filtered .drail { color: var(--ink-dim); }
+.drow.filtered .rail-marker { border-width: 1px; background: transparent !important; border-color: var(--ink-dim) !important; }
+
+/* the filter checklist — ruled, like everything else in the register */
+.filter-checklist {
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: 10px 0;
+  margin-bottom: var(--s2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  font-family: var(--face-mono);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  color: var(--ink-dim);
+}
+.filter-checklist label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+/* character diff in the discrepancy report */
+.diff-bad { color: var(--fail); font-weight: 500; text-decoration: underline; }
+
+/* the terminal hash on a pass attestation — set in the certification ink */
+.terminal-hash { color: var(--cat-community); }
+.terminal-hash .hashchunks { color: var(--cat-community); }
+
+/* visually hidden, screen-reader available */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* day-address pagination — a permanent record has addresses */
 .day-pagination {
   display: flex;
@@ -389,7 +467,7 @@ main {
   font-family: var(--face-mono);
   font-weight: 400;
   letter-spacing: 0.03em;
-  font-size: 10.5px;
+  font-size: 12px;
   text-transform: none;
   margin-top: 4px;
   color: var(--ink-dim);
@@ -429,18 +507,23 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .catbar .community { background: var(--cat-community); }
 .catbar .speculative { background: var(--cat-speculative); }
 
-/* the thread spine */
+/* the thread spine: each row carries a real node — the category glyph,
+   filled/hollow by confidence — seated on the 2px spine */
 .thread { border-left: 2px solid var(--rule); margin-left: 5px; padding-left: var(--s3); }
-.thread .drow { grid-template-columns: var(--rail-w) 1fr; position: relative; }
-.thread .drow::before {
-  content: "";
+.thread-row { position: relative; }
+.spine-node {
   position: absolute;
-  left: calc(-1 * var(--s3) - 7px);
-  top: 26px;
-  width: 12px;
-  height: 12px;
+  left: calc(-1 * var(--s3) - 8px);
+  top: 24px;
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: var(--ground);
+  padding: 1px 0;
 }
+/* a long silence: the spine itself goes dashed through the gap */
 .thread-gap {
   font-family: var(--face-mono);
   font-size: 12px;
@@ -448,6 +531,17 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   border-bottom: 1px dashed var(--rule);
   padding: 10px 0;
   letter-spacing: 0.05em;
+  position: relative;
+}
+.thread-gap::before {
+  content: "";
+  position: absolute;
+  left: calc(-1 * var(--s3) - 2px);
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--ground);
+  border-left: 2px dashed var(--rule);
 }
 
 /* ---------- provenance panel & console ---------- */
@@ -546,6 +640,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
     margin-bottom: 6px;
   }
   .thread { border-left: none; padding-left: 0; margin-left: 0; }
+  .spine-node, .thread-gap::before { display: none; }
   main { padding: var(--s4) var(--s2) var(--s8); }
   .masthead-inner, .sitenav-inner, .colophon-inner { padding-left: var(--s2); padding-right: var(--s2); }
 }

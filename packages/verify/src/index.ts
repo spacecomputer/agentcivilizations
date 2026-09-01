@@ -32,10 +32,24 @@ async function sha256Hex(input: string): Promise<string> {
   return hex;
 }
 
+// The hash preimage covers the immutable record. Two fields are excluded:
+// contentHash itself, and `confidence` — the one editorial field that is
+// allowed to change after entry (candidate → confirmed when a second
+// independent source appears). Everything else is frozen by the chain.
+// This list is the single source of truth; producers and verifiers must
+// both derive the preimage through hashPreimage().
+export const MUTABLE_FIELDS = ["contentHash", "confidence"] as const;
+
+export function hashPreimage(event: Partial<Event>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...event };
+  for (const field of MUTABLE_FIELDS) delete out[field];
+  return out;
+}
+
 export async function computeContentHash(
-  event: Omit<Event, "contentHash">,
+  event: Partial<Event>,
 ): Promise<string> {
-  return sha256Hex(canonicalize(event));
+  return sha256Hex(canonicalize(hashPreimage(event)));
 }
 
 export interface VerifyResult {
@@ -57,11 +71,11 @@ export async function verifyChain(events: Event[]): Promise<VerifyResult> {
     if (e.prevHash !== prevHash) {
       return { ok: false, verified: expectedSeq, brokenAt: e.id, reason: "prevHash" };
     }
-    const { contentHash, ...rest } = e;
-    const recomputed = await computeContentHash(rest);
-    if (recomputed !== contentHash) {
+    const recomputed = await computeContentHash(e);
+    if (recomputed !== e.contentHash) {
       return { ok: false, verified: expectedSeq, brokenAt: e.id, reason: "contentHash" };
     }
+    const contentHash = e.contentHash;
     prevHash = contentHash;
     expectedSeq++;
   }

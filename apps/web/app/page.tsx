@@ -1,7 +1,7 @@
 "use client";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { recentEvents, rootsForDays } from "@/lib/queries";
+import { recentEvents, eventsRecordedBetween, rootsForDays } from "@/lib/queries";
 import { utcDay } from "@/lib/format";
 import { Crest } from "@/components/Crest";
 import { ActivityStrip } from "@/components/ActivityStrip";
@@ -17,61 +17,86 @@ interface DayGroup {
   root: Root | null;
 }
 
+interface FeedPage {
+  groups: DayGroup[];
+  earlierDay: string | null; // day address of the next page, if any
+}
+
+// Day-aligned pagination: a day is never split across pages. When the
+// fetch window fills, the oldest day in it may be incomplete — it is
+// either dropped (and becomes the next page's address) or, when the whole
+// window is a single day, re-fetched in full.
+async function fetchFeedPage(until: string | null): Promise<FeedPage> {
+  const before = until
+    ? new Date(Date.parse(`${until}T00:00:00.000Z`) + 86400_000).toISOString()
+    : undefined;
+  let events = await recentEvents(PAGE_SIZE, { before });
+  let earlierDay: string | null = null;
+
+  if (events.length === PAGE_SIZE) {
+    const days = [...new Set(events.map((e) => utcDay(e.recordedAt)))].sort();
+    const oldest = days[0];
+    if (days.length > 1) {
+      events = events.filter((e) => utcDay(e.recordedAt) !== oldest);
+      earlierDay = oldest;
+    } else {
+      // Degenerate: the entire window is one day — fetch that day whole.
+      events = await eventsRecordedBetween(
+        `${oldest}T00:00:00.000Z`,
+        before ?? new Date().toISOString(),
+      );
+      events.reverse(); // eventsRecordedBetween returns ascending
+      earlierDay = new Date(
+        Date.parse(`${oldest}T00:00:00.000Z`) - 86400_000,
+      )
+        .toISOString()
+        .slice(0, 10);
+    }
+  }
+
+  const byDay = new Map<string, Event[]>();
+  for (const e of events) {
+    const day = utcDay(e.recordedAt);
+    const list = byDay.get(day) ?? [];
+    list.push(e);
+    byDay.set(day, list);
+  }
+  const days = [...byDay.keys()].sort().reverse();
+  const roots = await rootsForDays(days);
+  return {
+    groups: days.map((day) => ({
+      day,
+      events: byDay.get(day)!,
+      root: roots.get(day) ?? null,
+    })),
+    earlierDay,
+  };
+}
+
 function HomeFeed() {
   const params = useSearchParams();
   const until = params.get("until"); // day address: YYYY-MM-DD
-  const [groups, setGroups] = useState<DayGroup[] | null>(null);
-  const [oldestDay, setOldestDay] = useState<string | null>(null);
-  const [showCandidates, setShowCandidates] = useState(true);
+  const [page, setPage] = useState<FeedPage | null>(null);
+  const [dimCandidates, setDimCandidates] = useState(false);
+  const [hideFiltered, setHideFiltered] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      try {
-        const before = until
-          ? new Date(Date.parse(`${until}T00:00:00.000Z`) + 86400_000)
-              .toISOString()
-          : undefined;
-        const events = await recentEvents(PAGE_SIZE, { before });
-        if (cancelled) return;
-        const byDay = new Map<string, Event[]>();
-        for (const e of events) {
-          const day = utcDay(e.recordedAt);
-          const list = byDay.get(day) ?? [];
-          list.push(e);
-          byDay.set(day, list);
-        }
-        const days = [...byDay.keys()].sort().reverse();
-        const roots = await rootsForDays(days);
-        if (cancelled) return;
-        setGroups(
-          days.map((day) => ({
-            day,
-            events: byDay.get(day)!,
-            root: roots.get(day) ?? null,
-          })),
-        );
-        setOldestDay(days.length ? days[days.length - 1] : null);
-      } catch {
-        if (!cancelled) setGroups([]);
-      }
-    })();
+    fetchFeedPage(until)
+      .then((p) => !cancelled && setPage(p))
+      .catch(() => !cancelled && setPage({ groups: [], earlierDay: null }));
     return () => {
       cancelled = true;
     };
   }, [until]);
 
-  const today = utcDay(new Date().toISOString());
-  const earlierDay = oldestDay
-    ? new Date(Date.parse(`${oldestDay}T00:00:00.000Z`) - 86400_000)
-        .toISOString()
-        .slice(0, 10)
-    : null;
-
-  const visible = (events: Event[]) =>
-    showCandidates
-      ? events
-      : events.filter((e) => e.confidence === "confirmed");
+  const filteredCount = dimCandidates
+    ? (page?.groups ?? []).reduce(
+        (s, g) =>
+          s + g.events.filter((e) => e.confidence === "candidate").length,
+        0,
+      )
+    : 0;
 
   return (
     <>
@@ -85,21 +110,32 @@ function HomeFeed() {
       </p>
       {!until && <ActivityStrip />}
 
-      <div className="dmeta" style={{ marginBottom: "16px" }}>
-        <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+      <div className="filter-checklist" role="group" aria-label="Filters">
+        <label>
           <input
             type="checkbox"
-            checked={showCandidates}
-            onChange={(e) => setShowCandidates(e.target.checked)}
+            checked={dimCandidates}
+            onChange={(e) => {
+              setDimCandidates(e.target.checked);
+              if (!e.target.checked) setHideFiltered(false);
+            }}
           />
-          <span>SHOW CANDIDATE ENTRIES — reported, not yet corroborated</span>
+          <span>DIM CANDIDATE ENTRIES — reported, not yet corroborated</span>
         </label>
+        {dimCandidates && filteredCount > 0 && (
+          <label>
+            <input
+              type="checkbox"
+              checked={hideFiltered}
+              onChange={(e) => setHideFiltered(e.target.checked)}
+            />
+            <span>HIDE FILTERED ({filteredCount})</span>
+          </label>
+        )}
       </div>
 
-      {groups === null && (
-        <p className="mono dim">retrieving the record…</p>
-      )}
-      {groups !== null && groups.length === 0 && (
+      {page === null && <p className="mono dim">retrieving the record…</p>}
+      {page !== null && page.groups.length === 0 && (
         <p className="mono dim">
           {until
             ? `No events entered on or before ${until}.`
@@ -108,28 +144,33 @@ function HomeFeed() {
       )}
 
       <div className="register">
-        {groups?.map((g) => {
-          const rows = visible(g.events);
+        {page?.groups.map((g) => {
+          const hidden = hideFiltered
+            ? g.events.filter((e) => e.confidence === "candidate").length
+            : 0;
+          const rows = hideFiltered
+            ? g.events.filter((e) => e.confidence !== "candidate")
+            : g.events;
           return (
             <section key={g.day} aria-label={`Day ${g.day}`}>
-              {g.root ? (
-                <RootRow root={g.root} />
-              ) : g.day === today ? (
-                <OpenDayRow day={g.day} />
-              ) : (
-                <OpenDayRow day={g.day} />
-              )}
-              {rows.length === 0 ? (
+              {g.root ? <RootRow root={g.root} /> : <OpenDayRow day={g.day} />}
+              {rows.map((e) => (
+                <RegisterRow
+                  key={e.id}
+                  event={e}
+                  filteredOut={dimCandidates && e.confidence === "candidate"}
+                />
+              ))}
+              {rows.length === 0 && hidden > 0 && (
                 <div className="drow">
                   <div className="drail" />
                   <div className="dbody">
                     <p className="mono dim" style={{ margin: 0 }}>
-                      No events entered for this day.
+                      {hidden} candidate {hidden === 1 ? "entry" : "entries"}{" "}
+                      hidden.
                     </p>
                   </div>
                 </div>
-              ) : (
-                rows.map((e) => <RegisterRow key={e.id} event={e} />)
               )}
             </section>
           );
@@ -137,14 +178,12 @@ function HomeFeed() {
       </div>
 
       <nav className="day-pagination" aria-label="Day addresses">
+        <span>{until ? <a href="/">← the latest days</a> : " "}</span>
         <span>
-          {until ? <a href="/">← the latest days</a> : " "}
-        </span>
-        <span>
-          {earlierDay && groups && groups.length > 0 ? (
-            <a href={`/?until=${earlierDay}`}>earlier days →</a>
+          {page?.earlierDay ? (
+            <a href={`/?until=${page.earlierDay}`}>earlier days →</a>
           ) : (
-            " "
+            " "
           )}
         </span>
       </nav>

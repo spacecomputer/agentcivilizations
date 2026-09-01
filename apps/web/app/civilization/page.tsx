@@ -6,6 +6,7 @@ import { verifyChain } from "@agent-civilizations/verify";
 import { CivSeal } from "@/components/CivSeal";
 import { Stamp } from "@/components/Stamp";
 import { RegisterRow } from "@/components/RegisterRow";
+import { CategoryLabel, Glyph } from "@/components/Glyph";
 import { Tick } from "@/components/marks";
 import { utcDay, daysBetween } from "@/lib/format";
 import type { Civilization, Event, Category } from "@agent-civilizations/schema";
@@ -75,7 +76,8 @@ function FondsPage() {
   })).filter((x) => x.n > 0);
   const total = catCounts.reduce((s, x) => s + x.n, 0);
 
-  // Interleave thread rows with honest gap annotations.
+  // Interleave thread rows with honest gap annotations. Each row carries a
+  // spine node: the category glyph, filled or hollow by confidence.
   const thread: React.ReactNode[] = [];
   events?.forEach((e, i) => {
     if (i > 0) {
@@ -88,7 +90,18 @@ function FondsPage() {
         );
       }
     }
-    thread.push(<RegisterRow key={e.id} event={e} />);
+    thread.push(
+      <div key={e.id} className="thread-row">
+        <span className="spine-node" aria-hidden="true">
+          <Glyph
+            category={e.category}
+            filled={e.confidence === "confirmed"}
+            size={12}
+          />
+        </span>
+        <RegisterRow event={e} />
+      </div>,
+    );
   });
 
   return (
@@ -98,6 +111,9 @@ function FondsPage() {
         <div className="titleblock">
           <div className="fonds-callno">FILE {civ.id.toUpperCase()}</div>
           <h1>{civ.name}</h1>
+          <div className="dmeta">
+            <CategoryLabel category={civ.category} />
+          </div>
         </div>
         <Stamp status={civ.status} closedAt={civ.lastEventAt} />
       </div>
@@ -160,25 +176,27 @@ function FondsPage() {
         >
           Certify this file
         </button>{" "}
-        {cert.phase === "running" && (
-          <span className="mono dim">recomputing the chain…</span>
-        )}
-        {cert.phase === "intact" && (
-          <span className="mono verify-ok">
-            <Tick /> CHAIN INTACT — {cert.verified}{" "}
-            {cert.verified === 1 ? "entry" : "entries"} recomputed in this
-            browser
-          </span>
-        )}
-        {cert.phase === "failed" && (
-          <span className="mono verify-fail">
-            CERTIFICATION FAILED — first discrepancy at{" "}
-            <a href={`/event?id=${encodeURIComponent(cert.brokenAt)}`}>
-              {cert.brokenAt}
-            </a>{" "}
-            ({cert.reason})
-          </span>
-        )}
+        <span role="status">
+          {cert.phase === "running" && (
+            <span className="mono dim">recomputing the chain…</span>
+          )}
+          {cert.phase === "intact" && (
+            <span className="mono verify-ok">
+              <Tick /> CHAIN INTACT — {cert.verified}{" "}
+              {cert.verified === 1 ? "entry" : "entries"} recomputed in this
+              browser
+            </span>
+          )}
+          {cert.phase === "failed" && (
+            <span className="mono verify-fail">
+              CERTIFICATION FAILED — first discrepancy at{" "}
+              <a href={`/event?id=${encodeURIComponent(cert.brokenAt)}`}>
+                {cert.brokenAt}
+              </a>{" "}
+              ({cert.reason})
+            </span>
+          )}
+        </span>
       </div>
 
       <h2>The thread</h2>

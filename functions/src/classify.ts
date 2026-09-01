@@ -1,5 +1,8 @@
 import type { Candidate } from "./ingest.js";
-import type { ClassificationOutput } from "@agent-civilizations/schema";
+import {
+  ClassificationOutput as ClassificationOutputSchema,
+  type ClassificationOutput,
+} from "@agent-civilizations/schema";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 export const BATCH_SIZE = 10;
@@ -109,16 +112,30 @@ function parseOutputs(raw: string, expectedLen: number): ClassificationOutput[] 
       : Array.isArray((parsed as { results?: unknown[] })?.results)
         ? (parsed as { results: unknown[] }).results
         : [];
-  return array.slice(0, expectedLen).map((item: Record<string, unknown>) => ({
-    keep: Boolean(item.keep),
-    category: (item.category as ClassificationOutput["category"]) ?? null,
-    civilizationHint: (item.civilizationHint as string | null) ?? null,
-    actors: Array.isArray(item.actors) ? (item.actors as string[]) : [],
-    tags: Array.isArray(item.tags) ? (item.tags as string[]) : [],
-    title: (item.title as string | null) ?? null,
-    summary: (item.summary as string | null) ?? null,
-    reason: typeof item.reason === "string" ? item.reason : "",
-  }));
+  // Validate every item against the schema — model output is untrusted.
+  // An out-of-vocabulary category or malformed shape must never be hashed
+  // into the immutable ledger; such items are dropped with a reason.
+  return array.slice(0, expectedLen).map((item: unknown) => {
+    const parsed = ClassificationOutputSchema.safeParse(item);
+    if (!parsed.success) {
+      return {
+        keep: false,
+        category: null,
+        civilizationHint: null,
+        actors: [],
+        tags: [],
+        title: null,
+        summary: null,
+        reason: `classifier output failed validation: ${parsed.error.issues[0]?.message ?? "invalid shape"}`,
+      };
+    }
+    const out = parsed.data;
+    return {
+      ...out,
+      title: out.title ? out.title.slice(0, 200) : null,
+      summary: out.summary ? out.summary.slice(0, 1000) : null,
+    };
+  });
 }
 
 export async function classifyBatch(

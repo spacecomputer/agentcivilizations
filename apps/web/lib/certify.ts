@@ -21,8 +21,10 @@ export interface DayResult {
 
 export interface Discrepancy {
   eventId: string;
+  recordNo: number; // 1-based position in the certification run (0 for roots)
   reason: "contentHash" | "prevHash" | "seq" | "root";
-  detail: string;
+  expected: string;
+  computed: string;
 }
 
 export interface CertifyProgress {
@@ -35,8 +37,16 @@ export interface CertifyResult {
   ok: boolean;
   recordsVerified: number;
   daysVerified: number;
+  terminalHash: string | null; // last computed root (or last event hash)
   elapsedMs: number;
   discrepancy: Discrepancy | null;
+}
+
+export interface CertifyOptions {
+  // full: the run covers the entire register, so every civilization must
+  // begin at seq 0 — a missing genesis is a discrepancy. Bounded windows
+  // (the homepage crest) take the first visible record's linkage as given.
+  full?: boolean;
 }
 
 const CHUNK = 50;
@@ -57,27 +67,38 @@ export async function certify(
   events: Event[],
   roots: Map<string, Root>,
   onProgress?: (p: CertifyProgress) => void,
+  options: CertifyOptions = {},
 ): Promise<CertifyResult> {
   const started = performance.now();
   const dayResults: DayResult[] = [];
-  const report = (recordsDone: number) =>
-    onProgress?.({ recordsDone, recordsTotal: events.length, dayResults });
+  let verifiedCount = 0;
+  let terminalHash: string | null = null;
+  const positionOf = new Map(events.map((e, i) => [e.id, i + 1]));
+  const report = () =>
+    onProgress?.({
+      recordsDone: verifiedCount,
+      recordsTotal: events.length,
+      dayResults,
+    });
 
   // 1. Recompute every contentHash, chunked.
   for (let i = 0; i < events.length; i += CHUNK) {
     const chunk = events.slice(i, i + CHUNK);
     for (const e of chunk) {
-      const { contentHash, ...rest } = e;
-      const recomputed = await computeContentHash(rest);
-      if (recomputed !== contentHash) {
-        return finish(false, i, {
+      const recomputed = await computeContentHash(e);
+      if (recomputed !== e.contentHash) {
+        return finish({
           eventId: e.id,
+          recordNo: positionOf.get(e.id) ?? 0,
           reason: "contentHash",
-          detail: `stored ${contentHash} · computed ${recomputed}`,
+          expected: e.contentHash,
+          computed: recomputed,
         });
       }
+      verifiedCount++;
+      terminalHash = e.contentHash;
     }
-    report(Math.min(i + CHUNK, events.length));
+    report();
     await yieldToBrowser();
   }
 
@@ -90,21 +111,34 @@ export async function certify(
   }
   for (const [, list] of byCiv) {
     list.sort((a, b) => a.seq - b.seq);
+    if (options.full && list[0].seq !== 0) {
+      return finish({
+        eventId: list[0].id,
+        recordNo: positionOf.get(list[0].id) ?? 0,
+        reason: "seq",
+        expected: "seq 0 (genesis)",
+        computed: `seq ${list[0].seq}`,
+      });
+    }
     let prevHash: string | null = list[0].seq === 0 ? null : list[0].prevHash;
     let expectedSeq = list[0].seq;
     for (const e of list) {
       if (e.seq !== expectedSeq) {
-        return finish(false, events.length, {
+        return finish({
           eventId: e.id,
+          recordNo: positionOf.get(e.id) ?? 0,
           reason: "seq",
-          detail: `expected seq ${expectedSeq}, found ${e.seq}`,
+          expected: `seq ${expectedSeq}`,
+          computed: `seq ${e.seq}`,
         });
       }
       if (e.prevHash !== prevHash) {
-        return finish(false, events.length, {
+        return finish({
           eventId: e.id,
+          recordNo: positionOf.get(e.id) ?? 0,
           reason: "prevHash",
-          detail: `expected ${prevHash ?? "(genesis)"} · found ${e.prevHash ?? "(genesis)"}`,
+          expected: prevHash ?? "(genesis)",
+          computed: e.prevHash ?? "(genesis)",
         });
       }
       prevHash = e.contentHash;
@@ -135,29 +169,29 @@ export async function certify(
       sealedRoot: sealed?.merkleRoot ?? null,
       ok,
     });
-    report(events.length);
+    if (sealed) terminalHash = computedRoot;
+    report();
     if (!ok) {
-      return finish(false, events.length, {
+      return finish({
         eventId: day,
+        recordNo: 0,
         reason: "root",
-        detail: `sealed ${sealed!.merkleRoot} · computed ${computedRoot}`,
+        expected: sealed!.merkleRoot,
+        computed: computedRoot,
       });
     }
     await yieldToBrowser();
   }
 
-  return finish(true, events.length, null);
+  return finish(null);
 
-  function finish(
-    ok: boolean,
-    recordsVerified: number,
-    discrepancy: Discrepancy | null,
-  ): CertifyResult {
-    report(recordsVerified);
+  function finish(discrepancy: Discrepancy | null): CertifyResult {
+    report();
     return {
-      ok,
-      recordsVerified,
+      ok: discrepancy === null,
+      recordsVerified: verifiedCount,
       daysVerified: dayResults.filter((d) => d.ok && d.sealedRoot).length,
+      terminalHash,
       elapsedMs: performance.now() - started,
       discrepancy,
     };

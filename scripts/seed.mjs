@@ -26,6 +26,13 @@ function sha256(input) {
   return createHash("sha256").update(input, "utf8").digest("hex");
 }
 
+// Must mirror hashPreimage() in @agent-civilizations/verify: the preimage
+// excludes contentHash and the mutable confidence field.
+function eventPreimage(event) {
+  const { contentHash, confidence, ...rest } = event;
+  return rest;
+}
+
 function daysAgo(n, hour = 12) {
   const d = new Date(Date.now() - n * 86400_000);
   d.setUTCHours(hour, 0, 0, 0);
@@ -191,7 +198,7 @@ async function main() {
       prevHash,
       seq,
     };
-    const contentHash = sha256(canonicalize(base));
+    const contentHash = sha256(canonicalize(eventPreimage(base)));
     const full = { ...base, contentHash };
     await db.collection("events").doc(full.id).set(full);
     await db.collection("civilizations").doc(e.civ).update({

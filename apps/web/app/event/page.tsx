@@ -1,7 +1,7 @@
 "use client";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { event } from "@/lib/queries";
+import { event, eventByCivSeq } from "@/lib/queries";
 import { computeContentHash } from "@agent-civilizations/verify";
 import { CategoryLabel } from "@/components/Glyph";
 import { HashBlock } from "@/components/HashBlock";
@@ -15,10 +15,23 @@ type RecomputeState =
   | { phase: "match"; computed: string }
   | { phase: "mismatch"; computed: string };
 
+// Source URLs come from the open web via the ingestion pipeline — treat
+// them as data. Only http(s) URLs become links; anything else (including
+// javascript: and data: schemes) renders as inert text.
+function isSafeHttpUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function EventDetail() {
   const params = useSearchParams();
   const id = params.get("id");
   const [e, setEvent] = useState<Event | null | undefined>(undefined);
+  const [prevId, setPrevId] = useState<string | null>(null);
   const [rec, setRec] = useState<RecomputeState>({ phase: "idle" });
 
   useEffect(() => {
@@ -27,7 +40,15 @@ function EventDetail() {
       return;
     }
     let cancelled = false;
-    event(id).then((evt) => !cancelled && setEvent(evt));
+    event(id).then((evt) => {
+      if (cancelled) return;
+      setEvent(evt);
+      if (evt && evt.seq > 0) {
+        eventByCivSeq(evt.civilizationId, evt.seq - 1)
+          .then((prev) => !cancelled && setPrevId(prev?.id ?? null))
+          .catch(() => {});
+      }
+    });
     return () => {
       cancelled = true;
     };
@@ -36,10 +57,11 @@ function EventDetail() {
   async function recompute() {
     if (!e) return;
     setRec({ phase: "running" });
-    const { contentHash, ...rest } = e;
-    const computed = await computeContentHash(rest);
+    // computeContentHash derives the preimage itself (contentHash and the
+    // mutable confidence field are excluded).
+    const computed = await computeContentHash(e);
     setRec(
-      computed === contentHash
+      computed === e.contentHash
         ? { phase: "match", computed }
         : { phase: "mismatch", computed },
     );
@@ -94,9 +116,16 @@ function EventDetail() {
       <ul className="source-list">
         {e.sources.map((s) => (
           <li key={s.url} className="source-item">
-            <a href={s.url} target="_blank" rel="noreferrer noopener">
-              {s.title || s.url}
-            </a>
+            {isSafeHttpUrl(s.url) ? (
+              <a href={s.url} target="_blank" rel="noreferrer noopener">
+                {s.title || s.url}
+              </a>
+            ) : (
+              <span>
+                {s.title || s.url}{" "}
+                <span className="mono dim">(link withheld — unsupported scheme)</span>
+              </span>
+            )}
             <div className="domain">
               {s.domain} · fetched {utcStamp(s.fetchedAt)}
             </div>
@@ -114,7 +143,17 @@ function EventDetail() {
         <div className="prov-line">
           <span className="k">prevHash</span>
           {e.prevHash ? (
-            <HashBlock hash={e.prevHash} />
+            <>
+              <HashBlock hash={e.prevHash} />
+              {prevId && (
+                <>
+                  {" "}
+                  <a href={`/event?id=${encodeURIComponent(prevId)}`}>
+                    open the prior record
+                  </a>
+                </>
+              )}
+            </>
           ) : (
             <span className="dim">(genesis — the file opens here)</span>
           )}
@@ -132,19 +171,21 @@ function EventDetail() {
           >
             Recompute this record
           </button>{" "}
-          {rec.phase === "running" && (
-            <span className="mono dim">recomputing…</span>
-          )}
-          {rec.phase === "match" && (
-            <span className="mono verify-ok">
-              <Tick /> RECOMPUTES TO THE STORED VALUE
-            </span>
-          )}
-          {rec.phase === "mismatch" && (
-            <span className="mono verify-fail">
-              DISCREPANCY — computed {rec.computed.slice(0, 16)}…
-            </span>
-          )}
+          <span role="status">
+            {rec.phase === "running" && (
+              <span className="mono dim">recomputing…</span>
+            )}
+            {rec.phase === "match" && (
+              <span className="mono verify-ok">
+                <Tick /> RECOMPUTES TO THE STORED VALUE
+              </span>
+            )}
+            {rec.phase === "mismatch" && (
+              <span className="mono verify-fail">
+                DISCREPANCY — computed {rec.computed.slice(0, 16)}…
+              </span>
+            )}
+          </span>
         </div>
       </div>
 
