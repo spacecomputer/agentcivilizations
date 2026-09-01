@@ -1,55 +1,81 @@
+// The methodology page — the one place warmth is permitted: the institution
+// explaining its own rules, the way a good archive's reading-room guide does.
+export const metadata = { title: "Methodology" };
+
 export default function AboutPage() {
   return (
     <>
-      <h1>About</h1>
-      <p className="lede">
-        Agent Civilizations is a public, tamper-evident record of AI-agent-civilization
-        events — coordinated agent behavior, agent-driven incidents, and emergent agent
-        communities — mined continuously from public sources.
+      <span className="caps kicker">Reading-room guide</span>
+      <h1>Methodology</h1>
+      <p className="preamble">
+        We keep a public record of a new kind of history: events in which AI
+        agents coordinate, attack, and form persistent communities. We built
+        the register so that you never have to trust us — only check us.
+      </p>
+      <div className="rule-double" />
+
+      <h3>What we enter</h3>
+      <p>
+        Four categories of event: <strong>coordination</strong> (agents
+        cooperating, negotiating, specializing), <strong>security</strong>{" "}
+        (agents as attacker, target, or instrument of an incident),{" "}
+        <strong>community</strong> (persistent agent groupings with economies
+        and protocols of their own), and <strong>speculative</strong> (signals
+        that shift the near-future likelihood of the other three). The full
+        inclusion criteria are public, and they are also the literal
+        instructions given to our classifier — the editorial policy and the
+        code are the same document.
       </p>
 
-      <h2>What we log</h2>
+      <h3>How an entry is made</h3>
       <p>
-        Four categories: <span className="badge coordination">coordination</span>{" "}
-        <span className="badge security">security</span>{" "}
-        <span className="badge community">community</span>{" "}
-        <span className="badge speculative">speculative</span>. See the{" "}
-        <a href="https://github.com/agent-civilizations/agent-civilizations/blob/main/docs/TAXONOMY.md">
-          taxonomy
-        </a>{" "}
-        for the precise definitions.
+        Every thirty minutes we pull a fixed list of public feeds, discard
+        what we have seen before, and put the remainder to a language model
+        with the taxonomy as its instructions. What survives is entered into
+        the register: hashed, bound to the entry before it, and never edited
+        again. Each night the day's entries are sealed beneath a root record.
+      </p>
+      <p>
+        Two standards of confidence apply throughout.{" "}
+        <strong>CONFIRMED</strong> — corroborated by independent sources.{" "}
+        <strong>CANDIDATE</strong> — reported, not yet corroborated. A
+        candidate is promoted when a second independent source appears within
+        thirty days.
       </p>
 
-      <h2>How it works</h2>
+      <h3>When we are wrong</h3>
       <p>
-        Every 30 minutes, a Cloud Function pulls RSS/Atom feeds from a curated source list,
-        deduplicates against what we&apos;ve seen, and passes candidate items to a free-tier LLM
-        (via OpenRouter) for relevance and entity extraction. Surviving items become events
-        in Firestore, each stamped with a SHA-256 hash of its canonicalized JSON and the hash
-        of the previous event in its civilization thread. A nightly job computes a
-        Merkle-style root over the day&apos;s events, chaining days together.
+        Entries are never deleted. A wrong entry is superseded by a new entry
+        that names it, states the reason, and stays on the record beside it.
+        The mistake, the correction, and the timing all remain public.
       </p>
 
-      <h2>Why hash-chained</h2>
+      <h3>What certification proves</h3>
       <p>
-        So anyone can prove, without trusting us, that no event was silently edited or
-        deleted after publication. Try it at <a href="/verify">/verify</a>.
+        The <a href="/verify">certification console</a> recomputes every hash
+        in your own browser. A pass proves no entry has been altered or
+        reordered since its day was sealed. It does not prove our judgment
+        was right, and it does not prove nothing was omitted — for those,
+        read the sources we cite on every entry, and read our code, which is
+        open in full.
       </p>
 
-      <h2>What this is not</h2>
-      <ul>
-        <li>Not a threat feed or a security product.</li>
-        <li>Not investment or safety advice.</li>
-        <li>Not a claim that our classifier&apos;s judgment is always right — see{" "}
-          <a href="https://github.com/agent-civilizations/agent-civilizations/blob/main/docs/RETRACTIONS.md">retractions</a>.</li>
-      </ul>
-
-      <h2>Open source</h2>
+      <h3>The name</h3>
       <p>
-        MIT licensed. Source, taxonomy, classifier prompt, and issue tracker at{" "}
+        We call the persistent groupings <em>civilizations</em> with some
+        care. Most files in this register record small things: a research
+        demonstration, an incident, a marketplace finding its feet. We keep
+        them anyway, because a civilization is only visible in retrospect —
+        and the record has to begin before anyone is sure.
+      </p>
+
+      <div className="rule-double" />
+      <p className="mono dim">
+        SOURCE, TAXONOMY, AND CLASSIFIER PROMPT:{" "}
         <a href="https://github.com/agent-civilizations/agent-civilizations">
-          github.com/agent-civilizations
-        </a>.
+          GITHUB.COM/AGENT-CIVILIZATIONS
+        </a>{" "}
+        · MIT LICENSE
       </p>
     </>
   );

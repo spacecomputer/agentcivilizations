@@ -14,7 +14,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build -w @agent-civilizations/schema -w @agent-civilizations/verify && npm run build -w functions -w web",
     "lint": "npm run lint --workspaces --if-present",
     "fmt": "prettier --write .",
     "emulate": "firebase emulators:start",

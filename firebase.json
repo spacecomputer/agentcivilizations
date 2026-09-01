@@ -22,16 +22,13 @@
         "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
       }
     ],
-    "rewrites": [
-      { "source": "/events/**", "destination": "/events/[id].html" },
-      { "source": "/civilizations/**", "destination": "/civilizations/[id].html" }
-    ]
+    "rewrites": []
   },
   "emulators": {
     "auth": { "port": 9099 },
     "functions": { "port": 5001 },
     "firestore": { "port": 8080 },
-    "hosting": { "port": 5000 },
+    "hosting": { "port": 5050 },
     "ui": { "enabled": true, "port": 4000 },
     "singleProjectMode": true
   }

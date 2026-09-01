@@ -1,72 +1,194 @@
 "use client";
-import { useState } from "react";
-import { eventsForCivilization } from "@/lib/queries";
-import { verifyChain } from "@agent-civilizations/verify";
+import { useRef, useState } from "react";
+import { allEvents, allRoots } from "@/lib/queries";
+import { certify, type CertifyProgress, type CertifyResult } from "@/lib/certify";
+import { Tick } from "@/components/marks";
+import { recordNo, utcStamp, shortHash } from "@/lib/format";
+
+type ConsoleState =
+  | { phase: "idle" }
+  | { phase: "retrieving" }
+  | { phase: "running"; progress: CertifyProgress }
+  | { phase: "done"; result: CertifyResult; progress: CertifyProgress; at: string };
 
 export default function VerifyPage() {
-  const [civId, setCivId] = useState("");
-  const [state, setState] = useState<
-    { status: "idle" | "running" | "ok" | "fail"; detail?: string }
-  >({ status: "idle" });
+  const [state, setState] = useState<ConsoleState>({ phase: "idle" });
+  const [attestCopied, setAttestCopied] = useState(false);
+  const reducedMotion = useRef(
+    typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
 
   async function run() {
-    if (!civId.trim()) return;
-    setState({ status: "running" });
+    setState({ phase: "retrieving" });
     try {
-      const events = await eventsForCivilization(civId.trim());
-      if (events.length === 0) {
-        setState({ status: "fail", detail: "no events found for that civilization id" });
+      const [events, roots] = await Promise.all([allEvents(), allRoots()]);
+      if (!events.length) {
+        setState({
+          phase: "done",
+          result: {
+            ok: true,
+            recordsVerified: 0,
+            daysVerified: 0,
+            elapsedMs: 0,
+            discrepancy: null,
+          },
+          progress: { recordsDone: 0, recordsTotal: 0, dayResults: [] },
+          at: utcStamp(new Date().toISOString()),
+        });
         return;
       }
-      const result = await verifyChain(events);
-      if (result.ok) {
-        setState({ status: "ok", detail: `${result.verified} events verified end-to-end` });
-      } else {
-        setState({
-          status: "fail",
-          detail: `broken at event ${result.brokenAt} (${result.reason})`,
-        });
-      }
-    } catch (err) {
-      setState({ status: "fail", detail: err instanceof Error ? err.message : String(err) });
+      const rootMap = new Map(roots.map((r) => [r.id, r]));
+      let latest: CertifyProgress = {
+        recordsDone: 0,
+        recordsTotal: events.length,
+        dayResults: [],
+      };
+      const result = await certify(events, rootMap, (p) => {
+        latest = { ...p, dayResults: [...p.dayResults] };
+        // Under reduced motion the console skips the ticking and renders
+        // the finished attestation instantly.
+        if (!reducedMotion.current) {
+          setState({ phase: "running", progress: latest });
+        }
+      });
+      setState({
+        phase: "done",
+        result,
+        progress: latest,
+        at: utcStamp(new Date().toISOString()),
+      });
+    } catch {
+      setState({ phase: "idle" });
     }
   }
 
+  async function copyAttestation() {
+    if (state.phase !== "done") return;
+    const r = state.result;
+    const text = `AgentCivilizations.org attestation · ${r.ok ? "CHAIN INTACT" : "CERTIFICATION FAILED"} · ${r.recordsVerified} records · ${r.daysVerified} sealed roots · recomputed in-browser in ${(r.elapsedMs / 1000).toFixed(1)}s · ${state.at}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setAttestCopied(true);
+      setTimeout(() => setAttestCopied(false), 1600);
+    } catch {
+      // clipboard unavailable
+    }
+  }
+
+  const progress =
+    state.phase === "running" || state.phase === "done" ? state.progress : null;
+
   return (
     <>
-      <h1>Verify the ledger</h1>
-      <p className="lede">
-        The verifier recomputes each event&apos;s <code>contentHash</code> from its canonicalized JSON
-        and asserts each <code>prevHash</code> matches the previous event&apos;s
-        hash. If any event was silently edited or reordered, this check fails.
+      <span className="caps kicker">The certification console</span>
+      <h1>Certify the record</h1>
+      <p className="preamble">
+        What follows is computed by your browser, using the Web Crypto API,
+        reading the public database directly. No server of ours takes part.
+        Your browser recomputes the hash of every record from its contents,
+        confirms each record binds to the one before it, and re-derives every
+        daily root against the sealed value. A pass proves that no entry in
+        the register has been altered or reordered since its day was sealed.
       </p>
-      <p style={{ color: "var(--fg-dim)", fontSize: "0.9rem" }}>
-        The verifier runs entirely in your browser, reading directly from Firestore&apos;s
-        public REST endpoints. No trust in us required.
+      <p className="dim" style={{ maxWidth: "68ch" }}>
+        It does not prove our classifier's judgment, nor that nothing was
+        omitted at ingestion. Those questions are answered by the public
+        sources on every record and the public methodology.
       </p>
-      <div style={{ display: "flex", gap: "0.5rem", margin: "1.5rem 0" }}>
-        <input
-          type="text"
-          placeholder="civilization id (e.g. autogpt-swarm)"
-          value={civId}
-          onChange={(e) => setCivId(e.target.value)}
-          style={{ flex: 1 }}
-        />
-        <button onClick={run} disabled={state.status === "running"}>
-          Verify
+
+      <div style={{ margin: "24px 0" }}>
+        <button
+          type="button"
+          className="certify-btn"
+          onClick={run}
+          disabled={state.phase === "retrieving" || state.phase === "running"}
+        >
+          Certify the record
         </button>
       </div>
-      {state.status !== "idle" && (
-        <div className="verify-panel">
-          <div className={state.status === "ok" ? "verify-ok" : state.status === "fail" ? "verify-fail" : ""}>
-            {state.status === "running" ? "verifying…" : state.detail}
-          </div>
+
+      {state.phase === "retrieving" && (
+        <p className="mono dim">retrieving the record…</p>
+      )}
+
+      {(state.phase === "running" || state.phase === "done") && (
+        <div className="console" aria-live="polite">
+          {progress?.dayResults.map((d) => (
+            <div className="crow" key={d.day}>
+              <span className="cd">{d.day}</span>
+              <span className="ch">
+                root {shortHash(d.computedRoot)} · {d.eventCount}{" "}
+                {d.eventCount === 1 ? "event" : "events"}
+                {d.sealedRoot === null && " · unsealed (open day)"}
+              </span>
+              <span className={`cv${d.ok ? "" : " fail"}`}>
+                {d.ok ? (d.sealedRoot ? "intact" : "open") : "DISCREPANCY"}
+              </span>
+            </div>
+          ))}
+          {progress && (
+            <div className="counter">
+              {recordNo(progress.recordsDone)} of{" "}
+              {recordNo(progress.recordsTotal).replace("No. ", "")} records
+              recomputed
+            </div>
+          )}
+
+          {state.phase === "done" && (
+            <div className={`attest${state.result.ok ? "" : " failed"}`}>
+              {state.result.ok ? (
+                <>
+                  <div className="a1">
+                    <Tick size={14} />
+                    Chain intact — {state.result.recordsVerified} records,{" "}
+                    {state.result.daysVerified} sealed roots
+                  </div>
+                  <div className="a2">
+                    recomputed in this browser in{" "}
+                    {(state.result.elapsedMs / 1000).toFixed(1)}s · {state.at} ·{" "}
+                    <button
+                      type="button"
+                      className="hash-control"
+                      onClick={copyAttestation}
+                    >
+                      {attestCopied ? "copied" : "copy attestation"}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="a1">
+                    Certification failed — first discrepancy at{" "}
+                    {state.result.discrepancy?.eventId}
+                  </div>
+                  <div className="a2">
+                    {state.result.discrepancy?.reason}:{" "}
+                    {state.result.discrepancy?.detail}
+                    {state.result.discrepancy?.reason !== "root" && (
+                      <>
+                        {" · "}
+                        <a
+                          href={`/event?id=${encodeURIComponent(state.result.discrepancy?.eventId ?? "")}`}
+                        >
+                          open the record
+                        </a>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
-      <h2>Or from the command line</h2>
-      <pre className="verify-panel">
-        <code>npx @agent-civilizations/verify --civilization={"<id>"}</code>
-      </pre>
+
+      <h3>From the command line</h3>
+      <div className="panel">
+        <div className="prov-line">
+          npx @agent-civilizations/verify --civilization=&lt;file&gt;
+        </div>
+      </div>
     </>
   );
 }
