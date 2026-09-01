@@ -2,6 +2,8 @@ import { XMLParser } from "fast-xml-parser";
 import type { SourceSpec } from "./sources.js";
 import type { Candidate, FetcherResult } from "./sources/types.js";
 import { fetchArxiv } from "./sources/arxiv.js";
+import { fetchNvd, DEFAULT_NVD_KEYWORDS } from "./sources/nvd.js";
+import { tierOf } from "./tiers.js";
 
 // Re-export Candidate for backward compatibility with scan.ts imports.
 export type { Candidate };
@@ -18,6 +20,36 @@ function domainOf(url: string): string {
     return new URL(url).hostname.replace(/^www\./, "");
   } catch {
     return "unknown";
+  }
+}
+
+// Extract publisher info from an RSS <source url="..."> element. Google
+// News, Yahoo News, and a handful of other aggregators emit this; when
+// present it's the publisher's homepage URL, not the article URL.
+function extractPublisher(
+  src: unknown,
+): { homepageUrl: string; domain: string } | null {
+  if (!src) return null;
+  // fast-xml-parser gives us either a plain string (when there is only
+  // text content), or an object with @_url + #text.
+  let raw: string | undefined;
+  if (typeof src === "string") {
+    // no url attribute — nothing usable
+    return null;
+  }
+  if (typeof src === "object" && src !== null) {
+    raw = (src as { "@_url"?: string })["@_url"];
+  }
+  if (!raw) return null;
+  try {
+    const u = new URL(raw);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    return {
+      homepageUrl: raw,
+      domain: u.hostname.replace(/^www\./, ""),
+    };
+  } catch {
+    return null;
   }
 }
 
@@ -66,7 +98,16 @@ export async function fetchRss(
     const items = Array.isArray(rssItems) ? rssItems : [rssItems];
     return items.map((item: Record<string, unknown>) => {
       const url = String(item.link ?? item.guid ?? "");
-      return {
+      // Google News RSS carries the underlying publisher in <source
+      // url="https://www.example.com">Example</source>. When present,
+      // hydrate the candidate with the publisher's canonicalDomain and
+      // sourceTier so aggregator items get their real editorial weight
+      // instead of collapsing to news.google.com's aggregator-drop tier.
+      // See the research note in this commit for why we don't try to
+      // decode the CBM token to the article URL (unreliable since
+      // July 2024).
+      const publisher = extractPublisher(item.source);
+      const candidate: Candidate = {
         sourceId: source.id,
         sourceName: source.name,
         url,
@@ -76,6 +117,12 @@ export async function fetchRss(
         domain: domainOf(url),
         categoryHint: source.categoryHint,
       };
+      if (publisher) {
+        candidate.canonicalUrl = publisher.homepageUrl;
+        candidate.canonicalDomain = publisher.domain;
+        candidate.sourceTier = tierOf(publisher.domain);
+      }
+      return candidate;
     });
   }
 
@@ -113,6 +160,8 @@ async function fetchOne(source: SourceSpec): Promise<Candidate[]> {
       return fetchRss(source);
     case "arxiv-api":
       return fetchArxiv(source.id, source.name, source.categories, source.maxResults ?? 100);
+    case "nvd":
+      return fetchNvd(source.keywords ?? DEFAULT_NVD_KEYWORDS, source.windowHours ?? 24);
   }
 }
 

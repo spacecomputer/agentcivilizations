@@ -259,6 +259,28 @@ export default function VerifyPage() {
           npx @agent-civilizations/verify --civilization=&lt;file&gt;
         </div>
       </div>
+
+      <h3>Bitcoin-anchored root proofs</h3>
+      <p>
+        Each sealed daily root is submitted to the public{" "}
+        <a href="https://opentimestamps.org/" target="_blank" rel="noreferrer noopener">
+          OpenTimestamps
+        </a>{" "}
+        calendars, which aggregate submissions into a Bitcoin transaction.
+        Once Bitcoin confirms the aggregation (usually within a day), the
+        proof carries the Bitcoin block header — an independently
+        verifiable claim that our merkleRoot existed no later than that
+        block&apos;s timestamp. Neither we, nor the calendars, need to be
+        trusted.
+      </p>
+      <div className="panel">
+        <div className="prov-line">
+          curl -o day.ots https://agentcivilizations.org/api/roots/YYYY-MM-DD/ots
+        </div>
+        <div className="prov-line">
+          ots verify --raw &lt;merkleRoot-hex&gt; day.ots
+        </div>
+      </div>
     </>
   );
 }

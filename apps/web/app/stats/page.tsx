@@ -281,6 +281,25 @@ export default function StatsPage() {
               <span className="k">civilizations</span>{" "}
               {s.latestRoot.civilizationCount}
             </div>
+            {s.latestRoot.otsProof && (
+              <>
+                <div className="prov-line">
+                  <span className="k">ots proof</span>{" "}
+                  <a
+                    href={`/api/roots/${s.latestRoot.id}/ots`}
+                    className="mono"
+                  >
+                    download {s.latestRoot.id}.ots
+                  </a>
+                </div>
+                <div className="prov-line">
+                  <span className="k">bitcoin</span>{" "}
+                  {s.latestRoot.otsBitcoinBlockHeight
+                    ? `block ${s.latestRoot.otsBitcoinBlockHeight}`
+                    : "waiting for confirmation"}
+                </div>
+              </>
+            )}
           </div>
         </>
       )}

@@ -102,6 +102,15 @@ export const Root = z.object({
   civilizationCount: z.number().int().nonnegative(),
   computedAt: z.string().datetime(),
   prevRootHash: z.string().nullable(),
+  // OpenTimestamps attestations — appended after the root is written.
+  // The merkleRoot itself never changes; these are append-only records
+  // about it. See docs/DESIGN.md.
+  otsProof: z.string().optional(), // base64 .ots bytes
+  otsStampedAt: z.string().datetime().optional(),
+  otsCheckedAt: z.string().datetime().optional(),
+  otsUpgradedAt: z.string().datetime().optional(),
+  otsBitcoinBlockHeight: z.number().int().nonnegative().optional(),
+  otsBitcoinTimestamp: z.number().int().nonnegative().optional(),
 });
 export type Root = z.infer<typeof Root>;
 

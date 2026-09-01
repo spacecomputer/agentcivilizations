@@ -25,7 +25,8 @@
     "rewrites": [
       { "source": "/feed.xml", "function": { "functionId": "feed", "region": "us-central1" } },
       { "source": "/atom.xml", "function": { "functionId": "feed", "region": "us-central1" } },
-      { "source": "/sitemap.xml", "function": { "functionId": "sitemap", "region": "us-central1" } }
+      { "source": "/sitemap.xml", "function": { "functionId": "sitemap", "region": "us-central1" } },
+      { "source": "/api/roots/*/ots", "function": { "functionId": "otsProof", "region": "us-central1" } }
     ]
   },
   "emulators": {

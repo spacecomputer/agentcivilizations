@@ -19,6 +19,10 @@ await build({
     "fast-xml-parser",
     "ulid",
     "zod",
+    // OpenTimestamps pulls in web3 + XMLHttpRequest — leave to npm at
+    // runtime instead of bundling. Cloud Build's npm install will
+    // resolve these from functions/package.json.
+    "javascript-opentimestamps",
   ],
   logLevel: "info",
 });

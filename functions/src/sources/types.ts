@@ -24,7 +24,8 @@ export interface Candidate {
 // Discriminated union — sources.ts holds an array of these.
 export type SourceSpec =
   | { kind: "rss"; id: string; name: string; url: string; categoryHint?: Category }
-  | { kind: "arxiv-api"; id: string; name: string; categories: string[]; maxResults?: number };
+  | { kind: "arxiv-api"; id: string; name: string; categories: string[]; maxResults?: number }
+  | { kind: "nvd"; id: string; name: string; keywords?: string[]; windowHours?: number };
 
 export interface FetcherResult {
   candidates: Candidate[];

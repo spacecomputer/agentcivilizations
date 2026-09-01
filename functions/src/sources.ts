@@ -13,6 +13,13 @@ export const SOURCES: SourceSpec[] = [
     categories: ["cs.MA", "cs.AI", "cs.CR"],
     maxResults: 100,
   },
+  {
+    kind: "nvd",
+    id: "nvd-cve",
+    name: "NVD CVE (AI-agent keyword buckets)",
+    // Defaults to DEFAULT_NVD_KEYWORDS; override via Firestore config
+    // in a future governance-events iteration.
+  },
 
   // -- aggregators (keep, but their peerhood is dropped in corroboration) --
   {
