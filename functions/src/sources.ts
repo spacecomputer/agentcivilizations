@@ -21,35 +21,62 @@ export const SOURCES: SourceSpec[] = [
     // in a future governance-events iteration.
   },
 
-  // -- aggregators (keep, but their peerhood is dropped in corroboration) --
+  // -- aggregators (kept but peerhood dropped in corroboration by
+  // default; individual items get their canonical publisher tier via
+  // the RSS <source url> unwrap in ingest.ts) --
   {
     kind: "rss",
     id: "hn-frontpage",
     name: "Hacker News",
     url: "https://hnrss.org/frontpage",
   },
+  // Consolidated to two Google News queries — five was tripping their
+  // rate limit (HTTP 503) on every scan. These two queries cover the
+  // agent-civilization surface without redundancy.
   {
     kind: "rss",
-    id: "google-news-ai-agent",
-    name: "Google News: AI agent",
-    url: "https://news.google.com/rss/search?q=%22AI+agent%22&hl=en-US&gl=US&ceid=US:en",
+    id: "google-news-ai-agents",
+    name: "Google News: AI agents",
+    url: "https://news.google.com/rss/search?q=%22AI+agent%22+OR+%22autonomous+agent%22+OR+%22agentic+AI%22&hl=en-US&gl=US&ceid=US:en",
   },
   {
     kind: "rss",
-    id: "google-news-autonomous-hack",
-    name: "Google News: autonomous agent hack",
-    url: "https://news.google.com/rss/search?q=%22autonomous+agent%22+hack&hl=en-US&gl=US&ceid=US:en",
+    id: "google-news-agent-incidents",
+    name: "Google News: agent incidents",
+    url: "https://news.google.com/rss/search?q=%22agent+swarm%22+OR+%22multi-agent%22+OR+%22prompt+injection%22&hl=en-US&gl=US&ceid=US:en",
     categoryHint: "security",
   },
+  // Anthropic doesn't publish RSS — use a targeted Google News query
+  // as its proxy so their announcements aren't invisible to the ledger.
   {
     kind: "rss",
-    id: "google-news-agent-swarm",
-    name: "Google News: agent swarm",
-    url: "https://news.google.com/rss/search?q=%22agent+swarm%22+OR+%22multi-agent%22&hl=en-US&gl=US&ceid=US:en",
-    categoryHint: "coordination",
+    id: "google-news-anthropic",
+    name: "Google News: Anthropic",
+    url: "https://news.google.com/rss/search?q=Anthropic+Claude&hl=en-US&gl=US&ceid=US:en",
   },
 
-  // -- secondary press --
+  // -- primary vendor blogs (agent-first labs) --
+  // Anthropic publishes no RSS; covered by targeted Google News below.
+  {
+    kind: "rss",
+    id: "openai-news",
+    name: "OpenAI News",
+    url: "https://openai.com/news/rss.xml",
+  },
+  {
+    kind: "rss",
+    id: "deepmind-blog",
+    name: "Google DeepMind",
+    url: "https://deepmind.google/blog/rss.xml",
+  },
+  {
+    kind: "rss",
+    id: "huggingface-blog",
+    name: "Hugging Face Blog",
+    url: "https://huggingface.co/blog/feed.xml",
+  },
+
+  // -- primary-trade security beats --
   {
     kind: "rss",
     id: "krebs",
@@ -59,10 +86,52 @@ export const SOURCES: SourceSpec[] = [
   },
   {
     kind: "rss",
+    id: "schneier",
+    name: "Schneier on Security",
+    url: "https://www.schneier.com/feed/atom/",
+    categoryHint: "security",
+  },
+
+  // -- reputable secondary press --
+  {
+    kind: "rss",
     id: "the-register-ai",
     name: "The Register (AI/ML)",
     url: "https://www.theregister.com/software/ai_ml/headlines.atom",
   },
+  {
+    kind: "rss",
+    id: "the-register-security",
+    name: "The Register (Security)",
+    url: "https://www.theregister.com/security/headlines.atom",
+    categoryHint: "security",
+  },
+  {
+    kind: "rss",
+    id: "arstechnica-ai",
+    name: "Ars Technica (AI)",
+    url: "https://arstechnica.com/ai/feed/",
+  },
+  {
+    kind: "rss",
+    id: "arstechnica-security",
+    name: "Ars Technica (Security)",
+    url: "https://arstechnica.com/security/feed/",
+    categoryHint: "security",
+  },
+  {
+    kind: "rss",
+    id: "techcrunch-ai",
+    name: "TechCrunch (AI)",
+    url: "https://techcrunch.com/category/artificial-intelligence/feed/",
+  },
+  {
+    kind: "rss",
+    id: "mit-technology-review",
+    name: "MIT Technology Review (AI)",
+    url: "https://www.technologyreview.com/topic/artificial-intelligence/feed",
+  },
+
 ];
 
 // Named export retained for anyone still importing the old shape name.

@@ -17,19 +17,90 @@ export interface ScanSummary {
 }
 
 // Firestore-backed URL dedupe. Uses the `seenUrls` collection with the
-// sha1(url) as the doc id so a lookup is a single get(). Read-only: items
-// are marked seen only AFTER they have actually been through the
-// classifier (markSeen below), so a backlog larger than one scan's
-// classification budget drains across scans instead of being silently lost.
+// sha1(url) as the doc id. Read-only: items are marked seen only AFTER
+// they have actually been through the classifier (markSeen below), so a
+// backlog larger than one scan's classification budget drains across
+// scans instead of being silently lost.
+//
+// Batch getAll instead of sequential gets — at 400+ candidates/scan the
+// sequential path was adding ~5s of serial round-trips to Firestore.
 async function filterNewCandidates(candidates: Candidate[]): Promise<Candidate[]> {
   const db = getFirestore();
-  const out: Candidate[] = [];
+  const withIds: Array<{ c: Candidate; id: string }> = [];
   for (const c of candidates) {
     if (!c.url) continue;
-    const id = await sha1Hex(c.url);
-    const snap = await db.collection("seenUrls").doc(id).get();
-    if (snap.exists) continue;
-    out.push(c);
+    withIds.push({ c, id: await sha1Hex(c.url) });
+  }
+  const out: Candidate[] = [];
+  const CHUNK = 200; // Firestore getAll has no strict limit but 500 refs per RPC is the norm
+  for (let i = 0; i < withIds.length; i += CHUNK) {
+    const slice = withIds.slice(i, i + CHUNK);
+    const refs = slice.map((x) => db.collection("seenUrls").doc(x.id));
+    const snaps = await db.getAll(...refs);
+    for (let j = 0; j < snaps.length; j++) {
+      if (!snaps[j].exists) out.push(slice[j].c);
+    }
+  }
+  return out;
+}
+
+const TIER_RANK: Record<string, number> = {
+  primary: 0,
+  "primary-trade": 1,
+  secondary: 2,
+  aggregator: 3,
+  "aggregator-drop": 4,
+};
+
+function prioritizeByTier(candidates: Candidate[]): Candidate[] {
+  return [...candidates].sort((a, b) => {
+    const ra = TIER_RANK[a.sourceTier ?? "secondary"] ?? 2;
+    const rb = TIER_RANK[b.sourceTier ?? "secondary"] ?? 2;
+    return ra - rb;
+  });
+}
+
+// Normalize a title for dedup: lowercase, strip non-alphanumeric, split
+// into trigrams. Very cheap and catches the common case of the same
+// story surfacing under slightly different titles from multiple feeds.
+function trigramSet(title: string): Set<string> {
+  const s = title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const grams = new Set<string>();
+  if (s.length < 3) return grams;
+  for (let i = 0; i < s.length - 2; i++) grams.add(s.slice(i, i + 3));
+  return grams;
+}
+
+function jaccardOverlap(a: Set<string>, b: Set<string>): number {
+  if (a.size === 0 || b.size === 0) return 0;
+  let inter = 0;
+  for (const g of a) if (b.has(g)) inter++;
+  return inter / (a.size + b.size - inter);
+}
+
+// Keep the FIRST occurrence of each near-duplicate cluster — because
+// prioritizeByTier has already ordered primaries first, the survivor
+// is the highest-tier version of the story.
+function titleDedupe(candidates: Candidate[], threshold = 0.7): Candidate[] {
+  const out: Candidate[] = [];
+  const grams: Set<string>[] = [];
+  for (const c of candidates) {
+    const g = trigramSet(c.title);
+    let dup = false;
+    for (const prev of grams) {
+      if (jaccardOverlap(g, prev) >= threshold) {
+        dup = true;
+        break;
+      }
+    }
+    if (!dup) {
+      out.push(c);
+      grams.push(g);
+    }
   }
   return out;
 }
@@ -82,7 +153,17 @@ export async function runScan(opts: { apiKey: string; models: string[] }): Promi
     await fetchAll(SOURCES);
   errors.push(...fetchErrors);
   const fresh = await filterNewCandidates(fetched);
-  const considered = fresh.slice(0, MAX_CANDIDATES_PER_SCAN);
+  // Two throughput fixes:
+  //  1) Tier priority — primary/primary-trade sources go to the classifier
+  //     first. When we're LLM-budget-bound, arxiv/NVD/Krebs beat the
+  //     15th vendor product news of the scan.
+  //  2) In-scan dedupe by normalized-title trigrams — if two candidates
+  //     have >70% overlapping trigrams (e.g. the SAME story surfaced by
+  //     three feeds), classify only the highest-tier one. Saves LLM calls
+  //     that would just get a "duplicate coverage" drop.
+  const prioritized = prioritizeByTier(fresh);
+  const deduped = titleDedupe(prioritized);
+  const considered = deduped.slice(0, MAX_CANDIDATES_PER_SCAN);
 
   // Pull the top established civilizations by activity so the classifier
   // can reuse their slugs instead of inventing near-miss variants (see

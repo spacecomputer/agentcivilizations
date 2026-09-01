@@ -5,8 +5,13 @@ import {
 } from "@agent-civilizations/schema";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-export const BATCH_SIZE = 10;
-export const MAX_CANDIDATES_PER_SCAN = 40;
+// Throughput math: each batch is one OpenRouter call. Free-tier ceiling
+// per key is ~200 calls/day per model. We run 48 scans/day, so 4 calls
+// per scan (192/day) fits with slack. Raising BATCH_SIZE lets us
+// classify more per call — the models handle 25 items in ~800 char
+// excerpts comfortably.
+export const BATCH_SIZE = 25;
+export const MAX_CANDIDATES_PER_SCAN = 100;
 
 const SYSTEM_PROMPT = `You are the ingestion classifier for AgentCivilizations.org, an open ledger of AI-agent-civilization events.
 

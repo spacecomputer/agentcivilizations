@@ -134,14 +134,21 @@ export const ClassificationInput = z.object({
 });
 export type ClassificationInput = z.infer<typeof ClassificationInput>;
 
+// Every field is optional-with-default because free-tier models
+// routinely omit fields when they mean "no". `.default()` lets Zod
+// safeParse succeed on { keep: true, category: "coordination", ... }
+// even when the model didn't include actors/tags/reason. Then the
+// downstream promotion gate (scan.ts) explicitly requires the
+// mandatory fields (category, civilizationHint, title, summary),
+// which is where a truly-malformed keep=true gets dropped honestly.
 export const ClassificationOutput = z.object({
-  keep: z.boolean(),
-  category: Category.nullable(),
-  civilizationHint: z.string().nullable(),
+  keep: z.boolean().default(false),
+  category: Category.nullable().default(null),
+  civilizationHint: z.string().nullable().default(null),
   actors: z.array(z.string()).default([]),
   tags: z.array(z.string()).default([]),
-  title: z.string().nullable(),
-  summary: z.string().nullable(),
-  reason: z.string(),
+  title: z.string().nullable().default(null),
+  summary: z.string().nullable().default(null),
+  reason: z.string().default(""),
 });
 export type ClassificationOutput = z.infer<typeof ClassificationOutput>;
