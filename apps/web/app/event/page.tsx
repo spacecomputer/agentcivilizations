@@ -104,6 +104,11 @@ function EventDetail() {
           This entry is provisional and has not met the confirmation standard.
         </p>
       )}
+      {!candidate && e.confidencePromotedAt && (
+        <p className="dim mono" style={{ fontSize: "12px" }}>
+          CONFIRMED {utcStamp(e.confidencePromotedAt)} — corroborating source entered the ledger.
+        </p>
+      )}
 
       {e.actors.length > 0 && (
         <>
@@ -112,10 +117,68 @@ function EventDetail() {
         </>
       )}
 
+      {e.identifiers && Object.values(e.identifiers).some(Boolean) && (
+        <>
+          <h3>Identifiers</h3>
+          <div className="ident-row">
+            {e.identifiers.arxivId && (
+              <a
+                className="ident-chip"
+                href={`https://arxiv.org/abs/${e.identifiers.arxivId}`}
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                <span className="ident-kind">ARXIV</span>{" "}
+                <span className="mono">{e.identifiers.arxivId}</span>
+              </a>
+            )}
+            {e.identifiers.doi && (
+              <a
+                className="ident-chip"
+                href={`https://doi.org/${e.identifiers.doi}`}
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                <span className="ident-kind">DOI</span>{" "}
+                <span className="mono">{e.identifiers.doi}</span>
+              </a>
+            )}
+            {e.identifiers.cve && (
+              <a
+                className="ident-chip"
+                href={`https://nvd.nist.gov/vuln/detail/${e.identifiers.cve}`}
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                <span className="ident-kind">CVE</span>{" "}
+                <span className="mono">{e.identifiers.cve}</span>
+              </a>
+            )}
+            {e.identifiers.gitCommit && (
+              <span className="ident-chip">
+                <span className="ident-kind">GIT</span>{" "}
+                <span className="mono">{e.identifiers.gitCommit.slice(0, 10)}</span>
+              </span>
+            )}
+            {e.identifiers.hnItemId && (
+              <a
+                className="ident-chip"
+                href={`https://news.ycombinator.com/item?id=${e.identifiers.hnItemId}`}
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                <span className="ident-kind">HN</span>{" "}
+                <span className="mono">{e.identifiers.hnItemId}</span>
+              </a>
+            )}
+          </div>
+        </>
+      )}
+
       <h3>Sources consulted</h3>
       <ul className="source-list">
         {e.sources.map((s) => (
-          <li key={s.url} className="source-item">
+          <li key={s.url} className={`source-item tier-${s.sourceTier ?? "unknown"}`}>
             {isSafeHttpUrl(s.url) ? (
               <a href={s.url} target="_blank" rel="noreferrer noopener">
                 {s.title || s.url}
@@ -127,7 +190,17 @@ function EventDetail() {
               </span>
             )}
             <div className="domain">
-              {s.domain} · fetched {utcStamp(s.fetchedAt)}
+              {s.canonicalDomain ?? s.domain}
+              {s.sourceTier && (
+                <>
+                  {" · "}
+                  <span className={`source-tier tier-${s.sourceTier}`}>
+                    {s.sourceTier.toUpperCase()}
+                  </span>
+                </>
+              )}
+              {" · fetched "}
+              {utcStamp(s.fetchedAt)}
             </div>
             {s.rawExcerpt && <blockquote>“{s.rawExcerpt}”</blockquote>}
           </li>

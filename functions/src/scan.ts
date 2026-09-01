@@ -3,7 +3,7 @@ import { SOURCES } from "./sources.js";
 import { fetchAll, type Candidate } from "./ingest.js";
 import { classifyBatch, MAX_CANDIDATES_PER_SCAN } from "./classify.js";
 import { promoteEvent } from "./hashchain.js";
-import { extractFingerprints, isEmpty } from "./fingerprint.js";
+import { extractFingerprints, isEmpty, mergeFingerprints } from "./fingerprint.js";
 import { resolveCanonical, tierOf, canonicalHostname } from "./tiers.js";
 import { ulid } from "ulid";
 
@@ -32,6 +32,20 @@ async function filterNewCandidates(candidates: Candidate[]): Promise<Candidate[]
     out.push(c);
   }
   return out;
+}
+
+async function topActiveCivilizations(n: number): Promise<string[]> {
+  const db = getFirestore();
+  try {
+    const snap = await db
+      .collection("civilizations")
+      .orderBy("lastEventAt", "desc")
+      .limit(n)
+      .get();
+    return snap.docs.map((d) => (d.data() as { id: string }).id);
+  } catch {
+    return [];
+  }
 }
 
 async function markSeen(candidates: Candidate[]): Promise<void> {
@@ -70,8 +84,14 @@ export async function runScan(opts: { apiKey: string; models: string[] }): Promi
   const fresh = await filterNewCandidates(fetched);
   const considered = fresh.slice(0, MAX_CANDIDATES_PER_SCAN);
 
+  // Pull the top established civilizations by activity so the classifier
+  // can reuse their slugs instead of inventing near-miss variants (see
+  // deep-dive: civilization-slug fragmentation is the #1 corroboration
+  // blocker). Bounded to 60 to keep the prompt lean.
+  const establishedCivs = await topActiveCivilizations(60);
+
   const { outputs, llmCalls, tokensUsed, errors: classifyErrors } =
-    await classifyBatch(considered, opts);
+    await classifyBatch(considered, { ...opts, establishedCivs });
   errors.push(...classifyErrors);
   // Only what was actually put to the classifier is marked seen; the rest
   // of the backlog stays fresh for the next scan window.
@@ -83,17 +103,27 @@ export async function runScan(opts: { apiKey: string; models: string[] }): Promi
     const o = outputs[i];
     if (!o.keep || !o.category || !o.civilizationHint || !o.title || !o.summary) continue;
     try {
-      // Fingerprints from URL + excerpt — DOI, arxivId, CVE, git SHA,
-      // HN item id. Empty result means no fingerprint attached (the
-      // canonicalize() rule keeps historical events safe).
-      const fp = extractFingerprints({ url: c.url, excerpt: c.excerpt });
-      // Canonical resolution: unwrap Google News / t.co / hnrss to a
-      // primary URL where we can, and tag the tier from the canonical
-      // hostname.
-      const resolved = await resolveCanonical(c.url);
+      // Fingerprints: merge what the producer already knew (arXiv API
+      // gives us arxivId + DOI verbatim from the atom entry) with what
+      // the regex extractor pulls from URL + excerpt. Producer-set
+      // fingerprints win by being listed first in the merge.
+      const fp = mergeFingerprints(
+        c.fingerprints ?? {},
+        extractFingerprints({ url: c.url, excerpt: c.excerpt }),
+      );
+      // Canonical resolution: use producer-set canonical fields when the
+      // producer already knows them (arXiv API always sets them), else
+      // unwrap known aggregators via a bounded HEAD.
+      const resolved = c.canonicalDomain
+        ? {
+            canonicalUrl: c.canonicalUrl ?? c.url,
+            canonicalDomain: c.canonicalDomain,
+            resolvedAt: new Date().toISOString(),
+          }
+        : await resolveCanonical(c.url);
       const canonicalDomain =
         resolved?.canonicalDomain ?? canonicalHostname(c.domain);
-      const sourceTier = tierOf(canonicalDomain);
+      const sourceTier = c.sourceTier ?? tierOf(canonicalDomain);
       // Occurred-at defense in depth: an unparseable pubDate falls back
       // to now(), so a bad date can never abort promotion.
       let occurredAt = new Date().toISOString();

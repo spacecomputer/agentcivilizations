@@ -35,6 +35,31 @@ function slugify(input: string): string {
     .slice(0, 60) || "unknown";
 }
 
+// A "merge key" for civilization slugs: lowercase, drop punctuation and
+// trailing plural 's', sort the significant tokens alphabetically, and
+// drop meaningless stopwords. Two hints that produce the same merge key
+// name the same underlying grouping.
+//
+// This is deliberately conservative — false merges are worse than false
+// splits (once merged, unrelated events share a chain thread). The rule:
+//   openai-swarm ≡ swarm-openai      (order-insensitive)
+//   agent-swarms ≡ agent-swarm       (plural collapse)
+//   the-openai-agent ≡ openai-agent  (drop 'the', 'a', 'an')
+// Distinct groupings that share a token but disagree on another (e.g.
+// 'openai-swarm' vs 'anthropic-swarm') keep distinct keys.
+const STOPWORDS = new Set(["the", "a", "an", "of", "for", "on", "in", "to"]);
+function mergeKey(slug: string): string {
+  return slug
+    .toLowerCase()
+    .replace(/[^a-z0-9-\s]/g, "")
+    .split(/[-\s]+/)
+    .filter(Boolean)
+    .filter((t) => !STOPWORDS.has(t))
+    .map((t) => (t.length > 3 && t.endsWith("s") ? t.slice(0, -1) : t))
+    .sort()
+    .join("-");
+}
+
 async function upsertCivilization(
   db: FirebaseFirestore.Firestore,
   hint: string,
@@ -43,11 +68,35 @@ async function upsertCivilization(
   occurredAt: string,
 ): Promise<Civilization> {
   const id = slugify(hint);
+  const key = mergeKey(id);
+
+  // First: does an alias-matched civilization already exist? If the key
+  // is non-trivial (avoid matching everything to the same singleton), we
+  // look up by mergeKey. This one query is bounded (each key stores the
+  // merged civ id) so no scan.
+  if (key.length >= 3) {
+    const merged = await db
+      .collection("civilizations")
+      .where("mergeKey", "==", key)
+      .limit(1)
+      .get();
+    if (!merged.empty) {
+      const doc = merged.docs[0].data() as Civilization;
+      // Track the new hint as an alias if it isn't already the id or in aliases.
+      if (doc.id !== id && !doc.aliases.includes(id)) {
+        await db
+          .collection("civilizations")
+          .doc(doc.id)
+          .update({ aliases: [...doc.aliases, id] });
+      }
+      return doc;
+    }
+  }
+
   const ref = db.collection("civilizations").doc(id);
   const snap = await ref.get();
-  const nowIso = new Date().toISOString();
   if (!snap.exists) {
-    const doc: Civilization = {
+    const doc: Civilization & { mergeKey?: string } = {
       id,
       name,
       aliases: name === hint ? [] : [hint],
@@ -58,6 +107,10 @@ async function upsertCivilization(
       eventCount: 0,
       status: "active",
       headHash: null,
+      // mergeKey is stored outside the Civilization schema — it's an
+      // operational index for corroboration, not part of the register's
+      // public identity.
+      ...(key.length >= 3 && { mergeKey: key }),
     };
     await ref.set(doc);
     return doc;

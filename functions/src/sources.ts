@@ -1,63 +1,62 @@
-export interface FeedSource {
-  id: string;
-  name: string;
-  url: string;
-  weight: number;
-  categoryHint?: "coordination" | "security" | "community" | "speculative";
-}
+import type { SourceSpec } from "./sources/types.js";
 
-export const SOURCES: FeedSource[] = [
+// The register's editorial source list. New source kinds live in
+// functions/src/sources/{kind}.ts and are declared here as tagged-union
+// entries. RSS remains for aggregators and secondary press; primary
+// sources with an API get their own kind.
+export const SOURCES: SourceSpec[] = [
+  // -- primary via structured API (highest signal, real fingerprints) --
   {
+    kind: "arxiv-api",
+    id: "arxiv-agent-research",
+    name: "arXiv (multi-agent / autonomous agents)",
+    categories: ["cs.MA", "cs.AI", "cs.CR"],
+    maxResults: 100,
+  },
+
+  // -- aggregators (keep, but their peerhood is dropped in corroboration) --
+  {
+    kind: "rss",
     id: "hn-frontpage",
     name: "Hacker News",
     url: "https://hnrss.org/frontpage",
-    weight: 1.0,
   },
   {
-    id: "arxiv-cs-ai",
-    name: "arXiv cs.AI",
-    url: "http://export.arxiv.org/rss/cs.AI",
-    weight: 0.8,
-    categoryHint: "speculative",
-  },
-  {
-    id: "arxiv-cs-ma",
-    name: "arXiv cs.MA",
-    url: "http://export.arxiv.org/rss/cs.MA",
-    weight: 1.0,
-    categoryHint: "coordination",
-  },
-  {
+    kind: "rss",
     id: "google-news-ai-agent",
     name: "Google News: AI agent",
     url: "https://news.google.com/rss/search?q=%22AI+agent%22&hl=en-US&gl=US&ceid=US:en",
-    weight: 0.7,
   },
   {
+    kind: "rss",
     id: "google-news-autonomous-hack",
     name: "Google News: autonomous agent hack",
     url: "https://news.google.com/rss/search?q=%22autonomous+agent%22+hack&hl=en-US&gl=US&ceid=US:en",
-    weight: 0.9,
     categoryHint: "security",
   },
   {
+    kind: "rss",
     id: "google-news-agent-swarm",
     name: "Google News: agent swarm",
     url: "https://news.google.com/rss/search?q=%22agent+swarm%22+OR+%22multi-agent%22&hl=en-US&gl=US&ceid=US:en",
-    weight: 0.8,
     categoryHint: "coordination",
   },
+
+  // -- secondary press --
   {
+    kind: "rss",
     id: "krebs",
     name: "Krebs on Security",
     url: "https://krebsonsecurity.com/feed/",
-    weight: 0.6,
     categoryHint: "security",
   },
   {
+    kind: "rss",
     id: "the-register-ai",
     name: "The Register (AI/ML)",
     url: "https://www.theregister.com/software/ai_ml/headlines.atom",
-    weight: 0.6,
   },
 ];
+
+// Named export retained for anyone still importing the old shape name.
+export type { SourceSpec } from "./sources/types.js";

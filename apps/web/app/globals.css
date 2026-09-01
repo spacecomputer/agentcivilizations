@@ -650,8 +650,62 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 /* ---------- sources ---------- */
 .source-list { list-style: none; padding: 0; margin: var(--s2) 0; display: flex; flex-direction: column; gap: 10px; max-width: var(--measure); }
 .source-item { border-left: 2px solid var(--rule); padding: 2px 0 2px 14px; }
+/* tier is the load-bearing editorial claim about a source — a colored
+   spine makes it legible without adding to the type noise. */
+.source-item.tier-primary { border-left-color: var(--cat-community); }
+.source-item.tier-primary-trade { border-left-color: var(--seal); }
+.source-item.tier-secondary { border-left-color: var(--rule); }
+.source-item.tier-aggregator { border-left-color: var(--ink-dim); border-left-style: dashed; }
+.source-item.tier-aggregator-drop { border-left-color: var(--ink-dim); border-left-style: dashed; opacity: 1; }
+.source-item.tier-aggregator-drop::after {
+  content: "not counted for corroboration";
+  display: block;
+  font-family: var(--face-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--ink-dim);
+  margin-top: 4px;
+}
 .source-item .domain { font-family: var(--face-mono); font-size: 12px; color: var(--ink-dim); }
 .source-item blockquote { margin: 6px 0 0; font-size: 14.5px; color: var(--ink-dim); font-style: italic; }
+.source-tier {
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+.source-tier.tier-primary { color: var(--cat-community); }
+.source-tier.tier-primary-trade { color: var(--seal); }
+.source-tier.tier-secondary { color: var(--ink-dim); }
+.source-tier.tier-aggregator, .source-tier.tier-aggregator-drop { color: var(--ink-dim); font-style: italic; }
+
+/* Identifier chips — the strong external ids we bind to */
+.ident-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 var(--s3);
+}
+.ident-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  border-radius: 2px;
+  font-size: 13px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.ident-chip:hover { border-color: var(--ink-dim); text-decoration: none; }
+.ident-chip .ident-kind {
+  font-family: var(--face-caps);
+  font-variation-settings: "wdth" 115;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 12px;
+  color: var(--seal);
+}
 
 /* seals row */
 .civrow-name { display: flex; align-items: center; gap: 12px; }

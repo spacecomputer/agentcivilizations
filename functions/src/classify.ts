@@ -24,7 +24,9 @@ REJECT items that are:
 - hypothetical scenarios without a source event,
 - ordinary vendor product news.
 
-For each item you KEEP, propose a civilizationHint: a short slug (kebab-case) for the persistent grouping this event belongs to. Reuse an obvious existing name (e.g. "autogpt", "chaosgpt", "openai-swarm") if the item names one. Only invent a new name when the item names a specific new grouping.
+For each item you KEEP, propose a civilizationHint: a short slug (kebab-case) for the persistent grouping this event belongs to.
+
+STRONG PREFERENCE: reuse a civilization slug from the ESTABLISHED list I provide in the user message (they are the register's currently-tracked persistent groupings). Only invent a new slug when the item is CLEARLY about a distinct new grouping that no established slug covers. Reusing an existing slug for a related event is much better than opening a redundant new file. If none of the established slugs applies, keep the new slug short (2-4 tokens) and prefer the underlying framework/org name over the specific product feature.
 
 Output STRICT JSON array — one object per input item, in the same order:
 [
@@ -65,10 +67,17 @@ async function callOpenRouter(
   candidates: Candidate[],
   apiKey: string,
   model: string,
+  establishedCivs: string[],
 ): Promise<{ raw: string; tokens: number }> {
-  const userMessage = JSON.stringify(
-    candidates.map((c) => ({ title: c.title, url: c.url, excerpt: c.excerpt.slice(0, 800) })),
-  );
+  const civLine = establishedCivs.length
+    ? `ESTABLISHED CIVILIZATIONS (reuse when applicable, sorted by activity):\n${establishedCivs.slice(0, 60).join(", ")}\n\n`
+    : "";
+  const userMessage =
+    civLine +
+    "ITEMS:\n" +
+    JSON.stringify(
+      candidates.map((c) => ({ title: c.title, url: c.url, excerpt: c.excerpt.slice(0, 800) })),
+    );
   const res = await fetch(OPENROUTER_URL, {
     method: "POST",
     headers: {
@@ -167,7 +176,7 @@ function parseOutputs(raw: string, expectedLen: number): ClassificationOutput[] 
 
 export async function classifyBatch(
   candidates: Candidate[],
-  opts: { apiKey: string; models: string[] },
+  opts: { apiKey: string; models: string[]; establishedCivs?: string[] },
 ): Promise<ClassifyResult> {
   const limited = candidates.slice(0, MAX_CANDIDATES_PER_SCAN);
   const batches: Candidate[][] = [];
@@ -184,7 +193,12 @@ export async function classifyBatch(
     let done = false;
     for (const model of opts.models) {
       try {
-        const { raw, tokens } = await callOpenRouter(batch, opts.apiKey, model);
+        const { raw, tokens } = await callOpenRouter(
+          batch,
+          opts.apiKey,
+          model,
+          opts.establishedCivs ?? [],
+        );
         llmCalls++;
         tokensUsed += tokens;
         outputs.push(...parseOutputs(raw, batch.length));

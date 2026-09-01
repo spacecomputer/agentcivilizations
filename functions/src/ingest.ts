@@ -1,15 +1,11 @@
 import { XMLParser } from "fast-xml-parser";
-import type { FeedSource } from "./sources.js";
+import type { SourceSpec } from "./sources.js";
+import type { Candidate, FetcherResult } from "./sources/types.js";
+import { fetchArxiv } from "./sources/arxiv.js";
 
-export interface Candidate {
-  sourceId: string;
-  sourceName: string;
-  url: string;
-  title: string;
-  excerpt: string;
-  publishedAt: string;
-  domain: string;
-}
+// Re-export Candidate for backward compatibility with scan.ts imports.
+export type { Candidate };
+export type FetchAllResult = FetcherResult;
 
 const parser = new XMLParser({
   ignoreAttributes: false,
@@ -38,12 +34,30 @@ function clean(text: string): string {
     .trim();
 }
 
-export async function fetchFeed(source: FeedSource): Promise<Candidate[]> {
-  const res = await fetch(source.url, {
-    headers: { "user-agent": "agent-civilizations/0.1 (+https://agentcivilizations.org)" },
-  });
-  if (!res.ok) throw new Error(`${source.id}: HTTP ${res.status}`);
-  const xml = await res.text();
+// 10s timeout on any single feed fetch — a hung host must not eat the
+// full 540s function timeout.
+async function fetchWithTimeout(url: string, ms = 10_000): Promise<string> {
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), ms);
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "user-agent":
+          "agent-civilizations/0.1 (+https://agentcivilizations.org)",
+      },
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.text();
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+export async function fetchRss(
+  source: Extract<SourceSpec, { kind: "rss" }>,
+): Promise<Candidate[]> {
+  const xml = await fetchWithTimeout(source.url);
   const parsed = parser.parse(xml);
 
   // RSS 2.0 shape
@@ -60,6 +74,7 @@ export async function fetchFeed(source: FeedSource): Promise<Candidate[]> {
         excerpt: clean(String(item.description ?? item.summary ?? "")).slice(0, 2000),
         publishedAt: String(item.pubDate ?? new Date().toUTCString()),
         domain: domainOf(url),
+        categoryHint: source.categoryHint,
       };
     });
   }
@@ -84,6 +99,7 @@ export async function fetchFeed(source: FeedSource): Promise<Candidate[]> {
         excerpt: clean(String(entry.summary ?? entry.content ?? "")).slice(0, 2000),
         publishedAt: String(entry.updated ?? entry.published ?? new Date().toISOString()),
         domain: domainOf(url),
+        categoryHint: source.categoryHint,
       };
     });
   }
@@ -91,14 +107,17 @@ export async function fetchFeed(source: FeedSource): Promise<Candidate[]> {
   return [];
 }
 
-export interface FetchAllResult {
-  candidates: Candidate[];
-  errors: string[]; // per-source failures — a dead feed is a real operational signal
-  perSource: Record<string, number>; // items fetched per source id
+async function fetchOne(source: SourceSpec): Promise<Candidate[]> {
+  switch (source.kind) {
+    case "rss":
+      return fetchRss(source);
+    case "arxiv-api":
+      return fetchArxiv(source.id, source.name, source.categories, source.maxResults ?? 100);
+  }
 }
 
-export async function fetchAll(sources: FeedSource[]): Promise<FetchAllResult> {
-  const results = await Promise.allSettled(sources.map(fetchFeed));
+export async function fetchAll(sources: SourceSpec[]): Promise<FetcherResult> {
+  const results = await Promise.allSettled(sources.map(fetchOne));
   const candidates: Candidate[] = [];
   const errors: string[] = [];
   const perSource: Record<string, number> = {};
