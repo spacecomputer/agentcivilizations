@@ -5,12 +5,19 @@ import { defineSecret } from "firebase-functions/params";
 import { setGlobalOptions } from "firebase-functions/v2";
 import { runScan } from "./scan.js";
 import { computeDailyRoot } from "./hashchain.js";
+import { FALLBACK_MODELS } from "./classify.js";
 
 initializeApp();
 setGlobalOptions({ region: "us-central1", maxInstances: 5 });
 
 const OPENROUTER_API_KEY = defineSecret("OPENROUTER_API_KEY");
-const DEFAULT_MODEL = "deepseek/deepseek-chat-v3.1:free";
+
+// OPENROUTER_MODEL (comma-separated) overrides; otherwise the fallback
+// chain of currently-available free models applies.
+function models(): string[] {
+  const env = process.env.OPENROUTER_MODEL;
+  return env ? env.split(",").map((m) => m.trim()) : FALLBACK_MODELS;
+}
 
 // Scheduled: every 30 minutes.
 export const scheduledScan = onSchedule(
@@ -18,7 +25,7 @@ export const scheduledScan = onSchedule(
   async () => {
     const summary = await runScan({
       apiKey: OPENROUTER_API_KEY.value(),
-      model: process.env.OPENROUTER_MODEL ?? DEFAULT_MODEL,
+      models: models(),
     });
     console.log("scan summary", summary);
   },
@@ -31,7 +38,7 @@ export const scanNow = onRequest(
   async (_req, res) => {
     const summary = await runScan({
       apiKey: OPENROUTER_API_KEY.value(),
-      model: process.env.OPENROUTER_MODEL ?? DEFAULT_MODEL,
+      models: models(),
     });
     res.json(summary);
   },

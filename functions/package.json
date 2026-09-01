@@ -6,15 +6,13 @@
   "type": "module",
   "main": "lib/index.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc --noEmit -p tsconfig.json && node build.mjs",
     "lint": "tsc --noEmit",
     "serve": "npm run build && firebase emulators:start --only functions",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log"
   },
   "dependencies": {
-    "@agent-civilizations/schema": "*",
-    "@agent-civilizations/verify": "*",
     "firebase-admin": "^12.1.0",
     "firebase-functions": "^5.0.0",
     "fast-xml-parser": "^4.3.0",
@@ -23,6 +21,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "esbuild": "^0.21.0",
     "typescript": "^5.4.0"
   },
   "engines": {

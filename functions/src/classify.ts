@@ -44,6 +44,7 @@ export interface ClassifyResult {
   outputs: ClassificationOutput[];
   llmCalls: number;
   tokensUsed: number;
+  errors: string[];
 }
 
 interface OpenRouterResponse {
@@ -51,6 +52,14 @@ interface OpenRouterResponse {
   usage?: { total_tokens?: number };
   error?: { message?: string };
 }
+
+// The free-model lineup rotates; when the preferred model errors (renamed,
+// rate-limited, JSON mode unsupported), fall through this list in order.
+export const FALLBACK_MODELS = [
+  "minimax/minimax-m3:free",
+  "z-ai/glm-5.2:free",
+  "nvidia/nemotron-3-super-120b-a12b:free",
+];
 
 async function callOpenRouter(
   candidates: Candidate[],
@@ -88,11 +97,29 @@ async function callOpenRouter(
   return { raw: content, tokens: json.usage?.total_tokens ?? 0 };
 }
 
+// Free models routinely ignore response_format and wrap JSON in markdown
+// fences or prose. Strip fences; if parsing still fails, extract the first
+// top-level JSON array from the text.
+function extractJson(raw: string): string {
+  let s = raw.trim();
+  const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fence) s = fence[1].trim();
+  try {
+    JSON.parse(s);
+    return s;
+  } catch {
+    const start = s.indexOf("[");
+    const end = s.lastIndexOf("]");
+    if (start !== -1 && end > start) return s.slice(start, end + 1);
+    return s;
+  }
+}
+
 function parseOutputs(raw: string, expectedLen: number): ClassificationOutput[] {
   // The model may wrap the array in an object; be lenient.
   let parsed: unknown;
   try {
-    parsed = JSON.parse(raw);
+    parsed = JSON.parse(extractJson(raw));
   } catch {
     return Array(expectedLen).fill({
       keep: false,
@@ -140,7 +167,7 @@ function parseOutputs(raw: string, expectedLen: number): ClassificationOutput[] 
 
 export async function classifyBatch(
   candidates: Candidate[],
-  opts: { apiKey: string; model: string },
+  opts: { apiKey: string; models: string[] },
 ): Promise<ClassifyResult> {
   const limited = candidates.slice(0, MAX_CANDIDATES_PER_SCAN);
   const batches: Candidate[][] = [];
@@ -151,16 +178,27 @@ export async function classifyBatch(
   let llmCalls = 0;
   let tokensUsed = 0;
   const outputs: ClassificationOutput[] = [];
+  const errors: string[] = [];
 
   for (const batch of batches) {
-    try {
-      const { raw, tokens } = await callOpenRouter(batch, opts.apiKey, opts.model);
-      llmCalls++;
-      tokensUsed += tokens;
-      outputs.push(...parseOutputs(raw, batch.length));
-    } catch (err) {
-      llmCalls++;
-      const reason = err instanceof Error ? err.message : String(err);
+    let done = false;
+    for (const model of opts.models) {
+      try {
+        const { raw, tokens } = await callOpenRouter(batch, opts.apiKey, model);
+        llmCalls++;
+        tokensUsed += tokens;
+        outputs.push(...parseOutputs(raw, batch.length));
+        done = true;
+        break;
+      } catch (err) {
+        llmCalls++;
+        errors.push(
+          `${model}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+    if (!done) {
+      const reason = errors.slice(-opts.models.length).join(" | ");
       for (let i = 0; i < batch.length; i++) {
         outputs.push({
           keep: false,
@@ -170,11 +208,11 @@ export async function classifyBatch(
           tags: [],
           title: null,
           summary: null,
-          reason: `classifier error: ${reason}`,
+          reason: `all models failed: ${reason}`.slice(0, 500),
         });
       }
     }
   }
 
-  return { outputs, llmCalls, tokensUsed };
+  return { outputs, llmCalls, tokensUsed, errors };
 }
