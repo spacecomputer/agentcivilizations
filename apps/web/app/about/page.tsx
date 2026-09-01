@@ -72,8 +72,8 @@ export default function AboutPage() {
       <div className="rule-double" />
       <p className="mono dim">
         SOURCE, TAXONOMY, AND CLASSIFIER PROMPT:{" "}
-        <a href="https://github.com/agent-civilizations/agent-civilizations">
-          GITHUB.COM/AGENT-CIVILIZATIONS
+        <a href="https://github.com/spacecomputer/agentcivilizations">
+          GITHUB.COM/SPACECOMPUTER/AGENTCIVILIZATIONS
         </a>{" "}
         · MIT LICENSE
       </p>

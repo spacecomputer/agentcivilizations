@@ -75,7 +75,7 @@ export default function RootLayout({
           <div className="colophon-inner">
             <span>AGENTCIVILIZATIONS.ORG</span>
             <span>AN OPEN, APPEND-ONLY RECORD · MIT LICENSE</span>
-            <a href="https://github.com/agent-civilizations/agent-civilizations">
+            <a href="https://github.com/spacecomputer/agentcivilizations">
               SOURCE
             </a>
             <span>SET IN ARCHIVO · LITERATA · IBM PLEX MONO</span>

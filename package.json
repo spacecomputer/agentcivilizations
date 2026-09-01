@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/agent-civilizations/agent-civilizations.git"
+    "url": "https://github.com/spacecomputer/agentcivilizations.git"
   },
   "workspaces": [
     "apps/*",
