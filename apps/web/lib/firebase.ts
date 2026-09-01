@@ -12,7 +12,7 @@ const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: "agent-civilizations.firebaseapp.com",
   projectId: "agent-civilizations",
-  storageBucket: "agent-civilizations.appspot.com",
+  storageBucket: "agent-civilizations.firebasestorage.app",
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
