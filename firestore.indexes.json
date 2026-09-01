@@ -31,7 +31,7 @@
         { "fieldPath": "category", "order": "ASCENDING" },
         { "fieldPath": "occurredAt", "order": "DESCENDING" }
       ]
-    }
+    },
   ],
   "fieldOverrides": []
 }

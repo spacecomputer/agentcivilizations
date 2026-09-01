@@ -6,6 +6,8 @@ import { setGlobalOptions } from "firebase-functions/v2";
 import { runScan } from "./scan.js";
 import { computeDailyRoot } from "./hashchain.js";
 import { FALLBACK_MODELS } from "./classify.js";
+import { buildAtomFeed, buildSitemap } from "./feeds.js";
+import { regenerateStaleSummaries } from "./summarize.js";
 
 initializeApp();
 setGlobalOptions({ region: "us-central1", maxInstances: 5 });
@@ -61,3 +63,53 @@ export const computeRoot = onRequest(async (req, res) => {
   await computeDailyRoot(day);
   res.json({ ok: true, day });
 });
+
+// Atom feed — served fresh every request through the /feed.xml rewrite in
+// firebase.json. Cache at the edge for 5 minutes so a busy day doesn't
+// hammer Firestore, but not longer — the register is meant to be current.
+export const feed = onRequest(
+  { invoker: "public", memory: "256MiB" },
+  async (_req, res) => {
+    const body = await buildAtomFeed();
+    res.set("Content-Type", "application/atom+xml; charset=utf-8");
+    res.set("Cache-Control", "public, max-age=300, s-maxage=300");
+    res.status(200).send(body);
+  },
+);
+
+// Sitemap — same treatment; hosts, search engines pull it fresh.
+export const sitemap = onRequest(
+  { invoker: "public", memory: "256MiB" },
+  async (_req, res) => {
+    const body = await buildSitemap();
+    res.set("Content-Type", "application/xml; charset=utf-8");
+    res.set("Cache-Control", "public, max-age=1800, s-maxage=1800");
+    res.status(200).send(body);
+  },
+);
+
+// Weekly: regenerate up to 5 civilization summaries — missing first, then
+// stalest active. Cheap on the free-inference budget (5 calls/week).
+export const weeklySummaries = onSchedule(
+  {
+    schedule: "0 6 * * 1", // Mondays 06:00 UTC
+    timeZone: "UTC",
+    secrets: [OPENROUTER_API_KEY],
+    timeoutSeconds: 300,
+    memory: "256MiB",
+  },
+  async () => {
+    const result = await regenerateStaleSummaries(OPENROUTER_API_KEY.value());
+    console.log("summaries", result);
+  },
+);
+
+// Manual summary trigger — authenticated by Cloud Run default (invoker
+// role required), so it cannot be used to drain the free-inference quota.
+export const summarizeNow = onRequest(
+  { secrets: [OPENROUTER_API_KEY], timeoutSeconds: 300, memory: "256MiB" },
+  async (_req, res) => {
+    const result = await regenerateStaleSummaries(OPENROUTER_API_KEY.value());
+    res.json(result);
+  },
+);

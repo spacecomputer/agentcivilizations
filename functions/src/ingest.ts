@@ -91,11 +91,28 @@ export async function fetchFeed(source: FeedSource): Promise<Candidate[]> {
   return [];
 }
 
-export async function fetchAll(sources: FeedSource[]): Promise<Candidate[]> {
+export interface FetchAllResult {
+  candidates: Candidate[];
+  errors: string[]; // per-source failures — a dead feed is a real operational signal
+  perSource: Record<string, number>; // items fetched per source id
+}
+
+export async function fetchAll(sources: FeedSource[]): Promise<FetchAllResult> {
   const results = await Promise.allSettled(sources.map(fetchFeed));
-  const out: Candidate[] = [];
-  for (const r of results) {
-    if (r.status === "fulfilled") out.push(...r.value);
+  const candidates: Candidate[] = [];
+  const errors: string[] = [];
+  const perSource: Record<string, number> = {};
+  for (let i = 0; i < results.length; i++) {
+    const r = results[i];
+    const src = sources[i];
+    if (r.status === "fulfilled") {
+      candidates.push(...r.value);
+      perSource[src.id] = r.value.length;
+    } else {
+      const msg = r.reason instanceof Error ? r.reason.message : String(r.reason);
+      errors.push(`${src.id}: ${msg}`.slice(0, 300));
+      perSource[src.id] = 0;
+    }
   }
-  return out;
+  return { candidates, errors, perSource };
 }

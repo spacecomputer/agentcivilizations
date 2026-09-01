@@ -62,7 +62,9 @@ export async function runScan(opts: { apiKey: string; models: string[] }): Promi
   const startedAt = new Date().toISOString();
   const errors: string[] = [];
 
-  const fetched = await fetchAll(SOURCES);
+  const { candidates: fetched, errors: fetchErrors, perSource } =
+    await fetchAll(SOURCES);
+  errors.push(...fetchErrors);
   const fresh = await filterNewCandidates(fetched);
   const considered = fresh.slice(0, MAX_CANDIDATES_PER_SCAN);
 
@@ -135,6 +137,7 @@ export async function runScan(opts: { apiKey: string; models: string[] }): Promi
     tokensUsed: summary.tokensUsed,
     errors: summary.errors,
     dropReasons,
+    perSource,
   });
 
   return summary;

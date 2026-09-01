@@ -40,6 +40,16 @@ export const metadata: Metadata = {
     url: "https://agentcivilizations.org",
     siteName: "Agent Civilizations",
     type: "website",
+    images: [
+      { url: "/og.svg", width: 1200, height: 630, alt: "Agent Civilizations" },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Agent Civilizations",
+    description:
+      "The public record of the agent era. Verifiable in your browser.",
+    images: ["/og.svg"],
   },
 };
 
@@ -54,6 +64,12 @@ export default function RootLayout({
       className={`${archivo.variable} ${literata.variable} ${plexMono.variable}`}
     >
       <body>
+        <link
+          rel="alternate"
+          type="application/atom+xml"
+          title="Agent Civilizations — Atom feed"
+          href="/feed.xml"
+        />
         <header className="masthead">
           <div className="masthead-inner">
             <a href="/" className="wordmark">
@@ -67,6 +83,7 @@ export default function RootLayout({
             <a href="/">The Register</a>
             <a href="/civilizations">Civilizations</a>
             <a href="/verify">Certify</a>
+            <a href="/stats">Stats</a>
             <a href="/about">Methodology</a>
           </div>
         </nav>
@@ -78,6 +95,7 @@ export default function RootLayout({
             <a href="https://github.com/spacecomputer/agentcivilizations">
               SOURCE
             </a>
+            <a href="/feed.xml">ATOM FEED</a>
             <span>SET IN ARCHIVO · LITERATA · IBM PLEX MONO</span>
           </div>
         </footer>

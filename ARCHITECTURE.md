@@ -196,6 +196,12 @@ async function verifyCivilization(id: string): Promise<VerifyResult> {
 
 ---
 
+## What's deliberately absent
+
+- **No analytics.** No page tracking, no product analytics, no third-party beacons, no cookies beyond a theme preference. A public record is not a funnel; readers should not be measured. Operational visibility comes from Firebase Hosting request logs and Cloud Function logs, and from the `/stats` page — which is public and derives every number from the same Firestore any reader can query.
+- **No client-side error tracking.** A silent failure of the browser verification is the only class of bug the register should never hide from a reader — so instead of routing it to Sentry, it renders as a visible `verify` state on the page itself. If the JS bundle throws before the crest paints, the reader sees a static, untouched page and can still walk the chain from the CLI (`npx @agent-civilizations/verify`) or from `/verify` on any working device.
+- **No account system.** There is nothing to log into. Everything an operator can do (retract an event, add a source, edit the taxonomy) happens through PRs against the open repository.
+
 ## What's deliberately deferred
 
 - Real Merkle tree with inclusion proofs (flat root is fine for MVP)

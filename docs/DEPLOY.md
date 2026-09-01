@@ -82,13 +82,18 @@ Expected: a job named `firebase-schedule-scheduledScan-us-central1` running ever
 
 ## Verify it works
 
+`scanNow` deploys as an authenticated Cloud Run service — public invoke is disabled deliberately so a stranger can't drain your free-tier LLM quota. Pass an identity token to trigger it:
+
 ```bash
-# Trigger a manual scan
-curl https://us-central1-agent-civilizations.cloudfunctions.net/scanNow
+# Trigger a manual scan (authenticated)
+curl -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
+  https://us-central1-agent-civilizations.cloudfunctions.net/scanNow
 
 # Check Firestore for new events
 firebase firestore:query events --limit 5
 ```
+
+The public read surface — `/`, `/civilizations`, `/verify`, `/stats`, `/feed.xml`, `/sitemap.xml` — needs no authentication.
 
 ## Cost expectations
 
