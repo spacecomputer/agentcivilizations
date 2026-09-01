@@ -6,7 +6,8 @@
   "type": "module",
   "main": "lib/index.js",
   "scripts": {
-    "build": "tsc --noEmit -p tsconfig.json && node build.mjs",
+    "build": "tsc --noEmit -p tsconfig.json && node build.mjs && tsc -p tsconfig.test.json",
+    "test": "node src/fingerprint.test.mjs",
     "lint": "tsc --noEmit",
     "serve": "npm run build && firebase emulators:start --only functions",
     "deploy": "firebase deploy --only functions",

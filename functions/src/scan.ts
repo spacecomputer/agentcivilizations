@@ -3,6 +3,8 @@ import { SOURCES } from "./sources.js";
 import { fetchAll, type Candidate } from "./ingest.js";
 import { classifyBatch, MAX_CANDIDATES_PER_SCAN } from "./classify.js";
 import { promoteEvent } from "./hashchain.js";
+import { extractFingerprints, isEmpty } from "./fingerprint.js";
+import { resolveCanonical, tierOf, canonicalHostname } from "./tiers.js";
 import { ulid } from "ulid";
 
 export interface ScanSummary {
@@ -81,15 +83,32 @@ export async function runScan(opts: { apiKey: string; models: string[] }): Promi
     const o = outputs[i];
     if (!o.keep || !o.category || !o.civilizationHint || !o.title || !o.summary) continue;
     try {
+      // Fingerprints from URL + excerpt — DOI, arxivId, CVE, git SHA,
+      // HN item id. Empty result means no fingerprint attached (the
+      // canonicalize() rule keeps historical events safe).
+      const fp = extractFingerprints({ url: c.url, excerpt: c.excerpt });
+      // Canonical resolution: unwrap Google News / t.co / hnrss to a
+      // primary URL where we can, and tag the tier from the canonical
+      // hostname.
+      const resolved = await resolveCanonical(c.url);
+      const canonicalDomain =
+        resolved?.canonicalDomain ?? canonicalHostname(c.domain);
+      const sourceTier = tierOf(canonicalDomain);
+      // Occurred-at defense in depth: an unparseable pubDate falls back
+      // to now(), so a bad date can never abort promotion.
+      let occurredAt = new Date().toISOString();
+      if (c.publishedAt) {
+        const d = new Date(c.publishedAt);
+        if (!Number.isNaN(d.getTime())) occurredAt = d.toISOString();
+      }
+
       await promoteEvent({
         civilizationHint: o.civilizationHint,
         civilizationName: o.civilizationHint,
         category: o.category,
         title: o.title,
         summary: o.summary,
-        occurredAt: c.publishedAt
-          ? new Date(c.publishedAt).toISOString()
-          : new Date().toISOString(),
+        occurredAt,
         actors: o.actors,
         tags: o.tags,
         source: {
@@ -98,7 +117,13 @@ export async function runScan(opts: { apiKey: string; models: string[] }): Promi
           title: c.title,
           fetchedAt: startedAt,
           rawExcerpt: c.excerpt.slice(0, 2000),
+          ...(resolved && { canonicalUrl: resolved.canonicalUrl }),
+          canonicalDomain,
+          sourceTier,
+          ...(resolved && { resolvedAt: resolved.resolvedAt }),
+          ...(isEmpty(fp) ? {} : { fingerprints: fp }),
         },
+        identifiers: isEmpty(fp) ? undefined : fp,
       });
       promoted++;
     } catch (err) {

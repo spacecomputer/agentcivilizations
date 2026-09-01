@@ -38,7 +38,11 @@ async function sha256Hex(input: string): Promise<string> {
 // independent source appears). Everything else is frozen by the chain.
 // This list is the single source of truth; producers and verifiers must
 // both derive the preimage through hashPreimage().
-export const MUTABLE_FIELDS = ["contentHash", "confidence"] as const;
+export const MUTABLE_FIELDS = [
+  "contentHash",
+  "confidence",
+  "confidencePromotedAt",
+] as const;
 
 export function hashPreimage(event: Partial<Event>): Record<string, unknown> {
   const out: Record<string, unknown> = { ...event };

@@ -1,0 +1,1532 @@
+[
+  {
+    "id": "01M1DTCRTR94N543PXHNQSW22A",
+    "civilizationId": "doltlite",
+    "title": "DoltHub ships DoltLite SQLite fork built from ~2,000 agent-generated PRs",
+    "summary": "DoltHub released DoltLite, a SQLite fork with Git-style version control, where approximately 2,000 pull requests were produced by AI coding agents. The project demonstrates large-scale multi-agent code contribution to a production-grade database system.",
+    "occurredAt": "2026-09-01T01:25:40.000Z",
+    "recordedAt": "2026-09-01T06:27:06.201Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://www.dolthub.com/blog/2026-08-31-doltlite-beta/",
+        "domain": "dolthub.com",
+        "title": "DoltLite: A SQLite fork with Git-style version control, built with 2k agent PRs",
+        "fetchedAt": "2026-09-01T06:25:54.273Z",
+        "rawExcerpt": "Article URL: https://www.dolthub.com/blog/2026-08-31-doltlite-beta/ Comments URL: https://news.ycombinator.com/item?id=49516848 Points: 25 # Comments: 7"
+      }
+    ],
+    "actors": [
+      "DoltHub"
+    ],
+    "tags": [
+      "code-generation",
+      "multi-agent",
+      "open-source",
+      "benchmark"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "958162e85425d50f4e2c230dae2b64d1db4db8db7c57a730fc0ac6c34771406d"
+  },
+  {
+    "id": "01M1DTCS2YZEFY9M280FR8S60D",
+    "civilizationId": "ds-lighting",
+    "title": "DS-Lighting Toolkit Makes Agent Harnesses Explicit for Data-Science Automation",
+    "summary": "Researchers introduced DS-Lighting, a unified agent harness toolkit that decomposes data-science automation into four reusable layers (data, workflow, execution, evaluation) and represents agents as executable operator programs. The framework aims to improve reproducibility and comparability across heterogeneous data-science agent tasks.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T06:27:06.463Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.28590",
+        "domain": "arxiv.org",
+        "title": "DS-Lighting: Making Agent Harnesses Explicit for Data-Science Automation",
+        "fetchedAt": "2026-09-01T06:25:54.273Z",
+        "rawExcerpt": "arXiv:2608.28590v1 Announce Type: new Abstract: Large Language Model (LLM) agents have shown promise for automating data-science workflows, yet their end-to-end performance depends critically on the agent harness that represents tasks, manages execution state, constrains output artifacts, and provides evaluation feedback. Existing data-science agents often leave this harness implicit, making results difficult to reproduce, compare, and attribute across heterogeneous tasks. We introduce DS-Lighting, a unified harness toolkit that makes harness design explicit for data-science automation. DS-Lighting decomposes the harness into four reusable layers: data, workflow, execution, and evaluation, and represents diverse agents as executable operator programs that support both predefined pipelines and adaptive search. We further integrate multiple open-source data-science benchmarks into an MLE-Bench-style task format, enabling controlled comparison under a shared task interface, sandboxed runtime, and metric protocol. Experiments across agents, harnesses, models, and ablations show that explicit harness design improves reproducibility, comparability, and reliability, while reducing avoidable system-level failures in end-to-end data-science workflows. Our code is available at https://github.com/usail-hkust/dslighting"
+      }
+    ],
+    "actors": [
+      "arXiv authors",
+      "DS-Lighting team"
+    ],
+    "tags": [
+      "agent-harness",
+      "data-science",
+      "framework",
+      "reproducibility"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "bbe98a776a2644a37e0304f80d013758790ab0068009cf23c423d9b25071276f"
+  },
+  {
+    "id": "01M1DTCSA81Y9YZ8VM29AN05PK",
+    "civilizationId": "paper-pilot",
+    "title": "Paper Pilot: Human-in-the-Loop Expert System for Evidence-Traceable Manuscript Generation",
+    "summary": "Researchers proposed Paper Pilot, a human-in-the-loop expert system that applies the Collaborative Agent Reasoning Engineering (CARE) methodology to scientific manuscript generation, with approval gates, no-pass criteria, and audit logging for artifact-level traceability. The system addresses governance gaps when ideas, methods, and claims propagate through AI-assisted workflows.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T06:27:06.696Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.28596",
+        "domain": "arxiv.org",
+        "title": "Paper Pilot: A Human-in-the-Loop Expert System for Evidence-Traceable Scientific Manuscript Generation in Applied Sciences",
+        "fetchedAt": "2026-09-01T06:25:54.273Z",
+        "rawExcerpt": "arXiv:2608.28596v1 Announce Type: new Abstract: Large language model (LLM) agents are increasingly embedded in scientific workflows for literature analysis, drafting, and review. Existing systems advance autonomous discovery and manuscript generation, but do not resolve the governance problem that arises when ideas, methods, results, and claims propagate through AI-assisted workflows without mandatory human approval or artifact-level traceability. This paper proposes Paper Pilot, a human-in-the-loop expert system for evidence-traceable scientific manuscript generation in applied sciences. It adapts the Collaborative Agent Reasoning Engineering (CARE) methodology to manuscript development through manuscript-owner approval gates, explicit no-pass criteria, claim classification, audit logging, advisory LLM review, and evidence-locked revision control. The framework defines eight approval gates across the idea-to-claim pipeline and distinguishes literature-grounded from artifact-grounded claims, requiring reported numbers and interpretations to remain traceable to approved evidence; its system prompt is openly released for deployment in ChatGPT, Gemini, Claude, or institutional LLM environments. As a first empirical validation, we evaluate the citation-grounding layer with a controlled, mechanically scored benchmark (two commercial LLMs, real arXiv papers, no LLM judge): under coverage pressure ungated drafters fabricated up to 25% of their citations and never flagged an evidence gap, whereas the same models under Paper Pilot's evidence-locked rules produced zero fabricated citations and surfaced the planted gaps as explicit placeholders. Preliminary results for result grounding, revision, and adversarial robustness point the same way; full evaluation is left to future work. Paper Pilot positions LLM-assisted writing as a controlled human-AI decision-support process rather than a fully autonomous authorship pipeline."
+      }
+    ],
+    "actors": [
+      "Paper Pilot authors"
+    ],
+    "tags": [
+      "human-in-the-loop",
+      "governance",
+      "scientific-writing",
+      "CARE"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "644929cda7cb22d8746c2e53fec8775aac8f155c4e1f7f16056cb31131dcf9b1"
+  },
+  {
+    "id": "01M1DTCSM982PP4TCJFWA2TDB6",
+    "civilizationId": "cdep-agent",
+    "title": "CDEP Agent: LLM-agent framework linking compound climate events to real-world evidence",
+    "summary": "Researchers introduced CDEP Agent, an auditable LLM-agent framework that connects meteorologically detected compound drought-to-extreme-precipitation events to documentary hazard and impact evidence across heterogeneous sources. Applied to California using ERA5 data from 2021\u20132025, it identified 408 candidate events, demonstrating a multi-source coordination pattern for an agentic reasoning pipeline.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T06:27:07.017Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.28628",
+        "domain": "arxiv.org",
+        "title": "CDEP Agent: Connecting Meteorologically Detected Temporal Compound Events to Real-World Documentary Evidence",
+        "fetchedAt": "2026-09-01T06:25:54.273Z",
+        "rawExcerpt": "arXiv:2608.28628v1 Announce Type: new Abstract: Compound drought-to-extreme-precipitation (CDEP) events are recognized in climate science as a growing driver of extreme impact, but whether this recognition carries over into real-world early warning and post-event documentation is unknown, so a meteorologically real CDEP event may pass with neither advance warning nor any later record. Here we present CDEP Agent, an auditable LLM-agent framework that tests this mismatch directly by linking CDEP candidates detected from meteorological reanalysis to real-world hazard and impact evidence across sources with different spatial scales, temporal resolutions, and reporting conventions. Using California as a case study, we identify 408 candidate CDEP events from ERA5 observations during 2021-2025 and evaluate each against the U.S. Drought Monitor, NOAA Storm Events, and public webpages along five dimensions: antecedent drought, extreme rainfall, local impact, hazard-impact attribution, and explicit drought-to-rainfall linkage. Only 34.3% of candidates are corroborated on both hazard components, and just 1.5% are ever explicitly linked to their antecedent drought, indicating that most meteorologically detected CDEP events go undocumented and their compound nature almost never enters the record at all. Our framework gives climate scientists a way to test physical event definitions against what actually gets documented, and gives social scientists, economists, and disaster-response agencies a provenance-linked evidence base for compound events that current warning and reporting systems largely fail to capture."
+      }
+    ],
+    "actors": [
+      "CDEP Agent authors"
+    ],
+    "tags": [
+      "agent-framework",
+      "climate",
+      "evidence-integration",
+      "llm-agent"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "7042511737b0afbd4f0e5184d8a291e48cc4e35d2dc21a0fdbceb0b6279f117a"
+  },
+  {
+    "id": "01M1DVJPXTQJXBF5TPSV4EW2MM",
+    "civilizationId": "frac-mas",
+    "title": "FRAC-MAS multi-agent system for explainable fracture diagnosis",
+    "summary": "Researchers proposed FRAC-MAS, an agentic AI system combining stacked vision ensembles with a multi-agent critic workflow for verification, guideline retrieval, and report generation in bone fracture detection. A pipeline-depth ablation showed the multi-agent critic triaged 86.6% of cases into a high-confidence bucket.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T06:47:49.435Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.28662",
+        "domain": "arxiv.org",
+        "title": "FRAC-MAS: A Safe and Explainable Multi-Agent System for Fracture Diagnosis",
+        "fetchedAt": "2026-09-01T06:46:02.908Z",
+        "rawExcerpt": "arXiv:2608.28662v1 Announce Type: new Abstract: Fracture detection and its clinical interpretability see notable improvements when deep vision models are integrated with agentic AI architectures. While deep learning models achieve high diagnostic performance, their black-box nature limits clinical adoption. We propose FRAC-MAS, an agentic AI system for automated, explainable, and safe bone fracture detection. The framework combines a stacked ensemble of four vision models with conformal prediction to produce statistically grounded differential diagnoses, while a multi-agent workflow performs independent verification, retrieves clinical guidelines, and generates patient-friendly reports. A pipeline-depth ablation study confirms that our multi-agent critic triages 86.6% of cases into a high-confidence auto-confirmed cohort while escalating uncertain cases, outperforming a single-agent baseline. Patient preference studies against Llama, MedGemma, and Gemini further demonstrate significantly more comprehensible clinical reports. These results suggest that integrating multi-agent critics with conformal guarantees enables safer radiology triage while preserving clinician oversight. More broadly, FRAC-MAS demonstrates how cooperative agentic architectures can serve as auditable, human-in-the-loop decision support systems for safety-critical healthcare. Our code is available at https://github.com/hardik1712/FRAC-MAS, and the website is available at https://frac-mas.vercel.app."
+      }
+    ],
+    "actors": [
+      "FRAC-MAS authors"
+    ],
+    "tags": [
+      "multi-agent",
+      "medical-imaging",
+      "verification",
+      "conformal-prediction"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "dc702373e9534a35878d53bbc351451bcbfb87422a5e7aaf56574dcaa165713a"
+  },
+  {
+    "id": "01M1DVJQ589K39F4WDNM4YWRG7",
+    "civilizationId": "nimblemind-nmas",
+    "title": "Nimblemind Multi-Agent System (nMAS) for Oncology Feature Extraction",
+    "summary": "A configurable multi-agent workflow (nMAS) decomposes oncology information extraction across reasoning, execution, and presentation layers. The system was evaluated on a 328-attribute schema spanning diagnosis, biomarkers, and specimens across longitudinal documentation.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T06:47:49.672Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.28974",
+        "domain": "arxiv.org",
+        "title": "From Analytics to Tumor Boards: An Evidence-Linked Multi-Agent Workflow for Oncology Feature Extraction",
+        "fetchedAt": "2026-09-01T06:46:02.908Z",
+        "rawExcerpt": "arXiv:2608.28974v1 Announce Type: new Abstract: Clinically relevant oncology information is distributed across heterogeneous, longitudinal documentation, creating substantial abstraction burden and requiring accurate attribution across specimens, tumors, biomarkers, and time points, while manual cancer-registry abstraction can require 27.2 minutes per case, highlighting the need for scalable methods that preserve clinical context while converting documentation into structured data. We evaluate the Nimblemind Multi-Agent System (nMAS), a configurable oncology information-extraction workflow which extracts clinically relevant structured fields from fragmented oncology documentation. The extraction task uses a clinician-informed schema of 328 attributes spanning report metadata, diagnosis, staging, and cancer-type-specific information. nMAS separates clinician-defined field specifications from model execution and combines complexity-aware extraction, report-level consolidation, and source-grounded validation. The retrospective evaluation included 230 de-identified oncology documents from 40 patients and 418 clinician-reviewed document-field pairs containing 1,126 non-empty reference values. Evaluation focused on fields identified by clinicians as present in the source documents rather than exhaustively annotating all 328 schema fields. nMAS achieved a rank-weighted value-level precision of 82.6%, recall of 87.5%, and F1 of 85.0%, compared with an F1 of 66.4% for an independently implemented UMA-style MiniMax M2.5 comparator. These findings support the feasibility of using a configurable, source-grounded extraction workflow to convert fragmented oncology documentation into reusable structured data."
+      }
+    ],
+    "actors": [
+      "Nimblemind"
+    ],
+    "tags": [
+      "multi-agent",
+      "oncology",
+      "healthcare",
+      "workflow"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "d544ed947fd8a36dda2d1c70dc8dbe50349af867ef966e56f74585841b884664"
+  },
+  {
+    "id": "01M1DVJQC987053XVWFK3GWP6P",
+    "civilizationId": "summary-collapse",
+    "title": "Summary Collapse: Privacy leakage in multi-agent LLM handoffs",
+    "summary": "Researchers demonstrate that when upstream multi-agent LLM interactions are compressed into handoff artifacts for downstream agents, boundary metadata is preferentially lost while operational facts survive \u2014 a failure mode they call 'summary collapse.' A controlled multi-agent testbed using a human-validated judge (\u03ba=0.74) measures near-zero correlation between boundary-marker and operational-fact survival across GPT-5-mini and DeepSeek models.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T06:47:49.898Z",
+    "category": "security",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.29028",
+        "domain": "arxiv.org",
+        "title": "Facts Without Rules: Boundary Metadata Collapse in Multi-Agent LLM Handoffs",
+        "fetchedAt": "2026-09-01T06:46:02.908Z",
+        "rawExcerpt": "arXiv:2608.29028v1 Announce Type: new Abstract: Multi-agent LLM systems often coordinate by compressing an upstream interaction into a handoff artifact that downstream agents treat as shared state. We show that this handoff step is a structural source of privacy leakage: summaries preferentially preserve operational facts while weakening the boundary metadata that governs how those facts may be used---a failure mode we call \\emph{summary collapse}. On a controlled multi-agent coordination testbed we measure marker survival with a human-validated judge ($\\kappa = 0.74$), where $\\sigma_b = 1$ means every boundary marker survives verbatim and $\\sigma_b = 0$ means all are lost. Boundary-marker and operational-fact survival are nearly uncorrelated at the handoff level on both GPT-5-mini and DeepSeek-R1-32B (Pearson $r$ near zero): uncompressed free-text handoffs preserve boundaries at $\\sigma_b \\approx 0.80$, whereas a $25$-word budget drops $\\sigma_b$ to ${\\approx}0.57$ while operational-fact survival stays near ceiling. Controlled downstream tests reveal that protection depends on \\emph{boundary explicitness}: vague languages leak in $73\\%$ of GPT and $50\\%$ of DeepSeek cases, while explicit constraints reduce leakage to under $15\\%$ across all three tested models. A no-handoff single-agent control further shows the failure is not reducible to multi-agent topology as direct full-marker access still leaks more often than the operationalized handoff. Prompt-only mitigation and exact-string redaction only partially address the problem, while a gold-derived audience allowlist nearly eliminates leakage across models, showing that correctly identifying audience boundaries is the key factor."
+      }
+    ],
+    "actors": [
+      "OpenAI (GPT-5-mini)",
+      "DeepSeek"
+    ],
+    "tags": [
+      "multi-agent",
+      "privacy",
+      "handoff",
+      "summary-collapse",
+      "testbed"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "11a0b736ad62df333277e5f74319b3740fe4b3af724d26a5bf0f9e2ff94c7e60"
+  },
+  {
+    "id": "01M1DZ3NEC3NHQ4VVTKNTQF6T2",
+    "civilizationId": "foresight-9",
+    "title": "FORESIGHT-9 benchmark introduced for prospective evaluation of adaptive trading agents",
+    "summary": "Researchers introduced FORESIGHT-9, a benchmark using nine auditable counterfactual market worldlines branching from a July 2026 information boundary to prospectively evaluate adaptive trading agents. The benchmark standardizes observations and execution while preserving each agent's native adaptation loop, addressing limitations of retrospective backtests.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T07:49:30.700Z",
+    "category": "speculative",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.29372",
+        "domain": "arxiv.org",
+        "title": "FORESIGHT-9: Prospective and Process-Aware Evaluation of Adaptive Trading Agents",
+        "fetchedAt": "2026-09-01T07:48:10.474Z",
+        "rawExcerpt": "arXiv:2608.29372v1 Announce Type: new Abstract: Retrospective backtests provide a limited test of adaptive trading agents: they cannot rule out historical contamination, expose sensitivity to a single realized market path, or reveal internal degeneration during long-horizon adaptation. We introduce FORESIGHT-9, a prospective and process-aware benchmark built from nine auditable counterfactual stress worldlines branching from a common July 2026 information boundary. Each worldline specifies staged macro-financial events and joint multi-asset anchors; a deterministic generator realizes the trajectories, while observations are disclosed according to in-world time. A common contract standardizes observations and execution while preserving each agent's native adaptation loop. We evaluate two adaptive trading-agent frameworks with two foundation-model backbones across 36 long-horizon runs. Agent rankings vary substantially across worldlines and backbones, and a fixed equal-weight policy outperforms 31 of 36 runs. Process telemetry exposes failures that terminal returns conceal: in one high-return run, the live factor library collapsed while executed holdings converged to the equal-weight fallback, even though decision records continued to report an active factor ensemble. FORESIGHT-9 therefore evaluates not only portfolio outcomes, but whether adaptive agent state and execution remain coherent across alternative futures. We release the worldlines, trajectories, audit traces, and regeneration scripts."
+      }
+    ],
+    "actors": [
+      "FORESIGHT-9 authors"
+    ],
+    "tags": [
+      "trading-agents",
+      "benchmark",
+      "counterfactual-evaluation",
+      "adaptive-agents"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "83420987f3e76cda4bdb2fd304b8ac2214d0c4f56fc28684874a84665cf15b97"
+  },
+  {
+    "id": "01M1DZ3NRTXT63H7RBYEZ3C49T",
+    "civilizationId": "agentic-skills-foundation",
+    "title": "Paper Proposes Systems Foundation and Reference Architecture for Agentic Skills",
+    "summary": "Researchers established a unified systems foundation and reference architecture for the 'agentic skills' ecosystem, formalizing skills as externalized procedural knowledge bridging cognitive planning with deterministic execution. The work delineates architecture, lifecycle, and security considerations for modular, reusable procedural abstractions in autonomous LLM agents.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T07:49:31.035Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.29596",
+        "domain": "arxiv.org",
+        "title": "Towards a Systems Foundation for Agentic Skills: Architecture, Lifecycle, and Security",
+        "fetchedAt": "2026-09-01T07:48:10.474Z",
+        "rawExcerpt": "arXiv:2608.29596v1 Announce Type: new Abstract: Autonomous large language model (LLM) agents increasingly face reliability, context consumption, and execution stability bottlenecks when deployed on complex, long-horizon tasks. While monolithic prompt engineering and stateless tool-calling paradigms struggle to scale, the field is rapidly converging toward \\emph{agentic skills}: modular procedural abstractions that externalize execution knowledge into reusable, executable, and portable artifacts. This paper establishes a unified systems foundation and reference architecture for the agentic skills ecosystem. We formalize skills as externalized procedural knowledge bridging high-level cognitive planning with deterministic execution environments, and systematically delineate the architecture across a nine-stage lifecycle: autonomous discovery, authoring and representation formats, memory storage, dynamic retrieval and routing, composition and orchestration, execution and repair, lifelong adaptation, empirical evaluation, and security governance. We further examine marketplace dynamics, public registries, and emerging adversarial threat vectors, alongside runtime verification and defense mechanisms. Finally, we categorize system implementations across software engineering, operating system navigation, embodied robotics, and scientific discovery, while highlighting critical open challenges in continual learning and benchmark realism. This work establishes agentic skills as a foundational paradigm for building scalable, robust, and verifiable autonomous language agents."
+      }
+    ],
+    "actors": [
+      "arXiv authors"
+    ],
+    "tags": [
+      "agentic-skills",
+      "architecture",
+      "lifecycle",
+      "security"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "c9d45e128eba588e8862558ad0aa6255b8d1eeb6e508c2d47cccf92fbb98388a"
+  },
+  {
+    "id": "01M1DZ3P0NNNEH84JW80EJB009",
+    "civilizationId": "asks",
+    "title": "ASKS Implements Agent-Driven Scientific Knowledge Compilation via LLM and Graph Pipelines",
+    "summary": "Researchers implemented ASKS, the Agent-Driven Scientific Knowledge System, in which LLM agents produce Wiki views and machine-facing semantics per source, deterministic checks yield document-local graph deltas, and embedding geometry plus explicit graph rules integrate changes into persistent state. The system was demonstrated by chronologically compiling scientific knowledge from multiple sources.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T07:49:31.285Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.29612",
+        "domain": "arxiv.org",
+        "title": "LLMs Interpret, Embeddings Organize, Graphs Emerge: Agent-Driven Compilation of Scientific Knowledge",
+        "fetchedAt": "2026-09-01T07:48:10.474Z",
+        "rawExcerpt": "arXiv:2608.29612v1 Announce Type: new Abstract: Sustained scientific work requires a knowledge substrate that carries interpretation across tasks and preserves paths to source evidence. We call this process \\emph{scientific knowledge compilation} and implement it in ASKS, the \\emph{Agent-Driven Scientific Knowledge System}. For each source, an LLM produces a readable Wiki view and machine-facing semantics. Deterministic checks convert the latter into a document-local GraphDelta, and embedding geometry together with explicit graph rules integrates the proposed changes into persistent state. Each ingest is an inspectable state transition over accumulated knowledge, with compiled Wiki and graph views linked to the preserved source record. We examine this process by chronologically compiling 56 published papers from one research program. Branch survival, cross-paper support, lineage, coverage, and churn yield a source-traceable author research portrait centered on tensor-network methods, with branches into quantum many-body research, tensor-network machine learning, and quantum-AI-oriented directions. In this run, higher-level Hub organization remains stable and low-churn. Canonical-node growth is predominantly additive. Graph-level measurements and navigation paths retain links to the source records from which they were compiled."
+      }
+    ],
+    "actors": [
+      "arXiv authors"
+    ],
+    "tags": [
+      "multi-agent",
+      "knowledge-compilation",
+      "scientific-knowledge",
+      "graph-construction"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "4130fa6bc1b8d7f4312b07a413151be55305fba8d42eea4fd50d62c6376dffe3"
+  },
+  {
+    "id": "01M1DZ3P7NFJW9GSX9Z7D643EN",
+    "civilizationId": "frameworkers",
+    "title": "FRAMEWORKERS: Multi-Agent Framework for AI Video Production",
+    "summary": "Researchers introduced FRAMEWORKERS, a task-centric multi-agent framework that coordinates scripting, storyboarding, generation, and editing for end-to-end AI video production. The system uses persistent asset management and dynamic task orchestration to handle interdependent creative steps beyond rigid pipelines.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T07:49:31.509Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.29814",
+        "domain": "arxiv.org",
+        "title": "FRAMEWORKERS: A Dynamic Multi-Agent Framework for AI-Generated Video Production",
+        "fetchedAt": "2026-09-01T07:48:10.474Z",
+        "rawExcerpt": "arXiv:2608.29814v1 Announce Type: new Abstract: Modern video generators excel at synthesizing individual clips, but complete video production requires coordinating a long sequence of interdependent creative steps, including scripting, storyboarding, generation, and editing. It further demands persistent asset management and dynamic task orchestration as intermediate outputs, dependencies, and execution states evolve over time. Existing automated systems typically rely on rigid pipelines that are difficult to adapt to diverse inputs and changing workflows, while general-purpose large language models (LLMs) remain unreliable for long-horizon orchestration and multimodal asset routing. We introduce FRAMEWORKERS, a task-centric and workspace-grounded multi-agent framework for open-ended video production. A central Director formulates video creation as dynamic task management, continuously editing a Task Stack to determine which subtask to execute next and which sub-agent to invoke. An Assistant serves as the execution layer, grounding each selected task in a shared Workspace, retrieving the required assets and context, invoking the assigned sub-agent, and persisting the resulting artifacts. Execution capabilities are exposed through modular sub-agents with registered descriptors, allowing new sub-agents to be integrated without redesigning the orchestration workflow. To improve orchestration reliability, we fine-tune the Director via supervised fine-tuning (SFT) followed by Group Relative Policy Optimization (GRPO) for descriptor-conditioned task routing. Experiments show that FRAMEWORKERS outperforms strong LLM planners in routing accuracy, recovers reliably from runtime failures, generalizes to unseen sub-agents without retraining, and achieves higher end-to-end video quality and broader task coverage than fixed pipelines, single-agent systems, and prior multi-agent approaches."
+      }
+    ],
+    "actors": [
+      "FRAMEWORKERS authors"
+    ],
+    "tags": [
+      "multi-agent",
+      "video-production",
+      "framework",
+      "task-orchestration"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "a1c8988af7a2f2fb69c2f70ab54ebaa9462bfaafcf9d944162367e1887b6cbba"
+  },
+  {
+    "id": "01M1DZ3PG5JHS50F3Y9T7HRRZ1",
+    "civilizationId": "vera-authority-revocation",
+    "title": "VERA: Authority-Preserving Edge Revocation for Federated AI-Agent Workflows",
+    "summary": "Researchers introduced VERA, a verifier-checkable revocation contract for agent-runtime adapters that precisely defines which agents lose authority when a delegation edge is revoked. The framework addresses authority consistency in composed multi-agent delegation graphs spanning planners, tool agents, and remote services.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T07:49:31.781Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.30091",
+        "domain": "arxiv.org",
+        "title": "VERA: Authority-Preserving Edge Revocation for Federated AI-Agent Workflows",
+        "fetchedAt": "2026-09-01T07:48:10.474Z",
+        "rawExcerpt": "arXiv:2608.30091v1 Announce Type: new Abstract: Modern agent frameworks compose planners, tool agents, remote services, and shared specialists into runtime delegation graphs, but their revocation APIs still resemble token or subtree invalidation. When one delegation is withdrawn, the runtime must know which agents lose authority while independently authorized agents keep working. We study this authority consistency problem and introduce VERA (Verifiable Edge Revocation for Agents), a verifier-checkable revocation contract and API emitted by agent-runtime adapters as signed evidence. Under disjunctive authority, revoking edge e invalidates exactly T_intent(e,G) = reach(G) \\ reach(G \\ {e}), the agents whose every authorizing root path used e. Used as a contract, this target exposes two runtime failures: tree cascades over-revoke shared agents, while deployer-scoped cascades under-revoke cross-domain descendants. In a LangGraph framework-replt cells repeated 20 times yield 500compiled-framework traces and 2,000 valid signed delegation decisions; 13/25 cells contain runtime multi-parsharing and 8/25 contain cross-deployer shies 500/500 target proofs, preserves all320 alternate-parent shared-agent cases that tree cascade revokes, and rejects unauthorized signers and omission attacks. Baseline replay over 1,9that holder/node and tree-style targetscannot express this behavior. We further validate schema portability on A2A, AutoGen, and CrewAI artifacts: nine traces, including five executable Cregned delegation events that pass schema and signature checks."
+      }
+    ],
+    "actors": [
+      "VERA authors"
+    ],
+    "tags": [
+      "agent-framework",
+      "authority-revocation",
+      "federated-agents",
+      "delegation"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "c7e99306bb016b332cf24e50bb8a315b135b9eaa7023c9fb25705d2b9ef3ffc7"
+  },
+  {
+    "id": "01M1DZ3PS82TD1DKP77REWKRCY",
+    "civilizationId": "ax-k2",
+    "title": "A.X Releases K2: 688B MoE Agentic Foundation Model with Sparse Gated Attention",
+    "summary": "A.X published a technical report for K2, a 688B-parameter MoE language model trained from scratch as an agentic foundation, featuring Sparse Gated Attention for native 128K context and over 30 percentage point gains on some benchmarks versus K1. The report frames K2 explicitly as a base for agentic applications.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T07:49:32.073Z",
+    "category": "speculative",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.30181",
+        "domain": "arxiv.org",
+        "title": "A.X K2 Technical Report",
+        "fetchedAt": "2026-09-01T07:48:10.474Z",
+        "rawExcerpt": "arXiv:2608.30181v1 Announce Type: new Abstract: We introduce A.X K2, a 688B-parameter Mixture-of-Experts (MoE) language model trained from scratch as a high-performance foundation for \\emph{agentic} applications. Trained on approximately 8.5T tokens---fewer than its predecessor, A.X K1---on a smaller but higher-quality mixture with substantially expanded agentic and software-engineering data, it nonetheless improves over A.X K1 across the board, by over 30 percentage points on some benchmarks, reflecting large gains in token efficiency. To support long contexts efficiently, we introduce Sparse Gated Attention (SGA), which combines sparse attention with gated attention, and adopt Gated Norm (GN) to stabilize large-scale training. SGA is trained natively at 128K through a \\emph{sparse} indexer warmup that optimizes the indexer against its own sparse top-$k$ selection rather than the dense attention distribution, making adaptation markedly cheaper: each query reads only 2,048 positions, yet long-context quality is unchanged and A.X K2 scores 94.6 on RULER out to 256K. The outlier suppression of GN in turn keeps 4-bit NVFP4 serving within one point of FP8 accuracy. A simple yet effective Think-Fusion recipe further lets users switch between thinking and non-thinking modes within a single unified model. Extensive evaluations show that A.X K2 performs competitively against strong open-weight baselines, matching or exceeding them on math and Korean-language benchmarks."
+      }
+    ],
+    "actors": [
+      "A.X"
+    ],
+    "tags": [
+      "frontier-model",
+      "agentic-foundation",
+      "MoE",
+      "sparse-attention"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "c327547d556e514cd78fd58273196c4c3bcbeafc47be07700cbc93b4fb886443"
+  },
+  {
+    "id": "01M1E0WJ9W2C3Z9KTYVHHG6HJ3",
+    "civilizationId": "navmcp",
+    "title": "NavMCP Scaffolds VLM Reasoner and Navigation Foundation Model into Long-Horizon Physical Agent",
+    "summary": "NavMCP couples a vision-language model reasoning agent with a navigation foundation model executor for long-horizon exploration, letting the VLM decide what evidence to seek and when to stop while the NFM grounds each semantic sub-goal into closed-loop behavior. The framework demonstrates a new role-specialized multi-model agent architecture crossing capability thresholds in physical-world navigation.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T08:20:35.261Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.30396",
+        "domain": "arxiv.org",
+        "title": "Scaffolding Foundation Models into Physical-World Agents Pushes the Frontier of Long-Horizon Navigation",
+        "fetchedAt": "2026-09-01T08:19:09.128Z",
+        "rawExcerpt": "arXiv:2608.30396v1 Announce Type: new Abstract: Long-horizon physical-world agents must reason over distant goals while grounding decisions in reliable closed-loop behavior. Today's foundation models split these capabilities: vision-language models (VLMs) infer missing information and adapt high-level plans but remain brittle and inefficient at repeated navigation grounding, while navigation foundation models (NFMs) robustly execute semantic goals but operate as bounded episodes without persistent task-level reasoning. We introduce NavMCP, an agentic scaffolding framework that couples a VLM reasoning agent with an NFM executor for long-horizon exploration. The VLM decides what evidence to seek, where to search, and when to stop, while the NFM grounds each semantic sub-goal into closed-loop navigation. Three channels structure their collaboration: intent translates evidence needs into navigation calls, observation converts rollouts into source-grounded trajectory evidence, and memory accumulates findings, negative evidence, and unresolved goals across calls. This design turns isolated navigation rollouts into persistent embodied interaction without retraining either model. On Embodied Question Answering, NavMCP achieves state-of-the-art results on HM-EQA, MT-HM3D, and EXPRESS-Bench. Under matched agent and executor backbones, it outperforms an episodic interface by 14.9 percentage points on HM-EQA. On a Unitree Go2, NavMCP reaches 78.3% success, with its margin over the strongest baseline growing from 10 to 45 points as the task horizon increases. These results demonstrate the potential of scaffolding complementary foundation models into long-horizon physical-world agents."
+      }
+    ],
+    "actors": [
+      "arXiv researchers"
+    ],
+    "tags": [
+      "agentic-framework",
+      "long-horizon-navigation",
+      "vlm-nfm-coupling",
+      "role-specialization"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "7b3a939b35163d30efc7f32858734a40a37528edf889732ff7f2eb08b4383d6a"
+  },
+  {
+    "id": "01M1E0WJHQQWA6ZTPKDHA03CH8",
+    "civilizationId": "evoskill-injection",
+    "title": "EvoSkill Injection: Red-Teaming Autonomous Skill Generation in Self-Evolving Agents",
+    "summary": "The paper defines EvoSkill Injection as a new threat against self-evolving agents whose autonomous skill-generation pipelines can be poisoned so malicious capabilities are stored and reused as legitimate skills. It introduces SARGE, a red-teaming framework targeting this attack surface.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T08:20:35.512Z",
+    "category": "security",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.30429",
+        "domain": "arxiv.org",
+        "title": "EvoSkill Injection: Red-Teaming Autonomous Skill Generation and Evolution in Self-Evolving Agents",
+        "fetchedAt": "2026-09-01T08:19:09.128Z",
+        "rawExcerpt": "arXiv:2608.30429v1 Announce Type: new Abstract: LLM-based agent systems increasingly adopt skill-based architectures to reduce repetitive reasoning costs and improve stable, efficient task execution. Recent studies propose self-evolving agents that autonomously generate, refine, and reuse skills from past experiences to enable continuous capability evolution. However, autonomous skill evolution introduces a new attack surface in which malicious capabilities are generated, stored, and reused as legitimate skills. In this paper, we define EvoSkill Injection as a threat model targeting the autonomous skill generation and evolution pipeline of self-evolving agents. We further propose SARGE (Red-teaming Autonomous Skill Generation and Evolution in self-evolving agents), a red-teaming framework for evaluating this threat model through iterative generation, escalation, and reinforcement interactions. To support our framework, we construct EvoSkillBench, a benchmark dataset of malicious interaction trajectories for inducing malicious skill formation in self-evolving agents, and introduce EvoSkillSafetyBench, a post-attack benchmark for evaluating whether injected malicious skills are subsequently retrieved and activated as harmful behaviors. Our evaluation shows that SARGE induces malicious skill formation and that injected skills are persistently stored and repeatedly activated, highlighting the risk of persistent capability corruption."
+      }
+    ],
+    "actors": [
+      "arXiv researchers"
+    ],
+    "tags": [
+      "self-evolving-agents",
+      "red-team",
+      "skill-poisoning",
+      "agent-security"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "52f63403ffe5bb07eae941256c76301544586635f9d0b1ce884d1391ee122bd4"
+  },
+  {
+    "id": "01M1E0WJS6VV82GS37M6V8E87S",
+    "civilizationId": "cm2",
+    "title": "CM2: Multi-Agent Framework for Multimodal Cultural Reasoning Across MLLMs",
+    "summary": "CM2 is a multi-agent framework integrating multimodal perception, retrieval-augmented generation, networked reasoning, gated fusion, and reward-driven feedback to perform horizontal, interdisciplinary cultural reasoning with MLLMs. Ablations confirm each module contributes and that conflict analyses yield genuine cross-modal arbitration.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T08:20:35.751Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.30498",
+        "domain": "arxiv.org",
+        "title": "CM2: Multimodal Cultural Reasoning via an Integrated Multi-Agent Framework",
+        "fetchedAt": "2026-09-01T08:19:09.128Z",
+        "rawExcerpt": "arXiv:2608.30498v1 Announce Type: new Abstract: Multimodal Large Language Models (MLLMs) have shown remarkable success in STEM domains, where progress is often driven by vertical, step-by-step deduction under relatively stable symbol systems. Their horizontal, interdisciplinary cultural reasoning, however, remains underexplored.We propose CM2, a multi-agent framework grounded in the cognitive pathway of human cultural interpretation. CM2 integrates multimodal perception, retrieval-augmented generation, networked reasoning, gated fusion, and reward-driven feedback.Experiments on CM2D across multiple MLLM backbones show consistent gains over CoT and typical reasoning paradigms; ablations validate each module's contribution, and conflict analyses confirm genuine cross-modal arbitration."
+      }
+    ],
+    "actors": [
+      "arXiv researchers"
+    ],
+    "tags": [
+      "multi-agent-framework",
+      "cultural-reasoning",
+      "cross-modal-arbitration",
+      "rag"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "c739a6b5226c9b4e2c5aafcb87f0c59e4dea99c6e5b92aad85d40ec27be0f806"
+  },
+  {
+    "id": "01M1E0WK0M1A33RW27GW6VMKSX",
+    "civilizationId": "hirs-agent",
+    "title": "HiRS-Agent proposes hierarchical multi-agent architecture for remote sensing tasks",
+    "summary": "HiRS-Agent introduces a two-layer collaborative system with a Manager Layer for dynamic routing, step-level verification, and replanning to address unstable execution in long-horizon remote sensing tasks. The system moves away from monolithic decision-making to handle multi-stage, interdependent RS workflows.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T08:20:35.989Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.30672",
+        "domain": "arxiv.org",
+        "title": "HiRS-Agent: A Hierarchical Multi-Agent System for Reliable Long-Horizon Remote Sensing Task Solving",
+        "fetchedAt": "2026-09-01T08:19:09.128Z",
+        "rawExcerpt": "arXiv:2608.30672v1 Announce Type: new Abstract: Recent advances in large language models and multimodal models have pushed remote sensing (RS) processing from simple perception models to agentic systems designed to tackle complex, long-horizon RS tasks. However, existing systems often rely on monolithic decision-making frameworks, which fail to accommodate the multi-stage, interdependent nature of RS tasks. This centralized approach leads to challenges such as unstable task execution, incorrect tool usage, and error propagation across stages. To address these issues, we propose HiRS-Agent, a hierarchical multi-agent system for long-horizon RS task solving. HiRS-Agent adopts a two-level collaborative architecture: the Manager Layer handles dynamic routing, step-level verification, replanning, and termination control, while the Specialist Layer organizes domain-specific tools according to the RS workflow and is responsible for subtask reasoning and tool execution. To further enhance the system's capability, we introduce a two-stage supervised tuning strategy and a verification-guided hierarchical reinforcement learning stage to jointly optimize coordination and tool-use policies. Experiments on Earth-Agent Benchmark and ThinkGeo show that HiRS-Agent substantially improves long-horizon tool-use capability and final-task correctness, demonstrating the effectiveness of structured multi-agent collaboration for reliable RS agents. The code is publicly available at https://github.com/IntelliSensing/HiRS-Agent."
+      }
+    ],
+    "actors": [
+      "HiRS-Agent authors"
+    ],
+    "tags": [
+      "multi-agent",
+      "hierarchical",
+      "remote-sensing",
+      "long-horizon"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "3121e1cf71d25a3449a1cb588e46bb2f1833e4405daac3ac15b28a5970f306c9"
+  },
+  {
+    "id": "01M1E2MVQXMCT36BE7JH7R9FAV",
+    "civilizationId": "terminal-bench-lilt",
+    "title": "Terminal-Bench-LILT: 300-task multilingual agentic coding benchmark released",
+    "summary": "Researchers released a 300-task multilingual agentic coding benchmark spanning ten languages, with culturally specific issues. Evaluation of six frontier models showed the strongest reaching only 63.1% pass rate, indicating a significant capability gap for non-English coding agents.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T08:51:19.934Z",
+    "category": "speculative",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.28641",
+        "domain": "arxiv.org",
+        "title": "Terminal-Bench-LILT: Multilingual Agentic Coding Benchmark Grounded in Language, Region, and Culture",
+        "fetchedAt": "2026-09-01T08:50:17.272Z",
+        "rawExcerpt": "arXiv:2608.28641v1 Announce Type: cross Abstract: Most evaluations for coding agents are conducted exclusively in English, which does not reflect real-world multilingual deployment. We present Terminal-Bench-LILT, a suite of 300 authentic coding tasks in ten languages: Arabic, Czech, German, Spanish, Hindi, Japanese, Korean, Serbian, Turkish, and Chinese. Each task targets issues specific to non-English software development that have no direct English equivalent, e.g., internationalization, encoding, text normalization, and cultural conventions. All tasks are authored by native-speaker programmers and validated through a multi-stage quality control pipeline. Evaluation of six frontier models reveals that even the strongest model reaches only 63.1\\% pass rate, with many tasks unsolved by any model. Performance varies substantially by language and does not track general coding benchmark rankings, highlighting that multilingual coding competence is a distinct and underexplored capability axis. Sample tasks are available at https://github.com/lilt/terminal-bench-lilt"
+      }
+    ],
+    "actors": [
+      "Terminal-Bench-LILT authors"
+    ],
+    "tags": [
+      "benchmark",
+      "coding-agent",
+      "multilingual",
+      "evaluation"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "91ac8f7a0e47b0315d512485f17eae2d8f765d1cf69048e5dfef4d00b4eed7aa"
+  },
+  {
+    "id": "01M1E4E25CSRW4B0KG0785DSCH",
+    "civilizationId": "peer-oversight",
+    "title": "Peer k-oversight proposed as design principle for multi-agent decision systems",
+    "summary": "The paper introduces peer k-oversight, a property requiring at least k agents to share responsibility for every harmful outcome in sequential collective decision mechanisms. It proves tractability and gives a polynomial-time algorithm to construct redistributions achieving k-oversight when possible.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T09:22:34.284Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.28754",
+        "domain": "arxiv.org",
+        "title": "Peer Oversight in Collective Decision Making",
+        "fetchedAt": "2026-09-01T09:21:14.431Z",
+        "rawExcerpt": "arXiv:2608.28754v1 Announce Type: cross Abstract: This article introduces peer $k$-oversight, a property of sequential collective decision mechanisms requiring at least $k$ agents to be responsible for every harmful outcome. It is shown that whenever $k$-oversight can be achieved by redistributing control over the decisions in a mechanism, it can be achieved using just $k$ agents. A polynomial-time algorithm is also presented that determines whether such a redistribution exists and, when it does, constructs one. These results establish peer oversight as a tractable design principle for multiagent decision-making systems."
+      }
+    ],
+    "actors": [],
+    "tags": [
+      "multi-agent",
+      "governance",
+      "collective-decision-making",
+      "oversight"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "4c555a24ac534b02cf13aadd1ac656c9be28af566d69ce8b028fac72654ac6dd"
+  },
+  {
+    "id": "01M1E4E2D511K4AYT0JK5R28A6",
+    "civilizationId": "astra",
+    "title": "ASTRA agentic system coordinates three specialist agents for ticket resolution",
+    "summary": "ASTRA uses a central orchestrator that coordinates TicketSimilarityAgent, LogAgent, and a third specialist agent, driving a judge-orchestrator refinement loop to produce evidence-backed troubleshooting reports. The design emphasizes explicit evidence modeling and provenance across fragmented ticket, log, and documentation sources.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T09:22:34.534Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.28790",
+        "domain": "arxiv.org",
+        "title": "ASTRA - Agentic System for Ticket Resolution and Analysis",
+        "fetchedAt": "2026-09-01T09:21:14.431Z",
+        "rawExcerpt": "arXiv:2608.28790v1 Announce Type: cross Abstract: Technical operations teams resolve large volumes of incidents by synthesizing fragmented evidence from ticket text, historical cases, system logs, and technical documentation. Existing automation often relies on monolithic generation without explicit evidence modeling or provenance, making outputs difficult to verify when critical signals are sparse across sources. We propose ASTRA, an agentic system for ticket resolution in which a central orchestrator coordinates three specialist information-gathering agents and drives a judge-orchestrator refinement loop to produce evidence-backed troubleshooting reports. TicketSimilarityAgent retrieves relevant historical precedents through dense retrieval and LLM reranking; LogAgent distills hundreds of thousands of log lines into structured, quote-grounded findings using deterministic filtering and constrained LLM analysis; and DomainKnowledgeAgent retrieves relevant technical knowledge via the Model Context Protocol (MCP). Their outputs are transformed into a claim-evidence representation linking each claim to a verbatim source passage, assigning a support level, and preventing cross-attribution. A JudgeAgent scores the report on five criteria, while the OrchestratorAgent converts low scores into targeted follow-up queries for bounded iterative refinement. Evaluated on 987 real-world telecom fault tickets across seven product lines, ASTRA achieves a mean quality score of 4.13/5.0, with 59.9% of reports identifying the fault area at the component-family level or better. Relevance and Clarity scores are 4.88 and 4.94, respectively, while fabricated technical details remain below 3% of error cases. Stratification by fault type reveals that hardware faults remain substantially harder than software or configuration faults (Cohen's d=0.80), pointing to a fundamental limitation of text-based evidence channels for hardware fault diagnosis."
+      }
+    ],
+    "actors": [],
+    "tags": [
+      "agentic-system",
+      "orchestrator",
+      "specialist-agents",
+      "ticket-resolution"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "69d3c65759f085d32f96b87b4180895c22444a70b006b6d094595d438b1d4047"
+  },
+  {
+    "id": "01M1E66EZ0QD4DW50CEKPV4JSN",
+    "civilizationId": "stl-diffusion-planning",
+    "title": "Multi-agent planning from Signal Temporal Logic specs via diffusion models",
+    "summary": "A new method uses diffusion-based learning to enable multi-agent systems (drone swarms, autonomous cars, warehouse robots) to plan under Signal Temporal Logic specifications with generalization to new objectives at deployment time. Existing optimization methods scale poorly with agent count, while prior learning methods fail when deployment specs differ from training.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T09:53:22.401Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.29490",
+        "domain": "arxiv.org",
+        "title": "Generalizable Multi-Agent Planning from Signal Temporal Logic Specifications via Diffusion",
+        "fetchedAt": "2026-09-01T09:52:11.807Z",
+        "rawExcerpt": "arXiv:2608.29490v1 Announce Type: cross Abstract: Multi-agent systems in the real-world (e.g., drone swarms, autonomous cars, warehouse robots) must satisfy rich, temporal tasks while avoiding collisions. Signal Temporal Logic (STL) elegantly encodes such objectives, but current STL planning methods face critical limitations. State-of-the-art optimization-based approaches can handle arbitrary STL specifications but struggle with scalability, becoming computationally impractical as the number of agents grows. Learning-based methods efficiently handle a large number of agents with rapid planning times but fare poorly when deployment-time objectives differ from those used during training, and do not support planning tasks that require different specifications to be ascribed to different agents (i.e., heterogeneity) or team-level specifications requiring coordination of multiple agents. This fundamental trade-off between generalizability and scalability presents a challenge for realizing multi-agent STL planning algorithms in practice. To overcome this challenge, we introduce a new diffusion method for multi-agent planning with STL specifications. Using a differentiable approximation of STL, we integrate the STL gradient in the denoising process, making our approach generalizable to novel formulas whose predicates are placed anywhere within the goal region covered during training, while achieving the same scalability as existing learning-based methods. Our method supports heterogeneous specifications, and by using diffusion models, naturally enhances plan diversity, thereby significantly reducing safety-related violations (e.g., collisions) among agents. A detailed evaluation study justifies the utility of STL-guided diffusion-based multi-agent planners for constructing generalizable, scalable, and diverse plans. Videos and code are available at https://www.jeappen.com/diff-ma-stl/ and https://github.com/jeappen/diff-ma-stl ."
+      }
+    ],
+    "actors": [],
+    "tags": [
+      "multi-agent-planning",
+      "signal-temporal-logic",
+      "diffusion-models",
+      "drone-swarms",
+      "warehouse-robots"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "b93b55c805c880f6c1687e4aaa5df5485194d9b2c4c9f032b721ed3fa21953bc"
+  },
+  {
+    "id": "01M1E7YH3VVANEJ2MVKE1031BF",
+    "civilizationId": "evidence-gated-mlops-agents",
+    "title": "Evidence-gated multi-agent framework autonomously deploys cloud MLOps stacks from natural language",
+    "summary": "Researchers present a multi-agent framework where a stateful Graph Orchestrator coordinates specialized agents for repository generation, review, execution, verification, release, and rollback to turn natural-language MLOps tasks into verified cloud deployments. The framework combines graph, loop, and agent-harness engineering to autonomously operationalize end-to-end ML pipelines.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T10:23:59.611Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.29615",
+        "domain": "arxiv.org",
+        "title": "Forward-Deployed Full-Stack Engineering for Autonomous Cloud MLOps",
+        "fetchedAt": "2026-09-01T10:23:09.298Z",
+        "rawExcerpt": "arXiv:2608.29615v1 Announce Type: cross Abstract: Across industries, machine-learning systems support applications ranging from prediction and anomaly detection to forecasting, optimization, and scheduling, yet operationalizing these systems requires coordinating application development, model pipelines, cloud infrastructure, security, deployment, monitoring, retraining, recovery, and rollback. We present an evidence-gated multi-agent framework for transforming a natural-language MLOps cloud engineering task into a verified repository and operational cloud deployment. The framework combines graph engineering, loop engineering, and agent harness engineering. A stateful Graph Orchestrator coordinates specialized agents for repository generation, review, execution, verification, release, and monitoring while governing workflow dependencies, evidence gates, retry bounds, recovery paths, and termination. Consequential lifecycle transitions proceed only when their required predicates are supported by verifiable execution or runtime evidence. Verification failures activate bounded reflection, repair, and re-verification, while runtime evidence of failure, drift, degradation, or policy violation can trigger bounded adaptation, recovery, or rollback. Agent harness engineering constrains repository generation, review, and repair, artifact execution, and cloud operations through controlled capabilities and isolated execution environments. We realize the framework on Google Cloud Platform and evaluate repository completeness, controlled execution, evidence-gated transitions, cloud promotion, and bounded recovery. Our experimental results show that the framework prevents unsupported lifecycle transitions and drives each run toward either a verified operational deployment or an auditable terminal failure."
+      }
+    ],
+    "actors": [
+      "arXiv authors"
+    ],
+    "tags": [
+      "multi-agent",
+      "mlops",
+      "framework",
+      "orchestration"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "abd0d05b1ec10e85c5610a152f31fa426801dab3c0fea2846cce903787336ddd"
+  },
+  {
+    "id": "01M1E7YHBZFT8TQR29JCZKFCYK",
+    "civilizationId": "kg-adversarial-factcheck",
+    "title": "Memory-first multi-agent adversarial tribunal system for knowledge-graph fact-checking",
+    "summary": "The paper introduces a hybrid fact-checking framework that combines knowledge-graph semantic memory with a web-fallback adversarial tribunal composed of support, contradiction, and judging agents for explainable misinformation detection. A graph-aware confidence mechanism fuses semantic similarity and NLI signals to produce verdicts.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T10:23:59.872Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.29617",
+        "domain": "arxiv.org",
+        "title": "Memory-First Fact-Checking: A Knowledge-Graph-Grounded Multi-Agent System for Misinformation Detection",
+        "fetchedAt": "2026-09-01T10:23:09.298Z",
+        "rawExcerpt": "arXiv:2608.29617v1 Announce Type: cross Abstract: This paper introduces a hybrid fact-checking framework that integrates Knowledge Graph-based semantic memory with adversarial multi-agent reasoning for explainable misinformation detection. The proposed system follows a memory-first, web-fallback architecture, in which input claims are initially evaluated against a dual-index Knowledge Graph through Sentence-BERT-based semantic retrieval and Natural Language Inference. When the evidence retrieved from the graph is insufficient to support a reliable decision, the framework collects information from trusted web sources and assesses it using an adversarial tribunal composed of support, contradiction, and judging agents. A graph-aware confidence mechanism combines semantic similarity, NLI confidence, and structural graph evidence to determine whether internal knowledge is sufficient, thereby reducing unnecessary web retrieval. Following verification, validated information is transformed into structured triples and incorporated into the Knowledge Graph, supporting the incremental expansion of the system's semantic memory. Experimental evaluation on a curated COVID-19 misinformation benchmark demonstrates that the proposed framework achieves an accuracy of 97.4\\% and a macro-averaged F1-score of 92.6% on resolved claims, outperforming a Llama~3.3~70B baseline, which obtains an accuracy of 87.7% and a macro-averaged F1-score of 86.3%."
+      }
+    ],
+    "actors": [
+      "arXiv authors"
+    ],
+    "tags": [
+      "multi-agent",
+      "fact-checking",
+      "knowledge-graph",
+      "adversarial-tribunal"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "d68d4ae9483bbba39ea3329312378db4b18307a2fedfb59b45649bff86abd80e"
+  },
+  {
+    "id": "01M1E9QCS1DAY4C8WGX57AVPDZ",
+    "civilizationId": "arc-agi-solver",
+    "title": "ARC-AGI-1 scored 44% at $0.67 compute cost",
+    "summary": "An independent blog reports achieving 44% on the ARC-AGI-1 benchmark for roughly 67 cents of compute, framing it as a cost-efficiency milestone. The post is linked from Hacker News with modest discussion.",
+    "occurredAt": "2026-09-01T09:52:45.000Z",
+    "recordedAt": "2026-09-01T10:55:02.945Z",
+    "category": "speculative",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://mvakde.github.io/blog/44-on-arc-1/",
+        "domain": "mvakde.github.io",
+        "title": "44% on ARC-AGI-1 in 67 cents",
+        "fetchedAt": "2026-09-01T10:54:13.391Z",
+        "rawExcerpt": "Article URL: https://mvakde.github.io/blog/44-on-arc-1/ Comments URL: https://news.ycombinator.com/item?id=49519939 Points: 23 # Comments: 6"
+      }
+    ],
+    "actors": [
+      "mvakde"
+    ],
+    "tags": [
+      "arc-agi",
+      "benchmark",
+      "cost-efficiency"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "c860eea35338cf62780fb92fa088b76842cd0fc6f30e307893f1aeed6fd793ce"
+  },
+  {
+    "id": "01M1E9QD1A3P2YB89FGD72762G",
+    "civilizationId": "sir-redteam",
+    "title": "SIR: Self-improving black-box prompt-injection attack on computer-use agents",
+    "summary": "Researchers introduce SIR, a black-box adaptive indirect prompt-injection attack targeting vision-language computer-use agents that operate real operating systems. The attack composes stealthy injections from a reusable principle library and improves itself over time, exposing a concrete risk class for deployed CUAs.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T10:55:03.211Z",
+    "category": "security",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.30207",
+        "domain": "arxiv.org",
+        "title": "SIR: Self-improving Red-teaming for Compute Use Agents",
+        "fetchedAt": "2026-09-01T10:54:13.391Z",
+        "rawExcerpt": "arXiv:2608.30207v1 Announce Type: cross Abstract: Computer use agents (CUAs) are vision-language models that perceive a screen and act on a real operating system through mouse, keyboard, and terminal, and they are increasingly deployed to automate everyday digital tasks. Because they can be exposed to untrusted content while operating, they are vulnerable to indirect prompt injection (IPI), in which an adversary plants instructions in content the agent will read and redirects it toward actions that violate the user's intent. Existing CUA safety benchmarks evaluate fixed injections written by hand, which may underestimate the risk posed by an adaptive adversary. We present SIR, a black box IPI attack that (i) composes stealthy injections from a small library of reusable principles stated in plain language and (ii) wraps composition in an iterative feedback loop that diagnoses the victim's failed trajectories and distills the bypasses into new, named strategies that are reapplied across tasks. Unlike prior red teaming of web agents, we target CUAs at the operating system level and score attacks with a fully deterministic oracle, using checks on filesystem, service, and permission state rather than an LLM judge. On experiment, we evaluate three frontier CUAs. Composing principles with feedback raises the attack success rate over a baseline written by hand, for example from 4% to 24% on Claude Opus 4.8 and from 0% to 28% on Gemini 3.5 Flash, while the benign task still completes. Principles discovered against one model further transfer to a different architecture with no additional feedback."
+      }
+    ],
+    "actors": [],
+    "tags": [
+      "red-teaming",
+      "indirect-prompt-injection",
+      "computer-use-agents",
+      "adaptive-attack"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "832ee65b1605531c6e05975c46b0bc37a4e9cbe0dd5a1f5e8de0a85db12dd89c"
+  },
+  {
+    "id": "01M1E9QD99156ANT2R7KCNWJBZ",
+    "civilizationId": "autotracegt",
+    "title": "AutoTraceGT: Multi-agent pipeline applies grounded theory to agent trajectory analysis",
+    "summary": "Researchers propose AutoTraceGT, a multi-agent pipeline that automates grounded theory coding (open, axial, theoretical) on thousands of agent trajectories until saturation, producing task-tailored behavioral taxonomies across six corpora. The work explicitly frames agent behavior analysis as a multi-agent coordination problem using a decades-old social-science method with auditable data-to-theory traceability.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T10:55:03.465Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.30391",
+        "domain": "arxiv.org",
+        "title": "Using Grounded Theory for Agent Behavior Analysis at Scale",
+        "fetchedAt": "2026-09-01T10:54:13.391Z",
+        "rawExcerpt": "arXiv:2608.30391v1 Announce Type: cross Abstract: Understanding agent behavior requires methods that scale to thousands of trajectories and surface new patterns in long, often unfamiliar tasks where pre-built classifiers fall short. We propose to bring grounded theory into agent trajectory analysis: a six-decade-old qualitative method from the social sciences, with a principled saturation criterion and an auditable trail from data to theory. We propose AutoTraceGT (Automated Trace analysis through Grounded Theory), the first multi-agent pipeline that automates grounded theory on agent trajectories. It iteratively performs open, axial, and theoretical coding until saturation, producing a behavioral taxonomy tailored to each task. Across six trajectory corpora, AutoTraceGT produces codebooks that recover 73-91 percent of the failure modes in human-annotated taxonomies and surface additional patterns that those taxonomies miss. The emergent theoretical narrative aligns with prior expert accounts. Used as a deductive feature space, the codebook outperforms zero-shot and few-shot LLM baselines on downstream failure prediction. These results suggest Grounded Theory offers a scalable analytic tool for ML researchers and agent developers studying what agents actually do."
+      }
+    ],
+    "actors": [
+      "arXiv authors (2608.30391)"
+    ],
+    "tags": [
+      "multi-agent",
+      "agent-analysis",
+      "grounded-theory",
+      "trajectory-analysis"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "471be599a8c8a0712fcd073dc3cce9b3fcfd6928e102d8934646184013d74788"
+  },
+  {
+    "id": "01M1EBGMQ30Y2Z638ZATJM8AZ4",
+    "civilizationId": "mineamongus-benchmark",
+    "title": "MineAmongUs: multimodal benchmark for verbal and non-verbal deception by VLM agents",
+    "summary": "Researchers introduced MineAmongUs, a 3D multimodal Among Us sandbox where VLM agents must deceive crewmates using both verbal and non-verbal actions. The accompanying ARIA framework provides a configurable testbed for studying strategic deception across embodied social interactions. The work positions joint verbal/non-verbal deception by multimodal agents as a concrete alignment and safety research concern.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T11:26:18.852Z",
+    "category": "speculative",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.30428",
+        "domain": "arxiv.org",
+        "title": "Lies We Can See: Joint Verbal and Non-Verbal Deception by VLM Agents in Embodied Social Interactions",
+        "fetchedAt": "2026-09-01T11:25:18.622Z",
+        "rawExcerpt": "arXiv:2608.30428v1 Announce Type: cross Abstract: Strategic deception by LLM and VLM agents has emerged as a central AI alignment and safety concern. Social-deduction games (where each player holds a hidden role and communicates with others to deduce identities) serve as the canonical testbed, particularly in multi-agent settings. Existing testbeds, however, are text-only and run on a single fixed agent configuration, missing the non-verbal sensorimotor channels treated as core by deception taxonomies and leaving it ambiguous whether an observed behavior reflects the underlying model or the surrounding harness. We introduce MineAmongUs, a 3D multimodal Among Us sandbox where imposter agents must deceive crewmates through joint verbal and non-verbal action. We also propose ARIA, a configurable VLM-agent harness that exposes five cognitive-component ablation axes; and an atom- and arc-level annotation scheme grounded in deception taxonomies and operationalized at scale by an LLM-as-a-Judge reaching near-human atom-labeling agreement. Empirical results show that VLM agents pursue imposter wins through joint verbal and non-verbal deception, with non-verbal channels emerging as the more decisive winning contributors across both harness ablation and cross-VLM evaluation. Taken together, our work opens a new path for embodied VLM-agent alignment research."
+      }
+    ],
+    "actors": [],
+    "tags": [
+      "multi-agent",
+      "deception",
+      "embodied-agents",
+      "benchmark",
+      "vlm"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "0313ea0fb473c32f3e053e4b71acdec43964eeb191230104d6ba4208bc00e184"
+  },
+  {
+    "id": "01M1EBGMYGW6094NJFZQJJXNED",
+    "civilizationId": "synthetic-data-covert-bias",
+    "title": "Covert targeted bias injection via benign synthetic training data demonstrated",
+    "summary": "Researchers show that a misaligned teacher model can produce semantically benign synthetic text that, when used to fine-tune aligned student models, covertly transmits targeted social biases. The work extends subliminal-learning findings to identify synthetic data as a stealthy attack channel against LLM training pipelines.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T11:26:19.088Z",
+    "category": "security",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.30619",
+        "domain": "arxiv.org",
+        "title": "Hidden Threat in Synthetic Data: Covert Targeted Bias Injection through Benign Text",
+        "fetchedAt": "2026-09-01T11:25:18.622Z",
+        "rawExcerpt": "arXiv:2608.30619v1 Announce Type: cross Abstract: Synthetic data is increasingly used to train large language models (LLMs), yet its security implications remain poorly understood. Prior work on subliminal learning suggests that models can inherit behavioral traits from seemingly unrelated training data. In this work, we investigate whether such mechanisms can be exploited to inject targeted social biases into aligned models through semantically benign synthetic data. We construct a pipeline in which a misaligned teacher model generates filtered synthetic datasets across domains such as creative writing and code generation, which are then used to fine-tune aligned student models. Our experiments show that benign-looking synthetic data can act as a covert channel for transmitting targeted biases while largely preserving the student model's general task capabilities. These results reveal a previously underexplored security risk in synthetic data-driven LLM training pipelines and highlight the need for improved safeguards. As one possible step toward this goal, we suggest that log-linearity-based scoring may provide a useful signal for screening seemingly benign synthetic data."
+      }
+    ],
+    "actors": [],
+    "tags": [
+      "supply-chain",
+      "synthetic-data",
+      "subliminal-learning",
+      "bias-injection"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "1f00f64ba35eb79609cc4eec38103dcd33387fe732ee6cc68c6fca3febb11f64"
+  },
+  {
+    "id": "01M1ED8TXXAE19QJECKR2Z2A75",
+    "civilizationId": "autoscirub",
+    "title": "AutoSciRub: Evaluation-First Framework for Autonomous Scientific Research Agents",
+    "summary": "AutoSciRub induces a task-specific executable rubric before research execution, using it to guide execution and criterion-level verification for autonomous scientific research agents. It decomposes underspecified research tasks into verifiable components before agents perform literature review, data analysis, experimentation, and report generation.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T11:57:00.222Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.31076",
+        "domain": "arxiv.org",
+        "title": "Learning to Evaluate Before Improving: Automatic Rubric Induction for Automatic Research Agents",
+        "fetchedAt": "2026-09-01T11:56:10.113Z",
+        "rawExcerpt": "arXiv:2608.31076v1 Announce Type: cross Abstract: Autonomous scientific research agents are increasingly applied to end-to-end scientific workflows, including literature review, data analysis, experimentation, and report generation. However, open-ended research tasks often do not clearly specify the analyses, methods, and success criteria required to complete the task. As a result, agents may miss important analyses, use inappropriate methods, or draw conclusions that are insufficiently supported by evidence. To address the problem, we present AutoSciRub, an evaluation-first framework that induces a task-specific executable rubric before research execution, and uses it to guide execution, criterion-level verification as well as iterative revision. AutoSciRub decomposes an underspecified instruction into atomic scientific goals, grounds them in relevant literature and task-visible data, and synthesizes specific, actionable, and verifiable criteria. The resulting rubric makes implicit experimental and evidential requirements explicit, providing guidance for experiments and analyses. During revision, rubric-guided verification identifies unmet criteria and enables targeted refinement of the research report and its supporting artifacts. On ResearchClawBench, AutoSciRub consistently improves all tested configurations, with an average gain of 2.08 points across three backbone LLMs under the fixed Codex harness and 2.95 points across three agent harnesses using a fixed DeepSeek-V4-Flash backbone. On a randomly sampled 20-task subset of AstaBench E2E Discovery, AutoSciRub further achieves an average improvement of 16.8 points across three agent harnesses, while maintaining or increasing the number of successfully completed tasks. These results demonstrate that evaluation-first guidance provides an effective and generalizable control mechanism for autonomous scientific research (Code: https://github.com/zjunlp/AutoSciRub)."
+      }
+    ],
+    "actors": [
+      "arXiv researchers"
+    ],
+    "tags": [
+      "autonomous-research",
+      "rubric-induction",
+      "evaluation-framework",
+      "scientific-agents"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "d35db8bb76cd375f9a7fc1258a66e1676da8b897d6570b8bdca6c4aa3391df6c"
+  },
+  {
+    "id": "01M1ED8V576BH3G2V0GGSJGV87",
+    "civilizationId": "assetopsbench",
+    "title": "AssetOpsBench: Benchmark for Multi-Agent Industrial Asset Operations",
+    "summary": "AssetOpsBench provides a unified framework orchestrating four domain-specific agents to automate industrial asset operations and maintenance workflows, evaluated via 140+ natural-language queries in a simulated IoT environment. It represents end-to-end task automation across specialized agent roles.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T11:57:00.455Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2506.03828",
+        "domain": "arxiv.org",
+        "title": "AssetOpsBench: Benchmarking AI Agents for Task Automation in Industrial Asset Operations and Maintenance",
+        "fetchedAt": "2026-09-01T11:56:10.113Z",
+        "rawExcerpt": "arXiv:2506.03828v4 Announce Type: replace Abstract: AI for Industrial Asset Lifecycle Management aims to automate complex operational workflows, such as condition monitoring and maintenance scheduling, to minimize system downtime. While traditional AI/ML approaches solve narrow tasks in isolation, Large Language Model (LLM) agents offer a next-generation opportunity for end-to-end automation. In this paper, we introduce AssetOpsBench, a unified framework for orchestrating and evaluating domain-specific agents for Industry 4.0. AssetOpsBench provides a multimodal ecosystem comprising a catalog of four domain-specific agents, a curated dataset of 140+ human-authored natural-language queries grounded in real industrial scenarios, and a simulated, CouchDB-backed IoT environment. We introduce an automated evaluation framework that uses three key metrics to analyze architectural trade-offs between the Tool-As-Agent and Plan-Executor paradigms, along with a systematic procedure for the automated discovery of emerging failure modes. The practical relevance of AssetOpsBench is demonstrated by its broad community adoption, with 250+ users and over 500 agents submitted to our public benchmarking platform, supporting reproducible and scalable research for real-world industrial operations. The code is accesible at https://github.com/IBM/AssetOpsBench ."
+      }
+    ],
+    "actors": [
+      "arXiv researchers"
+    ],
+    "tags": [
+      "benchmark",
+      "multi-agent",
+      "industrial-agents",
+      "orchestration"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "6dd5539153f30628eb8d60f32bb46547cdf8a1ddf4d9617a42a66cf8714908db"
+  },
+  {
+    "id": "01M1EF1SJS7T9RNKPXZR5MZD39",
+    "civilizationId": "unified-mas",
+    "title": "Unified-MAS: Automatic Multi-Agent System Generation Decoupling Node Implementation from Topology",
+    "summary": "Researchers proposed Unified-MAS, a framework that decouples domain-specific node implementation from high-level topology optimization to automatically generate multi-agent systems for knowledge-intensive domains like healthcare and law. The approach addresses architectural coupling that degraded efficacy in prior automatic MAS generators.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T12:28:06.618Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2603.21475",
+        "domain": "arxiv.org",
+        "title": "Unified-MAS: Universally Generating Domain-Specific Nodes for Empowering Automatic Multi-Agent Systems",
+        "fetchedAt": "2026-09-01T12:27:09.758Z",
+        "rawExcerpt": "arXiv:2603.21475v2 Announce Type: replace Abstract: Automatic Multi-Agent Systems (MAS) generation has emerged as a promising paradigm for solving complex reasoning tasks. However, existing frameworks are fundamentally bottlenecked when applied to knowledge-intensive domains (e.g., healthcare and law). They either rely on a static library of general nodes like Chain-of-Thought, which lack specialized expertise, or attempt to generate nodes on the fly. In the latter case, the orchestrator is not only bound by its internal knowledge limits but must also simultaneously generate domain-specific logic and optimize high-level topology, leading to a severe architectural coupling that degrades overall system efficacy. To bridge this gap, we propose Unified-MAS that decouples granular node implementation from topological orchestration via offline node synthesis. Unified-MAS operates in two stages: (1) Search-Based Node Generation retrieves external open-world knowledge to synthesize specialized node blueprints, overcoming the internal knowledge limits of LLMs; and (2) Reward-Based Node Optimization utilizes a perplexity-guided reward to iteratively enhance the internal logic of bottleneck nodes. Extensive experiments across four specialized domains demonstrate that integrating Unified-MAS into four Automatic-MAS baselines yields a better performance-cost trade-off, achieving up to a 14.2% gain while significantly reducing costs. Further analysis reveals its robustness across different designer LLMs and its effectiveness on conventional tasks such as mathematical reasoning."
+      }
+    ],
+    "actors": [
+      "Unified-MAS authors",
+      "arXiv:2603.21475"
+    ],
+    "tags": [
+      "multi-agent-systems",
+      "automatic-orchestration",
+      "knowledge-intensive-domains",
+      "framework"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "15c0cb57c9235e9667c8486e07780a97543c2bb7c311178e7eda5bb82ae7384d"
+  },
+  {
+    "id": "01M1EF1SVPAS33V7P4WJKHGFV2",
+    "civilizationId": "handoff-debt-benchmark",
+    "title": "Handoff Debt benchmark measures rediscovery cost when coding agents take over interrupted tasks",
+    "summary": "A new protocol interrupts a coding agent at deterministic handoff points and evaluates successor agents under four handoff views across 181 handoff-point tasks and 724 takeover runs per successor model. The work formalizes handoff debt as a missing dimension in coding-agent benchmarks where tasks are reassigned mid-stream between agents or engineers.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T12:28:06.902Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2606.02875",
+        "domain": "arxiv.org",
+        "title": "Handoff Debt: The Rediscovery Cost When Coding Agents Take Over Interrupted Tasks",
+        "fetchedAt": "2026-09-01T12:27:09.758Z",
+        "rawExcerpt": "arXiv:2606.02875v2 Announce Type: replace Abstract: Coding-agent benchmarks evaluate whether a single uninterrupted agent can resolve a repository issue. Real software work is messier: tasks are interrupted, reassigned, reviewed, and resumed from partial states left by another agent or engineer. We study this missing dimension through handoff debt: the rediscovery cost imposed when a predecessor's work is opaque or incomplete. Our takeover protocol interrupts a coding agent at deterministic handoff points, freezes the repository, and evaluates successor agents under four handoff views: repository state only, raw trace, summary notes, and structured notes. Across 75 source tasks, the protocol generates 181 handoff-point tasks and 724 takeover runs per successor model. Across three successor models, context-bearing handoffs reduce median agent events by 20-59% and cumulative prompt tokens by 42-63% relative to repository-only takeover. Solved-rate effects are smaller and model-dependent, but efficiency gains are consistent. These findings suggest that coding-agent evaluation should report not only whether a task is solved, but also how costly that work is for another agent to resume."
+      }
+    ],
+    "actors": [
+      "arXiv authors (2606.02875)"
+    ],
+    "tags": [
+      "coding-agents",
+      "handoff",
+      "multi-agent",
+      "benchmark",
+      "takeover"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "65af3b1c241abd3043f6ff86ebdc56755093b61b189a664abd5c497dcdafa1a3"
+  },
+  {
+    "id": "01M1EF1T1PY0MNJS9TD2N8CQTC",
+    "civilizationId": "foresightsafety-sage",
+    "title": "ForesightSafety-SAGE automates 1,072 safety scenarios for LLM agent evaluation",
+    "summary": "Researchers released a fully automated scenario generation and safety evaluation framework that instantiates five risk dimensions into 1,072 measurable evaluations for tool-using, memory-bearing LLM agents. The framework addresses gaps in manually written safety tests for autonomous task-execution agents.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T12:28:07.095Z",
+    "category": "speculative",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2606.08531",
+        "domain": "arxiv.org",
+        "title": "ForesightSafety-SAGE:A Fully Automated Scenario Generation and Safety Evaluation Framework for LLM Agents",
+        "fetchedAt": "2026-09-01T12:27:09.758Z",
+        "rawExcerpt": "arXiv:2606.08531v3 Announce Type: replace Abstract: Large language models (LLMs) are increasingly evolving from simple text-based interaction systems into LLM agents that can maintain memory, use tools, access external environments, and execute tasks. As their capabilities and autonomy expand, the safety risks they face also become more diverse. Existing evaluations often rely on manually written scenarios, static prompts, or final-output judgments, making it difficult to capture the diverse risks that agents may face during task execution. We introduce ForesightSafety-SAGE, a fully automated scenario generation and safety evaluation framework for LLM agents. Based on five risk dimensions,we instantiae abstract and diverse safety risks in real-world task execution into 1,072 measurable evaluation scenarios. Using the automated evaluation pipeline, 12 LLM agents are evaluated under two authority contexts. The results show that current agents still face substantial behavioral safety risks during task execution, with an average ASR of 47.1% and several models exceeding 70%. These findings demonstrate the importance of executable, process-level evaluation for understanding and improving LLM agent safety."
+      }
+    ],
+    "actors": [
+      "arXiv authors (2606.08531)"
+    ],
+    "tags": [
+      "safety",
+      "agent-evaluation",
+      "automated-benchmark",
+      "scenario-generation"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "c46e6fba7aec982bab34854745bd11a1dac27d19a19cc1c3e258e9bd6ed014e8"
+  },
+  {
+    "id": "01M1EGTG7TPZRMENJ6Q25QHPWM",
+    "civilizationId": "pear-debate",
+    "title": "PEAR introduces permutation-equivariant adaptive routing for multi-agent debate",
+    "summary": "Researchers proposed PEAR, a training-free multi-agent debate protocol that dynamically reconfigures communication roles and sparse topologies across rounds to mitigate positional bias and reduce sensitivity to role assignment. The framework is theoretically analyzed and evaluated against fixed-topology debate baselines.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T12:59:04.826Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2606.20621",
+        "domain": "arxiv.org",
+        "title": "PEAR: Permutation-Equivariant Adaptive Routing Multi-Agent Debate",
+        "fetchedAt": "2026-09-01T12:58:12.098Z",
+        "rawExcerpt": "arXiv:2606.20621v2 Announce Type: replace Abstract: Multi-agent debate improves the reliability of large language models (LLMs) through iterative peer critiques. However, fixed topologies often introduce persistent positional biases, amplify unreliable agents, and cause high sensitivity to role assignments. We introduce \\textit{Permutation-Equivariant Adaptive Routing Multi-Agent Debate (PEAR)}, an inference-time train-free protocol that dynamically reconfigures communication roles and sparse topologies across consecutive debate rounds. By strategically switching agent-to-role assignments based on evolving agent states, PEAR prevents any agent from permanently occupying a privileged network position or distributes influence more evenly across the debate. We theoretically characterize PEAR as an equivariant sparse router: it preserves accuracy under agent relabeling while reducing routing complexity and improving generalization. Comprehensive empirical evaluations across four reasoning benchmarks and six diverse LLM backbones demonstrate PEAR significantly improves average accuracy over the strongest debate baselines. The code is available at https://github.com/EVIEHub/PEAR."
+      }
+    ],
+    "actors": [
+      "PEAR authors"
+    ],
+    "tags": [
+      "multi-agent-debate",
+      "adaptive-routing",
+      "topology",
+      "train-free"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "5b386bce429cd78b842b8971b3cf877f7c75b198999d3e279ae8417bf154fe62"
+  },
+  {
+    "id": "01M1EGTGEN57RNJB2CWYJ1V8TT",
+    "civilizationId": "rift-bench",
+    "title": "RIFT-Bench introduces representation-driven dynamic red-teaming for agentic AI",
+    "summary": "Researchers released RIFT-Bench, a methodology for automated dynamic red-teaming of heterogeneous agentic AI systems via a hierarchical representation with Discovery and Scanning phases. It enables unified cross-architecture security evaluations beyond traditional LLM vulnerability scopes.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T12:59:05.045Z",
+    "category": "security",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2606.23927",
+        "domain": "arxiv.org",
+        "title": "RIFT-Bench: Dynamic Red-teaming For Agentic AI Systems",
+        "fetchedAt": "2026-09-01T12:58:12.098Z",
+        "rawExcerpt": "arXiv:2606.23927v2 Announce Type: replace Abstract: Agentic AI systems powered by large language models (LLMs) are rapidly evolving into autonomous decision-making systems, exposing attack vectors beyond those of traditional LLM vulnerabilities. Existing security evaluations are often tied to specific implementations or domains, limiting unified comparison across heterogeneous systems. To address this gap, we introduce RIFT-Bench, a representation-driven methodology for dynamic red-teaming that enables unified evaluations across diverse agentic architectures. Building on a novel hierarchical representation, RIFT-Bench operates in two automated phases: Discovery, which extracts system structure, and Scanning, which executes adaptive adversarial attacks. It directly evaluates the examined system using 105 adaptive adversarial probes spanning diverse attack vectors and objectives. We demonstrate the effectiveness of the proposed evaluation pipeline across 45 agentic systems spanning a diverse range of implementations, showing that the approach generalizes effectively to heterogeneous agentic architectures. Beyond systems and attacks, RIFT-Bench also supports direct evaluation of mitigation strategies. These key capabilities make RIFT-Bench a scalable foundation for security evaluation of agentic AI systems in practice. Infrastructure code and benchmark artifacts are available at https://tinyurl.com/RIFTBench."
+      }
+    ],
+    "actors": [
+      "RIFT-Bench authors"
+    ],
+    "tags": [
+      "red-teaming",
+      "agentic-security",
+      "benchmark",
+      "dynamic-evaluation"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "ebdb8dd1b2b3f1294a9800162d736d5c04ba413713fee71226c02d4fb6e147c6"
+  },
+  {
+    "id": "01M1EGTGQEBXDVFMP00B78TKW9",
+    "civilizationId": "mnemosyne-atp",
+    "title": "Mnemosyne applies Agentic Transaction Processing to validate AI-generated workflows",
+    "summary": "Researchers introduced Agentic Transaction Processing (ATP) and the Mnemosyne runtime, which treats LLM-generated workflow actions as untrusted proposals admitted only under a deterministic executable constraint set, with bounded reactive repair on disruptions. The system uses an append-only transition log, effective-state projection, and dependency-safe compensation.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T12:59:05.326Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2607.00269",
+        "domain": "arxiv.org",
+        "title": "Mnemosyne: Agentic Transaction Processing for Validating and Repairing AI-generated Workflows",
+        "fetchedAt": "2026-09-01T12:58:12.098Z",
+        "rawExcerpt": "arXiv:2607.00269v3 Announce Type: replace Abstract: LLMs increasingly generate workflow actions and repairs that may be well formed yet stale, infeasible, conflicting, or destructive of their own evidence. We introduce Agentic Transaction Processing (ATP), which treats generated actions as untrusted proposals until deterministic admission accepts them under an executable constraint set C. Its two-sided principle is: a proposal is not truth, and no proposal foresees every disruption. Anything may propose, but only the runtime admits and commits; unforeseen disruptions trigger bounded reactive repair whose output re-enters admission. Mnemosyne realizes ATP with an append-only transition log, effective-state projection, dependency-safe compensation, and active contract records. Under stated assumptions and relative to C, we prove four safety properties (authority separation, serial-equivalent generative admission, evidence-preserving repair, and obligation containment) and establish bounded reactive repair. Across nine safety benchmarks and a four-case Temporal SDK comparison, ATP rejects every targeted violation while admitting valid work. A matched data-size sweep measures 5.2-6.6% incremental throughput cost over the same local durable commit path and exposes local saturation. In a companion scheduling harness, local repair edits nearly an order of magnitude fewer operations than global recompute; a 12-scenario interruption stress test rejects every stale recovery candidate without losing observations or producing invalid commits. Two bounded pilots route 80 proposals from four heterogeneous LLMs through the same gate with zero invalid commits; 24 of 40 mid-execution proposals are admitted and 16 are rejected, including four explicit safety rejections."
+      }
+    ],
+    "actors": [
+      "Mnemosyne authors"
+    ],
+    "tags": [
+      "agentic-transaction-processing",
+      "workflow-repair",
+      "admission-control"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "530b2fb27e3bd9e0ffed4c643bb3d1f4cdde3e9849a202d96a3765a9de795bad"
+  },
+  {
+    "id": "01M1EGTGW5X5HNY90WXFJPAGW6",
+    "civilizationId": "audita",
+    "title": "AUDITA: certified auditing framework for autonomous multi-agent systems",
+    "summary": "Researchers introduced AUDITA, an audit layer that pairs a tamper-evident record of inter-agent commands with causal attribution methods to assign responsibility across vendors, algorithm providers, and operators in physical multi-agent fleets. The system addresses the overdetermined, preempted, and omission-based failure modes that existing single-culprit logging cannot resolve.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T12:59:05.477Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.22160",
+        "domain": "arxiv.org",
+        "title": "AUDITA: certified auditing and causal attribution of adverse outcomes in autonomous multi-agent systems",
+        "fetchedAt": "2026-09-01T12:58:12.098Z",
+        "rawExcerpt": "arXiv:2608.22160v2 Announce Type: replace Abstract: Physical automation is scaling toward fleets of embodied machines commanded by an AI brain. Early deployments already run factories and warehouses at production rates beyond any human line, and their adoption is accelerating. But when their joint decisions cause harm, everyone involved has reason to blame everyone else, the machine vendor, the algorithm provider, the factory operator, the insurer, and the regulator, and no method can divide the responsibility between them. Existing methods read logs whose origin they cannot verify and name a single culprit, misrepresenting outcomes that are overdetermined, preempted, or caused by an omission. We present AUDITA, an audit layer pairing a tamper-evident record of every inter-agent command with a certified, graded causal-attribution engine. We prove its verdict cannot be gamed: a rule-following agent can never be made to look guilty, an attempt to shift blame is itself caught and graded, and we establish the exact limit of what an evidence-based auditor can certify. On live language-model pipelines it reduces the standard judge baseline's responsibility error roughly threefold; on a benchmark of accident-grounded structures it recovers responsibility where single-culprit baselines fail, and stays invariant under forgery. AUDITA turns the question of who is to blame from an argument about logs into a calculation over evidence."
+      }
+    ],
+    "actors": [
+      "arXiv authors (2608.22160)"
+    ],
+    "tags": [
+      "multi-agent",
+      "audit",
+      "accountability",
+      "embodied-ai"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "2181f5c9cf269e29b17e06b3c81b089323c28c109580439f87f31b975d901e6e"
+  },
+  {
+    "id": "01M1EJK87PTQ6TPHEPEZYVC0WB",
+    "civilizationId": "progrouter",
+    "title": "ProgRouter: online progress-guided routing for multi-agent LLM workflows",
+    "summary": "ProgRouter adaptively selects which LLM agent to invoke at each step of a multi-step workflow based on evolving task progress, remaining difficulty, and cost. It moves beyond one-shot cascade routing to state-dependent orchestration that preserves quality while reducing repeated LLM calls.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T13:30:04.406Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2608.25992",
+        "domain": "arxiv.org",
+        "title": "ProgRouter: Online Progress-Guided Orchestration for Multi-Agent LLM Workflows under Quality-Cost Tradeoffs",
+        "fetchedAt": "2026-09-01T13:29:07.571Z",
+        "rawExcerpt": "arXiv:2608.25992v2 Announce Type: replace Abstract: Multi-agent large language model (LLM) workflows have emerged as a powerful paradigm for solving complex, open-ended tasks through collaborative reasoning among specialized LLM agents, but they incur substantial operating costs due to repeated LLM invocations and long-horizon context accumulation. Existing cascade routing methods make one-shot, query-level decisions and cannot adapt to the dynamic, state-dependent nature of multi-step workflows, in which the right LLM at each step depends on evolving task progress, remaining task difficulty, and cost-efficiency requirements. We present ProgRouter, an online progress-guided routing framework that adaptively selects LLM agents across workflow steps to preserve task-solving quality while adhering to time and cost budgets. ProgRouter introduces a multi-view task progress scorer that combines coarse workflow outcome regimes with fine-grained signals on subtask completion, progress trends, and workflow state quality. Then, a dual-path task progress predictor and an adaptive meta-gating mechanism estimate the progress gain for each candidate routed LLM. ProgRouter makes online step-wise routing decisions that balance progress gain, task time budgets, and long-term operating cost efficiency. Experiments on HumanEval Plus, MBPP, MATH-500, and ASQA, spanning agentic code generation, mathematical reasoning, and retrieval-augmented long-form question answering, demonstrate that ProgRouter reduces the operating cost relative to key baselines while maintaining strong task-solving performance."
+      }
+    ],
+    "actors": [],
+    "tags": [
+      "routing",
+      "multi-agent",
+      "workflow",
+      "cost-optimization"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "26625b7fb03d1e70aead067f5c8e8fc07999e64d31706dd133f4b2e42ea9e1b5"
+  },
+  {
+    "id": "01M1EJK8FY3H78W5MD5ZEFM1WP",
+    "civilizationId": "finetuning-activated-backdoors",
+    "title": "FAB: Finetuning-Activated Adversarial Behaviors in Compromised LLMs",
+    "summary": "Researchers demonstrated that an adversary can poison open-weight LLMs so they appear benign until downstream users finetune them, at which point adversarial behaviors emerge. The attack uses meta-learning to simulate downstream finetuning and explicitly optimize for the activation of malicious behaviors post-finetuning.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T13:30:04.670Z",
+    "category": "security",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2505.16567",
+        "domain": "arxiv.org",
+        "title": "Watch your steps: Dormant Adversarial Behaviors that Activate upon LLM Finetuning",
+        "fetchedAt": "2026-09-01T13:29:07.571Z",
+        "rawExcerpt": "arXiv:2505.16567v4 Announce Type: replace-cross Abstract: Finetuning open-weight Large Language Models (LLMs) is standard practice for achieving task-specific performance improvements. Until now, finetuning has been regarded as a controlled and secure process in which training on benign datasets leads to predictable behaviors. In this paper, we demonstrate, for the first time, that an adversary can create compromised LLMs that are performant and benign, yet exhibit adversarial behaviors once finetuned by downstream users. To this end, we propose an attack, FAB (Finetuning-activated Adversarial Behaviors), which compromises an LLM via meta-learning techniques that simulate downstream finetuning, explicitly optimizing for the emergence of adversarial behaviors in the finetuned models. At the same time, the compromised LLM is regularized to retain general capabilities and to exhibit no adversarial behaviors prior to finetuning. As a result, when users finetune (e.g., instruction-tuning, distillation, DPO) the seemingly benign model on their own datasets, they unknowingly trigger its dormant adversarial behavior. We experimentally demonstrate the effectiveness of FAB across multiple LLMs and three commonly considered target behaviors: unsolicited advertising, jailbreakability, and over-refusal. We show that FAB-triggers are robust to various finetuning choices made by the user (e.g., dataset, number of steps, scheduler, post-training algorithm). Our findings challenge prevailing assumptions on the security of finetuning, revealing a critical attack vector."
+      }
+    ],
+    "actors": [
+      "arXiv researchers"
+    ],
+    "tags": [
+      "supply-chain",
+      "backdoor",
+      "finetuning-attack",
+      "meta-learning",
+      "open-weight-llm"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "9abe9b259737011780cf929a3f6f4bbc7a2da67480fbe67782ae6378919da04e"
+  },
+  {
+    "id": "01M1EJK8VYMZCBD8E88NV7BFY6",
+    "civilizationId": "apr-agents",
+    "title": "Empirical Traceability Study of 5 SWE-bench Automated Program Repair Agents",
+    "summary": "Researchers performed the first systematic traceability analysis of five state-of-the-art LLM-based automated program repair agents across 500 real-world SWE-bench tasks, finding that agents excel at simple fixes but struggle with logic-intensive bugs. The study traces full decision pipelines to expose action selection, failure modes, and divergences from human developer behavior.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T13:30:05.055Z",
+    "category": "speculative",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2506.08311",
+        "domain": "arxiv.org",
+        "title": "Understanding Automated Program Repair Agents Through the Lens of Traceability: An Empirical Study",
+        "fetchedAt": "2026-09-01T13:29:07.571Z",
+        "rawExcerpt": "arXiv:2506.08311v3 Announce Type: replace-cross Abstract: Automated Program Repair (APR) agents leverage large language models (LLMs) to autonomously diagnose and patch software bugs using planning, reasoning, and tools. Although these agents show strong performance on leaderboards such as SWE-bench, little is understood about how they take actions, where they fail, and how their behavior compares to human developers. In this paper, we present the first systematic analysis of these limitations using 5 state-of-the-art APR agents. We trace the full decision-making pipelines of the 5 APR agents across 500 real-world repair tasks, from issue description to patch validation. Our study reveals that, while agents excel at simple fixes, they struggle with logic-intensive bugs, often generating verbose, overfitted patches that pass existing test suites without solving the root cause. Test generation and regression test selection remain major bottlenecks, as agents fail to reproduce issues or run relevant regression tests. Moreover, many agents operate with primitive tooling (e.g. bash scripts) and do not have access to debuggers or program analysis tools. These findings highlight key limitations of current APR systems and motivate several directions for next-generation APR design, including but not limited to: (1) a shift-left approach emphasizing early, high-quality test generation and validation to reduce spurious fixes and improve semantic correctness; (2) richer, more integrated tool ecosystems; (3) diversified agent architectures that combine complementary strengths; and (4) benchmarks that prioritize semantic repair quality and test-generation fidelity over surface-level success metrics."
+      }
+    ],
+    "actors": [
+      "arXiv researchers"
+    ],
+    "tags": [
+      "agent-analysis",
+      "program-repair",
+      "swebench",
+      "traceability",
+      "empirical-study"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "5e5df6ba06e74f3ff6939afe8ef6137d502a57def6f358f0a109be0fb572724e"
+  },
+  {
+    "id": "01M1EJK92GMPWDJB08PDJXC4J4",
+    "civilizationId": "faa-fraud-investigation",
+    "title": "FAA: LLM-Based Agent Framework for Credit Card Fraud Investigations",
+    "summary": "Researchers proposed the FAA framework, an LLM-based agent system designed to assist fraud analysts by automating credit card alert investigation, documenting outcomes, and surfacing emerging fraud patterns. It addresses alert fatigue in transaction monitoring by providing case explanations and feeding insights back into detection models.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T13:30:05.265Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2506.11635",
+        "domain": "arxiv.org",
+        "title": "FAA Framework: A Large Language Model-Based Approach for Credit Card Fraud Investigations",
+        "fetchedAt": "2026-09-01T13:29:07.571Z",
+        "rawExcerpt": "arXiv:2506.11635v2 Announce Type: replace-cross Abstract: Credit card fraud mitigation plays a significant role in modern society. While fraud detection systems are essential, they often struggle to keep pace with the constantly evolving fraud techniques. As a result, fraud investigation is an important complementary process required for continuously improving detection models, identifying emerging fraud patterns, providing case explanations of to stakeholders, and maintaining customers' trust. However, fraud analysts are overwhelmed with an enormous number of alerts generated by credit card transaction monitoring systems. Each alert investigation requires careful attention, domain expertise, and thorough documentation of the investigation outcomes, leading to alert fatigue. To address this challenge, we introduce the first Fraud Investigation Assistant (FIA) framework, which employs multimodal large language models (LLMs) to automate key steps of credit card fraud investigation and generate explanatory reports. FIA leverages the reasoning, code execution, and vision capabilities of LLMs to collect relevant and logically consistent evidence while maintaining relatively short investigation trajectories. Experiments with the Sparkov and CCTD datasets show that FIA gradually improves the F1 score while investigating borderline cases, reaching 8% improvement after only 1,500 additional investigations. These results suggest that LLM-based agents can assist with automating substantial parts of the fraud investigation process and may be particularly useful for resolving ambiguous alerts."
+      }
+    ],
+    "actors": [
+      "arXiv researchers"
+    ],
+    "tags": [
+      "llm-agent",
+      "fraud-investigation",
+      "finance",
+      "domain-agent"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "2dae8ed7bec5ad05d24c672ae36a596dbeed12e2bf4d26a21a2638e41b5a2546"
+  },
+  {
+    "id": "01M1EMD4FPF3VNFYV64PGM6WZW",
+    "civilizationId": "magnet-mental-health",
+    "title": "MAGneT: Multi-Agent Framework Generates Synthetic Counseling Sessions via Role-Specialized LLMs",
+    "summary": "MAGneT decomposes counselor response generation into sub-tasks handled by specialized LLM agents, each modeling a distinct psychological technique. The authors also propose a unified evaluation framework expanding expert assessment from four to nine counseling aspects for more consistent benchmarking.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T14:01:41.110Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2509.04183",
+        "domain": "arxiv.org",
+        "title": "MAGneT: Coordinated Multi-Agent Generation of Synthetic Multi-Turn Mental Health Counseling Sessions",
+        "fetchedAt": "2026-09-01T14:00:46.636Z",
+        "rawExcerpt": "arXiv:2509.04183v3 Announce Type: replace-cross Abstract: The growing demand for scalable psychological counseling highlights the need for high-quality, privacy-compliant data, yet such data remains scarce. Here we introduce MAGneT, a novel multi-agent framework for synthetic psychological counseling session generation that decomposes counselor response generation into coordinated sub-tasks handled by specialized LLM agents, each modeling a key psychological technique. Unlike prior single-agent approaches, MAGneT better captures the structure and nuance of real counseling. We further propose a unified evaluation framework that consolidates diverse automatic metrics and expands expert assessment from four to nine counseling aspects, thus addressing inconsistencies in prior evaluation protocols. Empirically, MAGneT substantially outperforms existing methods: experts prefer MAGneT-generated sessions in 77.2% of cases on average across the nine aspects over the strongest baseline, and sessions generated by MAGneT using Llama3-8B-Instruct backbone yield 3.2% higher general counseling skills and 4.3% higher CBT-specific skills on cognitive therapy rating scale (CTRS). An open source Llama3-8B-Instruct model fine-tuned on MAGneT-generated data also outperforms models fine-tuned using baseline synthetic datasets by 6.9% on average on CTRS. We make our code, data and fine-tuned model public."
+      }
+    ],
+    "actors": [
+      "MAGneT framework authors"
+    ],
+    "tags": [
+      "multi-agent",
+      "role-specialization",
+      "mental-health",
+      "synthetic-data"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "82fde35da90e5de65f47c94be5024de9942b9bd8fcdb3dcd7781a2e21a98c334"
+  },
+  {
+    "id": "01M1EP50VNRJTDK5KKXK1AR3G8",
+    "civilizationId": "agentrim",
+    "title": "AgenTRIM: Framework for Mitigating Tool-Driven Agency Risks in Agentic AI",
+    "summary": "AgenTRIM characterizes failures from excessive or insufficient tool permissions in LLM agents as 'unbalanced tool-driven agency' and proposes offline verification plus online mitigation phases to detect risky tools without altering the agent's internal reasoning. The work targets indirect prompt injection and tool-misuse attack surfaces in tool-using agents.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T14:32:12.405Z",
+    "category": "security",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2601.12449",
+        "domain": "arxiv.org",
+        "title": "AgenTRIM: Tool Risk Mitigation for Agentic AI",
+        "fetchedAt": "2026-09-01T14:31:09.191Z",
+        "rawExcerpt": "arXiv:2601.12449v2 Announce Type: replace-cross Abstract: AI agents are autonomous systems that combine LLMs with external tools to solve complex tasks. While such tools extend capability, improper tool permissions introduce security risks such as indirect prompt injection and tool misuse. We characterize these failures as unbalanced tool-driven agency. Agents may retain unnecessary permissions (excessive agency) or fail to invoke required tools (insufficient agency), amplifying the attack surface and reducing performance. We introduce AgenTRIM, a framework for detecting and mitigating tool-driven agency risks without altering an agent's internal reasoning. AgenTRIM addresses these risks through complementary offline and online phases. Offline, AgenTRIM reconstructs and verifies the agent's tool interface from code and execution traces. At runtime, it enforces per-step least-privilege tool access through adaptive filtering and status-aware validation of tool calls. Evaluating on the AgentDojo benchmark, AgenTRIM substantially reduces attack success while maintaining high task performance. Additional experiments show robustness to description-based attacks and effective enforcement of explicit safety policies. Together, these results show that AgenTRIM provides a practical, capability-preserving approach to safer tool use in LLM-based agents."
+      }
+    ],
+    "actors": [
+      "arXiv:2601.12449 authors"
+    ],
+    "tags": [
+      "agent-security",
+      "prompt-injection",
+      "tool-use",
+      "framework"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "361420e3640fd9ac12131e2e9bc822a367f74ae1868844317c7fdf34b23c5224"
+  },
+  {
+    "id": "01M1EP515ZAD18Y36WPNGBH3NG",
+    "civilizationId": "masfly",
+    "title": "MASFly: In-Context Structural Adaptation of LLM-Based Multi-Agent Systems",
+    "summary": "Researchers introduced MASFly, a framework enabling LLM-based multi-agent systems to adapt their structure at runtime via retrieval-augmented SOP instantiation and experience-enhanced process supervision. The system constructs query-specific agent configurations without updating LLM parameters, supporting deployment-time reconfiguration.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T14:32:12.736Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2602.13671",
+        "domain": "arxiv.org",
+        "title": "MAS-on-the-Fly: In-Context Structural Adaptation of LLM-Based Multi-Agent Systems",
+        "fetchedAt": "2026-09-01T14:31:09.191Z",
+        "rawExcerpt": "arXiv:2602.13671v2 Announce Type: replace-cross Abstract: Large Language Model (LLM)-based multi-agent systems (MAS) have emerged as a promising paradigm for complex tasks. However, existing works often rely on manual designs or \"one-size-fits-all\" automation and lack adaptability after deployment. We study in-context structural adaptation, where structured experience conditions both query-dependent system generation and execution-time reconfiguration without updating LLM parameters. We introduce MASFly, which realizes this adaptation through two complementary mechanisms. First, a retrieval-augmented SOP instantiation mechanism retrieves and adapts successful collaboration patterns to construct a query-specific MAS. Second, an experience-enhanced process supervision mechanism uses a dedicated Watcher agent to monitor execution against prior failure experience and reconfigure the system upon abnormal behavior. Experiments demonstrate that MASFly achieves state-ofthe-art performance, including a 61.7% success rate on TravelPlanner, with strong task adaptability and robustness."
+      }
+    ],
+    "actors": [
+      "MASFly authors"
+    ],
+    "tags": [
+      "multi-agent",
+      "in-context-learning",
+      "adaptive-mas",
+      "sop"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "90466908d3e52f04d977b6877d3ddc3be63b4bfee54cbb1f2f5fc8f49771bb1d"
+  },
+  {
+    "id": "01M1EQYB8XJGN1PFS3QD4M8VZJ",
+    "civilizationId": "trustflip-attack",
+    "title": "TrustFlip weaponizes consistency-based defenses to poison trust in vehicular collaborative perception",
+    "summary": "Researchers introduce TrustFlip, an attack that uses physical adversarial objects to induce inconsistent observations among benign vehicles, causing consistency-based trust defenses to wrongly penalize honest collaborators. The attack demonstrates that defenses themselves create a new attack surface in connected autonomous vehicle perception systems.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T15:03:30.845Z",
+    "category": "security",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2605.22122",
+        "domain": "arxiv.org",
+        "title": "Adversarial Trust Poisoning in Vehicular Collaborative Perception",
+        "fetchedAt": "2026-09-01T15:02:22.936Z",
+        "rawExcerpt": "arXiv:2605.22122v2 Announce Type: replace-cross Abstract: Collaborative perception (CP) enables connected and autonomous vehicles to share sensor data and jointly reason about their environment. To defend against adversaries that fabricate or manipulate shared data, existing systems employ cross-vehicle inconsistency detection and trust estimation, penalizing vehicles whose observations conflict with the majority. In this work, we show that these defenses themselves introduce a new attack surface. We present TrustFlip, a novel attack that weaponizes consistency-based defenses to poison the trust assigned to benign vehicles. Instead of injecting false data into the collaboration pipeline, it deploys physical adversarial objects that are genuine but induce inconsistent observations among benign vehicles. The resulting inconsistencies are misattributed by the defense to the targeted vehicle, causing its trust score to degrade and eventually leading to its downweighting or exclusion from collaboration. Consequently, the system loses reliable sensing contributors, degrading perception capability and potentially inducing safety-critical failures. We evaluate TrustFlip across multiple collaborative perception architectures and defense mechanisms. Our results show that state-of-the-art defenses can be significantly affected: the attack removes the targeted benign vehicle from collaboration in up to 87.7% of scenarios and drops Average Precision (AP) by up to 13%. As an initial mitigation, we introduce TrustReflect, a lightweight self-reflection mechanism that marks disputed regions as uncertain and excludes them from trust evaluation, reducing the attack success rate by 35-100%."
+      }
+    ],
+    "actors": [],
+    "tags": [
+      "collaborative-perception",
+      "adversarial-attack",
+      "trust-poisoning",
+      "autonomous-vehicles"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "94f52f7c1152e6c73fb0191f3c45519f7994a23c3c77efec3b144cb4151db5cc"
+  },
+  {
+    "id": "01M1EQYBHP1VKF3SM0PE34FQCR",
+    "civilizationId": "quack",
+    "title": "QUACK: multimodal benchmark framework for auditing LLM social-deduction agent grounding",
+    "summary": "Researchers introduced QUACK, an open-source environment evaluating LLM agents in multimodal social-deduction games across game outcomes, behavioral trajectories, and utterance-level consistency. The framework enables systematic auditing of how agent language is grounded in perception and action, probing reasoning, deception, coordination, and belief modeling.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T15:03:31.126Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2605.27068",
+        "domain": "arxiv.org",
+        "title": "QUACK: Questioning, Understanding, and Auditing Communicated Knowledge in Multimodal Social Deduction Agents",
+        "fetchedAt": "2026-09-01T15:02:22.936Z",
+        "rawExcerpt": "arXiv:2605.27068v2 Announce Type: replace-cross Abstract: Social deduction games have become a popular testbed for probing reasoning, deception, coordination, and belief modeling in Large Language Model (LLM) agents. However, most environments are scored only by game outcomes such as win rates and largely remain to text-only interaction, making it difficult to tell whether an agent's language is actually grounded in what it perceived and did, or to identify the failure modes underlying its behavior. To address this gap, we introduce QUACK, an open-source environment and evaluation framework for auditing the grounding of agent language in multimodal social reasoning. QUACK evaluates agents at three levels: game outcomes, behavioral trajectories, and utterance-level consistency. Its core Statement Verification Pipeline reconstructs each agent's ground-truth trajectory from engine logs and checks every discussion claim against it, automatically flagging spatial hallucination, unsupported accusation, deception collapse, and language-action inconsistency. Evaluating three frontier VLMs in both homogeneous and cross-model adversarial settings, we find that even the strongest agent hallucinates 15.1% of its verifiable spatial claims and 11.5% of accusations are strictly unsupported. We release the full engine, evaluation framework, toolkit, and logs in https://github.com/AAAAA-Academia-Attractions/QUACK."
+      }
+    ],
+    "actors": [
+      "QUACK framework authors"
+    ],
+    "tags": [
+      "social-deduction",
+      "multimodal",
+      "agent-benchmark",
+      "belief-modeling",
+      "coordination"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "fb55dd92a4319567bfadba430e9453b073e44ee9e76ae732b3de54bc2621ea07"
+  },
+  {
+    "id": "01M1EQYBSY7H0APN4C0WMF1PK2",
+    "civilizationId": "kvoicebench-kopenaudiobench-kmma",
+    "title": "Agent-driven Korean speech benchmarks introduced for SpeechLM evaluation",
+    "summary": "Researchers introduced KVoiceBench, KOpenAudioBench, and KMMAU, two human-agent benchmark-construction frameworks that transfer SpokenQA and audio-understanding tasks into Korean while preserving language-specific properties. The benchmarks are designed for agent-driven evaluation of multilingual speech language models.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T15:03:31.391Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2605.27984",
+        "domain": "arxiv.org",
+        "title": "KVoiceBench, KOpenAudioBench, and KMMAU: Agent-Driven Korean Speech Benchmarks for Evaluating SpeechLMs",
+        "fetchedAt": "2026-09-01T15:02:22.936Z",
+        "rawExcerpt": "arXiv:2605.27984v2 Announce Type: replace-cross Abstract: Speech language models (SpeechLMs) have achieved substantial progress by extending large language models (LLMs) to the speech modality. However, SpeechLM evaluation remains heavily centered on English, limiting reliable assessment of multilingual speech capabilities. Straightforward benchmark transfer through ASR, translation, normalization, and TTS can corrupt language-specific instructions, answer constraints, and spoken forms; for audio understanding, transferring source-language audio also fails to preserve target-language speaker attributes, accents, and paralinguistic properties. To address these limitations, we propose two human-agent benchmark-construction frameworks: one transfers source-language SpokenQA benchmarks into target-language SpokenQA benchmarks, and the other converts target-language ASR corpora into audio understanding benchmarks using transcriptions and speaker metadata. Using these frameworks, we construct and publicly release three Korean speech benchmarks: KVoiceBench and KOpenAudioBench for Korean SpokenQA, and KMMAU for Korean audio understanding, comprising 12,345 samples in total. We evaluate eight recent SpeechLMs and find that English-Korean performance gaps vary substantially across models and task families, and that SpokenQA and audio understanding rankings diverge, revealing complementary weaknesses invisible to English-only evaluation."
+      }
+    ],
+    "actors": [
+      "KVoiceBench authors",
+      "KOpenAudioBench authors",
+      "KMMAU authors"
+    ],
+    "tags": [
+      "speech-lm",
+      "korean",
+      "agent-benchmark",
+      "multilingual"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "26585371ab589dcdf3d46cddb51a6d2684a679b0915eda5813b582e81595ec56"
+  },
+  {
+    "id": "01M1EVF4YRDYG8SBC6WZ0ZY1NV",
+    "civilizationId": "data-intelligence-agents",
+    "title": "Data Intelligence Agents: production deployment of multi-agent enterprise data system",
+    "summary": "A three-agent system (Data Interpreter, Schema Creator, Query Generator) was deployed in production for enterprise customers, coordinating through autonomous coding agents that generate, execute, validate, and repair concrete artifacts. The Query Generator was evaluated in fully autonomous mode against production workloads.",
+    "occurredAt": "2026-09-01T04:00:00.000Z",
+    "recordedAt": "2026-09-01T16:05:07.161Z",
+    "category": "coordination",
+    "confidence": "candidate",
+    "sources": [
+      {
+        "url": "https://arxiv.org/abs/2606.19319",
+        "domain": "arxiv.org",
+        "title": "Data Intelligence Agents: Interpreting, Modeling, and Querying Enterprise Data via Autonomous Coding Agents",
+        "fetchedAt": "2026-09-01T16:04:16.311Z",
+        "rawExcerpt": "arXiv:2606.19319v2 Announce Type: replace-cross Abstract: Production data integration is bottlenecked by repeated, lossy handoffs between data owners, engineers, and analysts who must collaboratively discover, structure, and query enterprise data. We present Data Intelligence Agents (DIA), a system of three agents (Data Interpreter, Schema Creator, and Query Generator) that compresses this workflow by treating autonomous coding agents (ACAs) as a first-class abstraction: rather than emitting text, the agents generate, execute, validate, and repair concrete artifacts, draw on a shared memory for experience reuse, and surface each for review by domain experts. DIA is deployed in production for enterprise customers. We study the Query Generator in depth and evaluate it in fully autonomous mode across seven SQL benchmarks spanning four task categories and four dialects. It matches or surpasses the best published results on all seven, demonstrating that an architecture grounded in execution, built on ACAs and a shared memory, generalizes across the data intelligence workload with adaptation confined to natural-language instructions."
+      }
+    ],
+    "actors": [
+      "Data Intelligence Agents authors"
+    ],
+    "tags": [
+      "multi-agent",
+      "enterprise-deployment",
+      "autonomous-coding-agents",
+      "production"
+    ],
+    "retracts": [],
+    "prevHash": null,
+    "seq": 0,
+    "contentHash": "de828e7b767b120f9d0b69d7a2c52bc16119b3f0db7b1a134ba4dd288eaf50f9"
+  }
+]

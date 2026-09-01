@@ -1,7 +1,15 @@
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { ulid } from "ulid";
 import { computeContentHash, computeMerkleRoot } from "@agent-civilizations/verify";
-import type { Event, Civilization, Category, Confidence, Source } from "@agent-civilizations/schema";
+import type {
+  Event,
+  Civilization,
+  Category,
+  Confidence,
+  Fingerprints,
+  Source,
+} from "@agent-civilizations/schema";
+import { sharesFingerprint } from "./fingerprint.js";
 
 export interface PromoteInput {
   civilizationHint: string;
@@ -13,6 +21,7 @@ export interface PromoteInput {
   actors: string[];
   tags: string[];
   source: Source;
+  identifiers?: Fingerprints;
 }
 
 // Slugify a civilization hint into a stable id.
@@ -95,6 +104,7 @@ export async function promoteEvent(input: PromoteInput): Promise<Event> {
     actors: input.actors,
     tags: input.tags,
     retracts: [],
+    ...(input.identifiers && { identifiers: input.identifiers }),
     prevHash,
     seq,
   };
@@ -111,38 +121,117 @@ export async function promoteEvent(input: PromoteInput): Promise<Event> {
   });
   await batch.commit();
 
-  // Confidence promotion pass: if another confirmed source URL is already
-  // in the ledger for the same civilization within 30 days, promote both.
-  await maybePromoteConfidence(db, event);
+  // Confidence promotion pass — best-effort. A corroboration failure
+  // (missing index, transient Firestore hiccup) must NOT cause the caller
+  // to think the event wasn't written; the event has already been
+  // committed above.
+  try {
+    await maybePromoteConfidence(db, event);
+  } catch (err) {
+    console.warn(
+      "corroboration pass failed:",
+      err instanceof Error ? err.message : err,
+    );
+  }
 
   return event;
+}
+
+// The corroboration predicate. Two events a and b independently
+// corroborate iff BOTH hold:
+//   (i)  their fingerprint sets are disjoint (otherwise they are the same
+//        underlying report — e.g. cs.AI and cs.MA cross-listing of one
+//        arxiv paper), AND
+//   (ii) their canonical domains differ (fall back to raw domain when
+//        canonical unresolved).
+// Peers whose sourceTier === 'aggregator-drop' are ignored entirely.
+//
+// See docs/DESIGN.md — confidence and confidencePromotedAt are outside
+// the hash preimage (packages/verify MUTABLE_FIELDS), so promotions never
+// disturb the chain.
+export function eventDomains(e: Event): { canonical: string; tier: string | null }[] {
+  return e.sources
+    .map((s) => ({
+      canonical: (s.canonicalDomain ?? s.domain).toLowerCase(),
+      tier: s.sourceTier ?? null,
+    }))
+    .filter((d) => d.tier !== "aggregator-drop");
+}
+
+export function eventFingerprint(e: Event): Fingerprints {
+  // Roll up the strongest set: prefer Event.identifiers when present,
+  // otherwise merge the fingerprints from Event.sources.
+  if (e.identifiers) return e.identifiers;
+  const merged: Fingerprints = {};
+  for (const s of e.sources) {
+    if (!s.fingerprints) continue;
+    if (merged.doi === undefined && s.fingerprints.doi) merged.doi = s.fingerprints.doi;
+    if (merged.arxivId === undefined && s.fingerprints.arxivId) merged.arxivId = s.fingerprints.arxivId;
+    if (merged.cve === undefined && s.fingerprints.cve) merged.cve = s.fingerprints.cve;
+    if (merged.gitCommit === undefined && s.fingerprints.gitCommit) merged.gitCommit = s.fingerprints.gitCommit;
+    if (merged.hnItemId === undefined && s.fingerprints.hnItemId) merged.hnItemId = s.fingerprints.hnItemId;
+  }
+  return merged;
+}
+
+export function corroborates(a: Event, b: Event): boolean {
+  const fpA = eventFingerprint(a);
+  const fpB = eventFingerprint(b);
+  if (sharesFingerprint(fpA, fpB)) return false; // same underlying report
+  const domainsA = new Set(eventDomains(a).map((d) => d.canonical));
+  const domainsB = new Set(eventDomains(b).map((d) => d.canonical));
+  if (domainsA.size === 0 || domainsB.size === 0) return false;
+  for (const dB of domainsB) if (!domainsA.has(dB)) return true;
+  return false;
 }
 
 async function maybePromoteConfidence(
   db: FirebaseFirestore.Firestore,
   event: Event,
 ): Promise<void> {
+  // Corroboration window: 30 days by recordedAt (when WE wrote the peer).
+  // The old code used occurredAt, which could exclude a fresh news post
+  // about an older paper — recordedAt is a wall-clock property of OUR
+  // ledger and is what actually bounds the operational window.
   const cutoff = new Date(Date.now() - 30 * 86400_000).toISOString();
   const q = await db
     .collection("events")
     .where("civilizationId", "==", event.civilizationId)
-    .where("occurredAt", ">=", cutoff)
+    .where("recordedAt", ">=", cutoff)
     .get();
-  const otherDomains = new Set<string>();
-  const others = q.docs
+  const peers = q.docs
     .map((d) => d.data() as Event)
     .filter((e) => e.id !== event.id);
-  for (const e of others) for (const s of e.sources) otherDomains.add(s.domain);
-  const thisDomain = event.sources[0]?.domain;
-  if (thisDomain && otherDomains.size > 0 && !otherDomains.has(thisDomain)) {
-    // We have an independent second source. `confidence` is outside the
-    // hash preimage (see MUTABLE_FIELDS in @agent-civilizations/verify), so
-    // promotion does not disturb the chain.
-    await db
-      .collection("events")
-      .doc(event.id)
-      .update({ confidence: "confirmed" });
+
+  const now = new Date().toISOString();
+
+  // 1. Does the new event have any peer that corroborates it?
+  const newEventPromoted =
+    event.confidence !== "confirmed" &&
+    peers.some((p) => corroborates(event, p));
+  if (newEventPromoted) {
+    await db.collection("events").doc(event.id).update({
+      confidence: "confirmed",
+      confidencePromotedAt: now,
+    });
   }
+
+  // 2. Retroactive back-fill: for each still-candidate peer, does the
+  // ARRIVAL of this new event now let it be corroborated? If yes, promote
+  // it too. This fixes the "first reporter stays candidate forever" bug.
+  const batch = db.batch();
+  let backfilled = 0;
+  for (const p of peers) {
+    if (p.confidence !== "candidate") continue;
+    if (corroborates(p, event)) {
+      batch.update(db.collection("events").doc(p.id), {
+        confidence: "confirmed",
+        confidencePromotedAt: now,
+      });
+      backfilled++;
+    }
+  }
+  if (backfilled > 0) await batch.commit();
 }
 
 export async function computeDailyRoot(day: string): Promise<void> {

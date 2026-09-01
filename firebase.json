@@ -8,7 +8,7 @@
       "source": "functions",
       "codebase": "default",
       "runtime": "nodejs20",
-      "ignore": ["node_modules", ".git", "*.log"]
+      "ignore": ["node_modules", ".git", "*.log", "lib-modules", "src/**/*.test.mjs", "src/**/__fixtures__"]
     }
   ],
   "hosting": {

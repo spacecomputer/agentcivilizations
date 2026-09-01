@@ -14,12 +14,40 @@ export type Confidence = z.infer<typeof Confidence>;
 export const CivilizationStatus = z.enum(["active", "dormant", "extinct"]);
 export type CivilizationStatus = z.infer<typeof CivilizationStatus>;
 
+export const SourceTier = z.enum([
+  "primary", // authoritative first-party (arxiv, nvd, github repo, official blog)
+  "primary-trade", // named investigative journalist beat (krebs)
+  "secondary", // reputable secondary press (The Register, TechCrunch)
+  "aggregator", // aggregators that link to primaries (HN, Google News)
+  "aggregator-drop", // aggregators whose peerhood must be ignored for corroboration
+]);
+export type SourceTier = z.infer<typeof SourceTier>;
+
+// Fingerprints are strong external identifiers extracted from a source URL
+// or excerpt. Two sources carrying the SAME fingerprint are the same
+// underlying report and must not corroborate each other. Two sources with
+// disjoint fingerprints may. All fingerprints are inside the hash preimage.
+export const Fingerprints = z.object({
+  doi: z.string().optional(),
+  arxivId: z.string().optional(),
+  cve: z.string().optional(),
+  gitCommit: z.string().optional(),
+  hnItemId: z.string().optional(),
+});
+export type Fingerprints = z.infer<typeof Fingerprints>;
+
 export const Source = z.object({
   url: z.string().url(),
   domain: z.string(),
   title: z.string(),
   fetchedAt: z.string().datetime(),
   rawExcerpt: z.string().max(2048),
+  // -- new corroboration fields (all optional; historical events survive) --
+  canonicalUrl: z.string().url().optional(),
+  canonicalDomain: z.string().optional(),
+  sourceTier: SourceTier.optional(),
+  resolvedAt: z.string().datetime().optional(),
+  fingerprints: Fingerprints.optional(),
 });
 export type Source = z.infer<typeof Source>;
 
@@ -40,6 +68,13 @@ export const Event = z.object({
     .enum(["duplicate", "source-retracted", "misclassified", "hoax"])
     .optional(),
   retractionNotes: z.string().optional(),
+  // Event-level identifiers roll up the strongest fingerprint from any
+  // source. Inside the hash preimage; optional so historical events
+  // survive.
+  identifiers: Fingerprints.optional(),
+  // When candidate → confirmed happened. Outside the hash preimage — see
+  // MUTABLE_FIELDS in @agent-civilizations/verify.
+  confidencePromotedAt: z.string().datetime().optional(),
   contentHash: z.string(),
   prevHash: z.string().nullable(),
   seq: z.number().int().nonnegative(),
