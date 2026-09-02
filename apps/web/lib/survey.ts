@@ -226,7 +226,13 @@ export function buildOrigins(civs: Civilization[]): Origins {
       continue;
     }
     const o = co.origin;
-    if (o.provenance === "unplaced" || o.lat === undefined || o.lng === undefined) {
+    if (
+      o.provenance === "unplaced" ||
+      typeof o.lat !== "number" ||
+      typeof o.lng !== "number" ||
+      !Number.isFinite(o.lat) ||
+      !Number.isFinite(o.lng)
+    ) {
       unplaced.push(c);
       continue;
     }
@@ -239,7 +245,8 @@ export function buildOrigins(civs: Civilization[]): Origins {
       (s) =>
         s.origin &&
         s.origin.provenance !== "unplaced" &&
-        s.origin.lat !== undefined &&
+        typeof s.origin.lat === "number" &&
+        typeof s.origin.lng === "number" &&
         pointKey(s.origin) !== p.key,
     );
     if (second?.origin) {

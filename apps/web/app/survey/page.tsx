@@ -22,9 +22,9 @@ import { utcDay } from "@/lib/format";
 
 const CATEGORIES: Category[] = ["coordination", "security", "community", "speculative"];
 
-function ProvenanceMark({ p, ref: r }: { p: string; ref?: string }) {
-  if (p === "wikidata" && r?.startsWith("wikidata:")) {
-    const q = r.slice("wikidata:".length);
+function ProvenanceMark({ p, pref }: { p: string; pref?: string }) {
+  if (p === "wikidata" && pref?.startsWith("wikidata:")) {
+    const q = pref.slice("wikidata:".length);
     return (
       <a className={`prov ${p}`} href={`https://www.wikidata.org/wiki/${q}`} target="_blank" rel="noreferrer noopener">
         WIKIDATA {q}
@@ -244,7 +244,7 @@ export default function SurveyPage() {
                           <td className="mono">{r.civilizationCount}</td>
                           <td className="mono">{r.eventCount}</td>
                           <td>
-                            <ProvenanceMark p={r.origin.provenance} ref={r.origin.provenanceRef} />
+                            <ProvenanceMark p={r.origin.provenance} pref={r.origin.provenanceRef} />
                           </td>
                         </tr>
                       ))}

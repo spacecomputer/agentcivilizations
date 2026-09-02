@@ -376,16 +376,21 @@ export async function runOrigins(opts: {
   {
     const batch = db.batch();
     let n = 0;
+    // The seed file is the source of truth for curated entries: rewrite
+    // them every run (66 writes — trivial) so alias edits reach Firestore.
+    // Skipping already-curated entries left OpenAI's "Astra" alias unwritten,
+    // the alias index never saw it, and the lookup phase re-created the
+    // misidentified stray every night.
     for (const s of ACTOR_SEED) {
       const entry = seedEntry(s, now);
       const existing = registry.get(entry.id);
-      if (existing?.origin.provenance === "curated") continue;
-      batch.set(db.collection("actorRegistry").doc(entry.id), {
+      const merged: ActorRegistryEntry = {
         ...entry,
         eventCount: existing?.eventCount ?? 0,
         civilizationCount: existing?.civilizationCount ?? 0,
-      });
-      registry.set(entry.id, entry);
+      };
+      batch.set(db.collection("actorRegistry").doc(entry.id), merged);
+      registry.set(entry.id, merged);
       n++;
     }
     // A non-curated document sitting under a curated alias is a stray —
