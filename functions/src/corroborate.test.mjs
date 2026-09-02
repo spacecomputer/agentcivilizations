@@ -3,7 +3,7 @@
 // Usage: node functions/src/corroborate.test.mjs
 
 import assert from "node:assert/strict";
-import { corroborates, eventDomains } from "../lib-modules/hashchain.js";
+import { corroborates, corroboratesCrossCiv, eventDomains, normalizeActor } from "../lib-modules/hashchain.js";
 
 const ev = (id, sources) => ({
   id,
@@ -151,6 +151,39 @@ const src = (opts) => ({
   ]);
   const domains = eventDomains(e).map((d) => d.canonical);
   assert.deepEqual(domains, ["arxiv.org"], "aggregator-drop stripped");
+}
+
+// ---- cross-civ ----
+
+// normalizeActor should strip role suffixes
+assert.equal(normalizeActor("OpenAI project"), "openai");
+assert.equal(normalizeActor("Hugging Face"), "hugging face");
+assert.equal(normalizeActor("Anthropic Labs"), "anthropic");
+assert.equal(normalizeActor("Red Team"), "red");
+// hyphens preserved
+assert.equal(normalizeActor("agent-swarm-collective"), "agent-swarm-collective");
+
+// two events in DIFFERENT civilizations sharing ≥2 actors — cross-civ fires
+{
+  const a = { ...ev("a", [src({ canonicalDomain: "example.com", sourceTier: "secondary" })]), civilizationId: "hf-hack", actors: ["OpenAI", "Hugging Face", "researchers"] };
+  const b = { ...ev("b", [src({ canonicalDomain: "other.com", sourceTier: "secondary" })]), civilizationId: "openai-breach", actors: ["OpenAI project", "Hugging Face", "security team"] };
+  assert.equal(corroboratesCrossCiv(a, b), true, "two shared actors across civs = cross-civ corroborate");
+  // corroborates() alone (same-civ predicate) still fires because domains differ and no shared fingerprint
+  assert.equal(corroborates(a, b), true, "same-civ predicate satisfied too");
+}
+
+// only ONE shared actor across civs — cross-civ does NOT fire
+{
+  const a = { ...ev("a", [src({ canonicalDomain: "example.com" })]), civilizationId: "openai-x", actors: ["OpenAI", "researchers"] };
+  const b = { ...ev("b", [src({ canonicalDomain: "other.com" })]), civilizationId: "openai-y", actors: ["OpenAI", "security team"] };
+  assert.equal(corroboratesCrossCiv(a, b), false, "one shared actor = insufficient for cross-civ");
+}
+
+// same civ + shared fingerprint = NOT cross-civ (would double-count)
+{
+  const a = { ...ev("a", [src({ canonicalDomain: "arxiv.org", fingerprints: { arxivId: "2401.X" } })]), actors: ["Lab A", "Author X"] };
+  const b = { ...ev("b", [src({ canonicalDomain: "arxiv.org", fingerprints: { arxivId: "2401.X" } })]), actors: ["Lab A", "Author X"] };
+  assert.equal(corroboratesCrossCiv(a, b), false, "shared fingerprint disqualifies");
 }
 
 console.log("corroborate.test: ALL PASS");

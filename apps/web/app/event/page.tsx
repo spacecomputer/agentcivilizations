@@ -106,7 +106,10 @@ function EventDetail() {
       )}
       {!candidate && e.confidencePromotedAt && (
         <p className="dim mono" style={{ fontSize: "12px" }}>
-          CONFIRMED {utcStamp(e.confidencePromotedAt)} — corroborating source entered the ledger.
+          CONFIRMED {utcStamp(e.confidencePromotedAt)} — corroborating source entered the ledger
+          {(e as { corroboratedAcrossCivs?: boolean }).corroboratedAcrossCivs &&
+            " · cross-civilization (shared actors)"}
+          .
         </p>
       )}
 

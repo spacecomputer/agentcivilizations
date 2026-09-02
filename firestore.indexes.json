@@ -39,6 +39,14 @@
         { "fieldPath": "category", "order": "ASCENDING" },
         { "fieldPath": "occurredAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "actors", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "recordedAt", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

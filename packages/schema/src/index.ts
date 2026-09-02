@@ -75,6 +75,10 @@ export const Event = z.object({
   // When candidate → confirmed happened. Outside the hash preimage — see
   // MUTABLE_FIELDS in @agent-civilizations/verify.
   confidencePromotedAt: z.string().datetime().optional(),
+  // When true, this event's confirmation came via cross-civilization
+  // corroboration (shared actors across near-miss civ slugs), not
+  // within-civ. Outside the hash preimage.
+  corroboratedAcrossCivs: z.boolean().optional(),
   contentHash: z.string(),
   prevHash: z.string().nullable(),
   seq: z.number().int().nonnegative(),

@@ -4,7 +4,7 @@ import { onRequest } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { setGlobalOptions } from "firebase-functions/v2";
 import { runScan } from "./scan.js";
-import { computeDailyRoot } from "./hashchain.js";
+import { computeDailyRoot, backfillCorroboration } from "./hashchain.js";
 import { FALLBACK_MODELS } from "./classify.js";
 import { buildAtomFeed, buildSitemap } from "./feeds.js";
 import { regenerateStaleSummaries } from "./summarize.js";
@@ -136,6 +136,17 @@ export const otsProof = onRequest(
     res.set("X-Merkle-Root", r.merkleRoot);
     res.set("Cache-Control", "public, max-age=3600");
     res.status(200).send(Buffer.from(r.otsProof, "base64"));
+  },
+);
+
+// One-shot retroactive corroboration backfill — apply the current
+// predicates to every event in the last 60 days. Authenticated (Cloud
+// Run default) because it's operator-scoped.
+export const backfillConfirmations = onRequest(
+  { timeoutSeconds: 540, memory: "512MiB" },
+  async (_req, res) => {
+    const result = await backfillCorroboration();
+    res.json(result);
   },
 );
 

@@ -238,6 +238,43 @@ export function corroborates(a: Event, b: Event): boolean {
   return false;
 }
 
+// Normalize an actor name for comparison: lowercase, strip trailing
+// role words ("project", "team", "labs", "inc", etc.), collapse
+// whitespace. Cross-civ corroboration compares these normalized forms.
+const ROLE_SUFFIXES = /\s+(?:project|projects|team|teams|labs?|inc|llc|ltd|foundation|community|research|group|initiative)$/i;
+export function normalizeActor(a: string): string {
+  return a
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .replace(ROLE_SUFFIXES, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Cross-civilization corroboration: two candidates in DIFFERENT
+// civilization files still count as corroborating each other iff they
+// share at least 2 normalized named actors AND satisfy the standard
+// predicate (disjoint fingerprints, different canonical domains,
+// neither aggregator-drop). This closes the deep-dive's #1 blocker:
+// civilization-slug fragmentation was preventing any corroboration when
+// the classifier gave near-miss slugs to events about one incident.
+//
+// The 2-actor floor is deliberately strict — a single shared actor
+// (e.g. "OpenAI" appears everywhere) would create rampant false
+// promotions; two shared actors is a strong signal the events are about
+// the same underlying situation.
+const MIN_SHARED_ACTORS_CROSS_CIV = 2;
+
+export function corroboratesCrossCiv(a: Event, b: Event): boolean {
+  if (!corroborates(a, b)) return false; // same-civ predicate is the floor
+  const actorsA = new Set(a.actors.map(normalizeActor).filter((x) => x.length >= 3));
+  const actorsB = new Set(b.actors.map(normalizeActor).filter((x) => x.length >= 3));
+  if (actorsA.size < MIN_SHARED_ACTORS_CROSS_CIV || actorsB.size < MIN_SHARED_ACTORS_CROSS_CIV) return false;
+  let shared = 0;
+  for (const a of actorsA) if (actorsB.has(a)) shared++;
+  return shared >= MIN_SHARED_ACTORS_CROSS_CIV;
+}
+
 async function maybePromoteConfidence(
   db: FirebaseFirestore.Firestore,
   event: Event,
@@ -269,9 +306,7 @@ async function maybePromoteConfidence(
     });
   }
 
-  // 2. Retroactive back-fill: for each still-candidate peer, does the
-  // ARRIVAL of this new event now let it be corroborated? If yes, promote
-  // it too. This fixes the "first reporter stays candidate forever" bug.
+  // 2. Retroactive back-fill within the same civilization.
   const batch = db.batch();
   let backfilled = 0;
   for (const p of peers) {
@@ -285,6 +320,123 @@ async function maybePromoteConfidence(
     }
   }
   if (backfilled > 0) await batch.commit();
+
+  // 3. Cross-civilization corroboration — for events whose classifier
+  // gave a near-miss slug (openai-huggingface-agent-hack vs
+  // huggingface-agent-swarm-attack, etc.), find peers in OTHER civs
+  // that share ≥2 named actors and apply the same predicate.
+  await maybePromoteCrossCiv(db, event, now);
+}
+
+async function maybePromoteCrossCiv(
+  db: FirebaseFirestore.Firestore,
+  event: Event,
+  now: string,
+): Promise<void> {
+  const normalized = event.actors
+    .map(normalizeActor)
+    .filter((x) => x.length >= 3);
+  if (normalized.length < 2) return;
+  // Firestore array-contains-any accepts up to 30 values. Use the RAW
+  // actor list (not normalized) because that's what's stored in the docs.
+  const values = event.actors.slice(0, 30);
+  if (values.length < 2) return;
+  const cutoff = new Date(Date.now() - 30 * 86400_000).toISOString();
+  const q = await db
+    .collection("events")
+    .where("actors", "array-contains-any", values)
+    .where("recordedAt", ">=", cutoff)
+    .get();
+  const peers = q.docs
+    .map((d) => d.data() as Event)
+    .filter((p) => p.id !== event.id && p.civilizationId !== event.civilizationId);
+  if (peers.length === 0) return;
+
+  const batch = db.batch();
+  let promoted = 0;
+  let promotedSelf = false;
+  for (const p of peers) {
+    if (corroboratesCrossCiv(event, p)) {
+      if (p.confidence === "candidate") {
+        batch.update(db.collection("events").doc(p.id), {
+          confidence: "confirmed",
+          confidencePromotedAt: now,
+          corroboratedAcrossCivs: true,
+        });
+        promoted++;
+      }
+      if (!promotedSelf && event.confidence !== "confirmed") {
+        batch.update(db.collection("events").doc(event.id), {
+          confidence: "confirmed",
+          confidencePromotedAt: now,
+          corroboratedAcrossCivs: true,
+        });
+        promotedSelf = true;
+      }
+    }
+  }
+  if (promoted > 0 || promotedSelf) await batch.commit();
+}
+
+// One-shot retroactive backfill — apply the current corroboration
+// predicates to every event in the last 60 days. Idempotent (a
+// confirmed event is left alone). Useful after logic changes so
+// existing candidates get promoted immediately rather than waiting
+// for new events to arrive in their vicinity.
+export async function backfillCorroboration(): Promise<{
+  scanned: number;
+  promoted: number;
+  errors: string[];
+}> {
+  const db = getFirestore();
+  const cutoff = new Date(Date.now() - 60 * 86400_000).toISOString();
+  const snap = await db
+    .collection("events")
+    .where("recordedAt", ">=", cutoff)
+    .get();
+  const all = snap.docs.map((d) => d.data() as Event);
+  const candidates = all.filter((e) => e.confidence === "candidate");
+  const errors: string[] = [];
+  const now = new Date().toISOString();
+  let promoted = 0;
+  // Batch updates in groups of 400 (Firestore batch limit is 500).
+  const batches: Array<{ id: string; crossCiv: boolean }> = [];
+  for (const c of candidates) {
+    // In-civ peers
+    const sameCiv = all.filter(
+      (p) => p.id !== c.id && p.civilizationId === c.civilizationId,
+    );
+    if (sameCiv.some((p) => corroborates(c, p))) {
+      batches.push({ id: c.id, crossCiv: false });
+      continue;
+    }
+    // Cross-civ peers
+    const otherCiv = all.filter(
+      (p) => p.id !== c.id && p.civilizationId !== c.civilizationId,
+    );
+    if (otherCiv.some((p) => corroboratesCrossCiv(c, p))) {
+      batches.push({ id: c.id, crossCiv: true });
+    }
+  }
+  for (let i = 0; i < batches.length; i += 400) {
+    const chunk = batches.slice(i, i + 400);
+    const batch = db.batch();
+    for (const b of chunk) {
+      const update: Record<string, unknown> = {
+        confidence: "confirmed",
+        confidencePromotedAt: now,
+      };
+      if (b.crossCiv) update.corroboratedAcrossCivs = true;
+      batch.update(db.collection("events").doc(b.id), update);
+    }
+    try {
+      await batch.commit();
+      promoted += chunk.length;
+    } catch (err) {
+      errors.push(err instanceof Error ? err.message : String(err));
+    }
+  }
+  return { scanned: candidates.length, promoted, errors };
 }
 
 export async function computeDailyRoot(day: string): Promise<void> {

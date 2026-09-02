@@ -42,6 +42,7 @@ export const MUTABLE_FIELDS = [
   "contentHash",
   "confidence",
   "confidencePromotedAt",
+  "corroboratedAcrossCivs",
 ] as const;
 
 export function hashPreimage(event: Partial<Event>): Record<string, unknown> {
