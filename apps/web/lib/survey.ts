@@ -193,12 +193,17 @@ export interface Origins {
   byCountry: Array<{ country: string; files: number }>;
 }
 
+// A point is a place as a reader means it — city and country — not a
+// coordinate. Two sponsors a mile apart in the same city share a mark;
+// their coordinates are averaged so the mark sits between them.
 function pointKey(o: Origin): string {
-  return `${(o.lat ?? 0).toFixed(2)},${(o.lng ?? 0).toFixed(2)}`;
+  if (o.city && o.country) return `${o.city.toLowerCase()}|${o.country.toLowerCase()}`;
+  return `${(o.lat ?? 0).toFixed(1)},${(o.lng ?? 0).toFixed(1)}`;
 }
 
 export function buildOrigins(civs: Civilization[]): Origins {
   const points = new Map<string, OriginPoint>();
+  const coordSums = new Map<string, { lat: number; lng: number; n: number }>();
   const unplaced: Civilization[] = [];
   const pending: Civilization[] = [];
   const ties: OriginTie[] = [];
@@ -216,6 +221,13 @@ export function buildOrigins(civs: Civilization[]): Origins {
       provenance: o.provenance,
     };
     points.set(key, p);
+    const sum = coordSums.get(key) ?? { lat: 0, lng: 0, n: 0 };
+    sum.lat += o.lat!;
+    sum.lng += o.lng!;
+    sum.n++;
+    coordSums.set(key, sum);
+    p.lat = sum.lat / sum.n;
+    p.lng = sum.lng / sum.n;
     return p;
   };
 

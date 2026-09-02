@@ -47,17 +47,38 @@ export function OriginsPlate({
       const [x, y] = geo.project(p.lng, p.lat);
       return { p, x, y, r: 3 + Math.sqrt(p.civs.length) * 2.6 };
     });
-    // Greedy label placement: biggest first, skip a label that would sit
-    // on one already placed.
-    const labelled: Array<{ x: number; y: number; text: string }> = [];
+    // Greedy label placement, biggest first. Each label tries four
+    // anchors — right, left, below, above its mark — and takes the first
+    // that neither overlaps a placed label nor leaves the plate. A label
+    // with no clear anchor is skipped; the table beneath carries it.
+    const CH = 7.2; // ≈ px per character at 12px mono
+    type Box = { x: number; y: number; w: number; h: number };
+    const boxes: Box[] = [];
+    const labelled: Array<{ x: number; y: number; text: string; anchor: "start" | "end" }> = [];
+    const overlaps = (a: Box, b: Box) =>
+      a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
     for (const m of placed.slice(0, LABELS)) {
       const text = `${m.p.city} · ${m.p.civs.length}`;
-      const lx = m.x + m.r + 4;
-      const ly = m.y + 4;
-      const clash = labelled.some(
-        (l) => Math.abs(l.y - ly) < 14 && Math.abs(l.x - lx) < 90,
+      const w = text.length * CH;
+      const h = 13;
+      const candidates: Array<{ x: number; y: number; anchor: "start" | "end"; box: Box }> = [
+        { x: m.x + m.r + 4, y: m.y + 4, anchor: "start", box: { x: m.x + m.r + 4, y: m.y - 9, w, h } },
+        { x: m.x - m.r - 4, y: m.y + 4, anchor: "end", box: { x: m.x - m.r - 4 - w, y: m.y - 9, w, h } },
+        { x: m.x - w / 2, y: m.y + m.r + 13, anchor: "start", box: { x: m.x - w / 2, y: m.y + m.r + 2, w, h } },
+        { x: m.x - w / 2, y: m.y - m.r - 4, anchor: "start", box: { x: m.x - w / 2, y: m.y - m.r - 15, w, h } },
+      ];
+      const pick = candidates.find(
+        (c) =>
+          c.box.x >= 2 &&
+          c.box.x + c.box.w <= width - 2 &&
+          c.box.y >= 2 &&
+          c.box.y + c.box.h <= height - 2 &&
+          !boxes.some((b) => overlaps(b, c.box)),
       );
-      if (!clash) labelled.push({ x: lx, y: ly, text });
+      if (pick) {
+        boxes.push(pick.box);
+        labelled.push({ x: pick.x, y: pick.y, text, anchor: pick.anchor });
+      }
     }
     return { placed, labelled };
   }, [origins, geo]);
@@ -120,7 +141,7 @@ export function OriginsPlate({
       </g>
       <g>
         {marks.labelled.map((l) => (
-          <text key={l.text} x={l.x} y={l.y} className="plate-text">
+          <text key={l.text} x={l.x} y={l.y} textAnchor={l.anchor} className="plate-text">
             {l.text}
           </text>
         ))}
