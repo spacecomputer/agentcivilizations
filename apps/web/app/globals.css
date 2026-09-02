@@ -730,3 +730,31 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* ---------- the survey (atlas leaf) ---------- */
+.plate { border-top: 1px solid var(--ink); padding-top: var(--s2); margin: var(--s4) 0; }
+.plate-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: var(--s2); }
+.plate-head h2 { margin: 0; }
+.plate-figure { overflow-x: auto; border: 1px solid var(--rule); background: var(--ground); }
+.plate-figure > svg { display: block; min-width: 640px; width: 100%; height: auto; }
+.plate-note { font-size: 13.5px; color: var(--ink-dim); margin: 10px 0 0; max-width: var(--measure); }
+.plate-text { font-family: var(--face-mono); font-size: 12px; fill: var(--ink-dim); pointer-events: none; }
+.plate-node { cursor: pointer; }
+.plate-node:hover circle { stroke-width: 2.5px; }
+.plate-node:hover text { fill: var(--ink); }
+.plate-node:focus-visible circle { outline: none; stroke-width: 3px; stroke: var(--cat-coordination); }
+.cadence-axis, .cadence-row { display: grid; grid-template-columns: 220px 1fr; gap: 12px; align-items: center; }
+.cadence-axis { padding: 6px 12px 2px; }
+.cadence-row { padding: 4px 12px; border-top: 1px solid var(--rule); }
+.cadence-row .name { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.cadence-row.status-dormant .name, .cadence-row.status-extinct .name { color: var(--ink-dim); font-weight: 400; }
+.cadence-row svg { display: block; width: 100%; height: 28px; }
+.prov { font-family: var(--face-caps); font-variation-settings: "wdth" 112; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px; text-decoration: none; }
+.prov.curated { color: var(--cat-community); }
+.prov.wikidata { color: var(--cat-coordination); }
+.prov.inferred { color: var(--seal); }
+.prov.unplaced { color: var(--ink-dim); }
+details > summary { cursor: pointer; margin: var(--s2) 0; }
+@media (max-width: 720px) {
+  .cadence-axis, .cadence-row { grid-template-columns: 132px 1fr; }
+}

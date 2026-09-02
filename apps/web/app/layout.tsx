@@ -82,6 +82,7 @@ export default function RootLayout({
           <div className="sitenav-inner">
             <a href="/">The Register</a>
             <a href="/civilizations">Civilizations</a>
+            <a href="/survey">The Survey</a>
             <a href="/verify">Certify</a>
             <a href="/stats">Stats</a>
             <a href="/about">Methodology</a>

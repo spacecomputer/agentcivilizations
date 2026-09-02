@@ -12,17 +12,25 @@
   "dependencies": {
     "@agent-civilizations/schema": "*",
     "@agent-civilizations/verify": "*",
+    "d3-force": "^3.0.0",
+    "d3-geo": "^3.1.1",
     "firebase": "^10.12.0",
     "next": "^14.2.0",
     "react": "^18.3.0",
-    "react-dom": "^18.3.0"
+    "react-dom": "^18.3.0",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2"
   },
   "devDependencies": {
+    "@types/d3-force": "^3.0.10",
+    "@types/d3-geo": "^3.1.1",
+    "@types/geojson": "^7946.0.16",
     "@types/node": "^20.0.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
-    "typescript": "^5.4.0",
+    "@types/topojson-client": "^3.1.5",
     "eslint": "^8.57.0",
-    "eslint-config-next": "^14.2.0"
+    "eslint-config-next": "^14.2.0",
+    "typescript": "^5.4.0"
   }
 }

@@ -9,6 +9,7 @@ import { FALLBACK_MODELS } from "./classify.js";
 import { buildAtomFeed, buildSitemap } from "./feeds.js";
 import { regenerateStaleSummaries } from "./summarize.js";
 import { anchorDailyRoot, upgradeAllPendingProofs } from "./opentimestamps.js";
+import { runOrigins } from "./origins.js";
 
 initializeApp();
 setGlobalOptions({ region: "us-central1", maxInstances: 5 });
@@ -194,6 +195,32 @@ export const weeklySummaries = onSchedule(
   async () => {
     const result = await regenerateStaleSummaries(OPENROUTER_API_KEY.value());
     console.log("summaries", result);
+  },
+);
+
+// Nightly 01:00 UTC: place sponsors on the map. Wikidata first (cited by
+// QID), the free-tier model second (labelled inferred), "unplaced" third.
+// At most 25 lookups a night — the free-inference budget stays intact.
+export const nightlyOrigins = onSchedule(
+  {
+    schedule: "0 1 * * *",
+    timeZone: "UTC",
+    secrets: [OPENROUTER_API_KEY],
+    timeoutSeconds: 540,
+    memory: "512MiB",
+  },
+  async () => {
+    const result = await runOrigins({ apiKey: OPENROUTER_API_KEY.value(), models: models() });
+    console.log("origins", result);
+  },
+);
+
+// Manual origins trigger — authenticated by Cloud Run default.
+export const originsNow = onRequest(
+  { secrets: [OPENROUTER_API_KEY], timeoutSeconds: 540, memory: "512MiB" },
+  async (_req, res) => {
+    const result = await runOrigins({ apiKey: OPENROUTER_API_KEY.value(), models: models() });
+    res.json(result);
   },
 );
 

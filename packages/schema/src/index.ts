@@ -85,6 +85,75 @@ export const Event = z.object({
 });
 export type Event = z.infer<typeof Event>;
 
+// ---- origins: where a civilization's sponsors sit on the map ----
+//
+// Origin is always an inference from actors, never a claim about the
+// event. Provenance says how we know: a curated commit, a Wikidata
+// headquarters claim (cited by QID), a model's best guess, or nothing —
+// "unplaced" is a first-class outcome, shown as such.
+export const OriginProvenance = z.enum([
+  "curated",
+  "wikidata",
+  "inferred",
+  "unplaced",
+]);
+export type OriginProvenance = z.infer<typeof OriginProvenance>;
+
+export const Origin = z.object({
+  city: z.string().optional(),
+  country: z.string().optional(),
+  lat: z.number().optional(),
+  lng: z.number().optional(),
+  provenance: OriginProvenance,
+  provenanceRef: z.string().optional(), // "wikidata:Q95" | model id | commit
+  determinedAt: z.string().datetime(),
+});
+export type Origin = z.infer<typeof Origin>;
+
+export const ActorKind = z.enum([
+  "lab",
+  "company",
+  "university",
+  "government",
+  "collective",
+  "agent-framework",
+  "individual",
+  "publication",
+  "unknown",
+]);
+export type ActorKind = z.infer<typeof ActorKind>;
+
+// One document per normalized actor in the `actorRegistry` collection.
+export const ActorRegistryEntry = z.object({
+  id: z.string(), // actorSlug(name)
+  name: z.string(),
+  aliases: z.array(z.string()).default([]),
+  kind: ActorKind,
+  homepage: z.string().url().optional(),
+  origin: Origin,
+  eventCount: z.number().int().nonnegative().default(0),
+  civilizationCount: z.number().int().nonnegative().default(0),
+  updatedAt: z.string().datetime(),
+});
+export type ActorRegistryEntry = z.infer<typeof ActorRegistryEntry>;
+
+export const Sponsor = z.object({
+  actorId: z.string(),
+  actorName: z.string(),
+  mentions: z.number().int().nonnegative(),
+  origin: Origin.optional(),
+});
+export type Sponsor = z.infer<typeof Sponsor>;
+
+export const CivilizationOrigin = z.object({
+  // The dominant sponsor's origin; provenance "unplaced" when no sponsor
+  // could be located.
+  origin: Origin,
+  sponsors: z.array(Sponsor).default([]), // top sponsors by mention count
+  updatedAt: z.string().datetime(),
+});
+export type CivilizationOrigin = z.infer<typeof CivilizationOrigin>;
+
 export const Civilization = z.object({
   id: z.string(),
   name: z.string(),
@@ -96,7 +165,13 @@ export const Civilization = z.object({
   eventCount: z.number().int().nonnegative(),
   status: CivilizationStatus,
   headHash: z.string().nullable(),
+  // Derived nightly by the origins job; optional so existing documents
+  // validate. Civilization documents are not hash-chained, so this is a
+  // plain mutable field.
+  origin: CivilizationOrigin.optional(),
 });
+
+export { normalizeActor, actorSlug } from "./actors.js";
 export type Civilization = z.infer<typeof Civilization>;
 
 export const Root = z.object({

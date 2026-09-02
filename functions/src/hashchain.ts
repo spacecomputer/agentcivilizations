@@ -238,18 +238,11 @@ export function corroborates(a: Event, b: Event): boolean {
   return false;
 }
 
-// Normalize an actor name for comparison: lowercase, strip trailing
-// role words ("project", "team", "labs", "inc", etc.), collapse
-// whitespace. Cross-civ corroboration compares these normalized forms.
-const ROLE_SUFFIXES = /\s+(?:project|projects|team|teams|labs?|inc|llc|ltd|foundation|community|research|group|initiative)$/i;
-export function normalizeActor(a: string): string {
-  return a
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, "")
-    .replace(ROLE_SUFFIXES, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+// Actor normalization lives in @agent-civilizations/schema so the web
+// app's survey plates and the origins job compare actors exactly the
+// way corroboration does. Re-exported here for the corroboration tests.
+import { normalizeActor } from "@agent-civilizations/schema";
+export { normalizeActor };
 
 // Cross-civilization corroboration: two candidates in DIFFERENT
 // civilization files still count as corroborating each other iff they

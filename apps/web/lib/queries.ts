@@ -12,7 +12,12 @@ import {
   where,
 } from "firebase/firestore";
 import { getDb } from "./firebase";
-import type { Event, Civilization, Root } from "@agent-civilizations/schema";
+import type {
+  ActorRegistryEntry,
+  Event,
+  Civilization,
+  Root,
+} from "@agent-civilizations/schema";
 
 export async function recentEvents(
   n = 60,
@@ -143,4 +148,10 @@ export async function allEvents(): Promise<Event[]> {
   const q = query(collection(db, "events"), orderBy("recordedAt", "asc"));
   const snap = await getDocs(q);
   return snap.docs.map((d) => d.data() as Event);
+}
+
+export async function actorRegistryAll(): Promise<ActorRegistryEntry[]> {
+  const db = getDb();
+  const snap = await getDocs(collection(db, "actorRegistry"));
+  return snap.docs.map((d) => d.data() as ActorRegistryEntry);
 }
