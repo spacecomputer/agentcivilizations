@@ -18,8 +18,10 @@ export interface SeedActor {
 
 export const ACTOR_SEED: SeedActor[] = [
   // -- frontier labs --
-  { name: "OpenAI", aliases: ["ChatGPT", "GPT", "Codex", "OpenAI Operator"], kind: "lab", city: "San Francisco", country: "US", lat: 37.762, lng: -122.397, homepage: "https://openai.com" },
-  { name: "Anthropic", aliases: ["Claude", "Claude Code", "Anthropic PBC"], kind: "lab", city: "San Francisco", country: "US", lat: 37.79, lng: -122.401, homepage: "https://www.anthropic.com" },
+  // Product and model names resolve to the lab that ships them — the
+  // sponsor of record is the organisation, never the artefact.
+  { name: "OpenAI", aliases: ["ChatGPT", "GPT", "Codex", "OpenAI Operator", "Astra", "GPT-Red", "OpenAI Astra", "Sora", "o3", "o4"], kind: "lab", city: "San Francisco", country: "US", lat: 37.762, lng: -122.397, homepage: "https://openai.com" },
+  { name: "Anthropic", aliases: ["Claude", "Claude Code", "Anthropic PBC", "Claude Opus", "Claude Opus 5", "Claude Code Opus 5", "Claude Fable", "Claude Sonnet", "Claude Haiku"], kind: "lab", city: "San Francisco", country: "US", lat: 37.79, lng: -122.401, homepage: "https://www.anthropic.com" },
   { name: "Google DeepMind", aliases: ["DeepMind", "Gemini"], kind: "lab", city: "London", country: "GB", lat: 51.532, lng: -0.126, homepage: "https://deepmind.google" },
   { name: "Google", aliases: ["Google AI", "Google Research", "Alphabet"], kind: "company", city: "Mountain View", country: "US", lat: 37.422, lng: -122.084, homepage: "https://google.com" },
   { name: "Meta", aliases: ["Meta AI", "Facebook", "FAIR", "Llama"], kind: "company", city: "Menlo Park", country: "US", lat: 37.453, lng: -122.182, homepage: "https://ai.meta.com" },
@@ -63,7 +65,8 @@ export const ACTOR_SEED: SeedActor[] = [
   { name: "MiniMax", kind: "lab", city: "Shanghai", country: "CN", lat: 31.23, lng: 121.474 },
   { name: "Technology Innovation Institute", aliases: ["TII", "Falcon"], kind: "lab", city: "Abu Dhabi", country: "AE", lat: 24.454, lng: 54.377 },
   { name: "G42", kind: "company", city: "Abu Dhabi", country: "AE", lat: 24.454, lng: 54.377 },
-  { name: "National Payments Corporation of India", aliases: ["NPCI"], kind: "government", city: "Mumbai", country: "IN", lat: 19.076, lng: 72.878 },
+  { name: "National Payments Corporation of India", aliases: ["NPCI", "UPI", "Unified Payments Interface"], kind: "government", city: "Mumbai", country: "IN", lat: 19.076, lng: 72.878 },
+  { name: "Reserve Bank of India", aliases: ["RBI"], kind: "government", city: "Mumbai", country: "IN", lat: 18.932, lng: 72.837 },
 
   // -- universities --
   { name: "MIT", aliases: ["Massachusetts Institute of Technology", "MIT CSAIL"], kind: "university", city: "Cambridge", country: "US", lat: 42.36, lng: -71.094 },
@@ -85,8 +88,15 @@ export const ACTOR_SEED: SeedActor[] = [
   { name: "UK AI Security Institute", aliases: ["AISI", "AI Safety Institute"], kind: "government", city: "London", country: "GB", lat: 51.503, lng: -0.128 },
   { name: "Europol", kind: "government", city: "The Hague", country: "NL", lat: 52.071, lng: 4.301 },
 
-  // -- publications (as sponsors of record) --
+  // -- publications (sources of record; never place a file) --
   { name: "arXiv", aliases: ["arXiv researchers", "arXiv authors"], kind: "publication", city: "Ithaca", country: "US", lat: 42.444, lng: -76.502, homepage: "https://arxiv.org" },
+  { name: "Reuters", aliases: ["Thomson Reuters"], kind: "publication", city: "London", country: "GB", lat: 51.512, lng: -0.09 },
+  { name: "The Register", kind: "publication", city: "London", country: "GB", lat: 51.507, lng: -0.128 },
+  { name: "Ars Technica", kind: "publication", city: "New York", country: "US", lat: 40.744, lng: -73.99 },
+  { name: "The Hacker News", kind: "publication", city: "New York", country: "US", lat: 40.713, lng: -74.006 },
+  { name: "Scientific American", kind: "publication", city: "New York", country: "US", lat: 40.755, lng: -73.984 },
+  { name: "Wired", kind: "publication", city: "San Francisco", country: "US", lat: 37.782, lng: -122.396 },
+  { name: "TechCrunch", kind: "publication", city: "San Francisco", country: "US", lat: 37.782, lng: -122.396 },
   { name: "Nature", aliases: ["Nature Portfolio", "Springer Nature"], kind: "publication", city: "London", country: "GB", lat: 51.507, lng: -0.128 },
   { name: "AAAI", aliases: ["Association for the Advancement of Artificial Intelligence"], kind: "publication", city: "Washington", country: "US", lat: 38.907, lng: -77.037 },
 ];

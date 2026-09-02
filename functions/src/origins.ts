@@ -120,10 +120,16 @@ function seedEntry(s: SeedActor, now: string): ActorRegistryEntry {
   };
 }
 
-// Alias slugs resolve to their canonical entry id.
+// Alias slugs resolve to their canonical entry id. Curated entries are
+// applied last so their aliases win over any standalone document that a
+// lookup created for the same name ("Astra" resolving to a UK company
+// yields to OpenAI's curated alias).
 function buildAliasIndex(entries: ActorRegistryEntry[]): Map<string, string> {
   const idx = new Map<string, string>();
-  for (const e of entries) {
+  const ordered = [...entries].sort((a, b) =>
+    Number(a.origin.provenance === "curated") - Number(b.origin.provenance === "curated"),
+  );
+  for (const e of ordered) {
     idx.set(e.id, e.id);
     for (const a of e.aliases) idx.set(a, e.id);
   }
@@ -193,9 +199,11 @@ function label(e: WdEntity | null | undefined): string | undefined {
 
 function kindFromDescription(d: string | undefined): ActorKind {
   const s = (d ?? "").toLowerCase();
+  // Publications first: "news agency" must not fall through to the
+  // government rule's "agency".
+  if (/news agency|journal|publisher|preprint|repository|magazine|newspaper|conference|news website|media company/.test(s)) return "publication";
   if (/universit|college|school of/.test(s)) return "university";
-  if (/government|agency|ministry|department|regulator|public body/.test(s)) return "government";
-  if (/journal|publisher|preprint|repository|magazine|newspaper|conference/.test(s)) return "publication";
+  if (/central bank|government|agency|ministry|department|regulator|public body/.test(s)) return "government";
   if (/laborator|research (institute|organi[sz]ation|center|centre)|institute/.test(s)) return "lab";
   if (/compan|corporat|startup|enterprise|firm|business|manufactur|software/.test(s)) return "company";
   if (/framework|library|software project|open-source/.test(s)) return "agent-framework";
@@ -379,6 +387,19 @@ export async function runOrigins(opts: {
       });
       registry.set(entry.id, entry);
       n++;
+    }
+    // A non-curated document sitting under a curated alias is a stray —
+    // a lookup that ran before the alias existed. Remove it so the alias
+    // is the only route to that name.
+    for (const s of ACTOR_SEED) {
+      for (const alias of (s.aliases ?? []).map(actorSlug)) {
+        const stray = registry.get(alias);
+        if (stray && stray.origin.provenance !== "curated" && stray.id !== actorSlug(s.name)) {
+          batch.delete(db.collection("actorRegistry").doc(alias));
+          registry.delete(alias);
+          n++;
+        }
+      }
     }
     if (n > 0) await batch.commit();
     result.seeded = n;
