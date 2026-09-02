@@ -168,15 +168,29 @@ assert.equal(normalizeActor("agent-swarm-collective"), "agent-swarm-collective")
   const a = { ...ev("a", [src({ canonicalDomain: "example.com", sourceTier: "secondary" })]), civilizationId: "hf-hack", actors: ["OpenAI", "Hugging Face", "researchers"] };
   const b = { ...ev("b", [src({ canonicalDomain: "other.com", sourceTier: "secondary" })]), civilizationId: "openai-breach", actors: ["OpenAI project", "Hugging Face", "security team"] };
   assert.equal(corroboratesCrossCiv(a, b), true, "two shared actors across civs = cross-civ corroborate");
-  // corroborates() alone (same-civ predicate) still fires because domains differ and no shared fingerprint
   assert.equal(corroborates(a, b), true, "same-civ predicate satisfied too");
+}
+
+// The load-bearing case — same aggregator domain (news.google.com pre-unwrap)
+// across different civs, with ≥2 shared actors: cross-civ still fires
+{
+  const a = { ...ev("a", [src({ url: "https://news.google.com/rss/articles/A", canonicalDomain: "news.google.com", sourceTier: "secondary" })]), civilizationId: "hf-hack", actors: ["OpenAI", "Hugging Face"] };
+  const b = { ...ev("b", [src({ url: "https://news.google.com/rss/articles/B", canonicalDomain: "news.google.com", sourceTier: "secondary" })]), civilizationId: "openai-breach", actors: ["OpenAI", "Hugging Face"] };
+  assert.equal(corroboratesCrossCiv(a, b), true, "same-canonical, distinct-URL, 2 actors, cross-civ = corroborate");
 }
 
 // only ONE shared actor across civs — cross-civ does NOT fire
 {
-  const a = { ...ev("a", [src({ canonicalDomain: "example.com" })]), civilizationId: "openai-x", actors: ["OpenAI", "researchers"] };
-  const b = { ...ev("b", [src({ canonicalDomain: "other.com" })]), civilizationId: "openai-y", actors: ["OpenAI", "security team"] };
+  const a = { ...ev("a", [src({ canonicalDomain: "example.com", sourceTier: "secondary" })]), civilizationId: "openai-x", actors: ["OpenAI", "researchers"] };
+  const b = { ...ev("b", [src({ canonicalDomain: "other.com", sourceTier: "secondary" })]), civilizationId: "openai-y", actors: ["OpenAI", "security team"] };
   assert.equal(corroboratesCrossCiv(a, b), false, "one shared actor = insufficient for cross-civ");
+}
+
+// SAME civilization — cross-civ does NOT fire (that's what within-civ is for)
+{
+  const a = { ...ev("a", [src({ canonicalDomain: "example.com" })]), civilizationId: "same", actors: ["OpenAI", "Hugging Face"] };
+  const b = { ...ev("b", [src({ canonicalDomain: "other.com" })]), civilizationId: "same", actors: ["OpenAI", "Hugging Face"] };
+  assert.equal(corroboratesCrossCiv(a, b), false, "same civilizationId excludes cross-civ predicate");
 }
 
 // same civ + shared fingerprint = NOT cross-civ (would double-count)

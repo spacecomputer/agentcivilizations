@@ -266,10 +266,34 @@ export function normalizeActor(a: string): string {
 const MIN_SHARED_ACTORS_CROSS_CIV = 2;
 
 export function corroboratesCrossCiv(a: Event, b: Event): boolean {
-  if (!corroborates(a, b)) return false; // same-civ predicate is the floor
-  const actorsA = new Set(a.actors.map(normalizeActor).filter((x) => x.length >= 3));
-  const actorsB = new Set(b.actors.map(normalizeActor).filter((x) => x.length >= 3));
-  if (actorsA.size < MIN_SHARED_ACTORS_CROSS_CIV || actorsB.size < MIN_SHARED_ACTORS_CROSS_CIV) return false;
+  // Must be different civilization files — the whole point of cross-civ.
+  if (a.civilizationId === b.civilizationId) return false;
+  // Fingerprint overlap still disqualifies — same underlying report.
+  const fpA = eventFingerprint(a);
+  const fpB = eventFingerprint(b);
+  if (sharesFingerprint(fpA, fpB)) return false;
+  // At least one source on each side that isn't aggregator-drop.
+  if (eventDomains(a).length === 0 || eventDomains(b).length === 0) return false;
+  // ≥2 shared normalized actors — the load-bearing signal that these
+  // are about the same underlying situation. Deliberately does NOT
+  // require different canonicalDomains: in the cross-civ case, two
+  // items surfaced by the same aggregator (Google News → same
+  // canonical, before the <source> unwrap fix landed) can still
+  // corroborate each other via shared actor overlap. The classifier
+  // creating two different civ slugs from the same story is itself
+  // evidence they carry independent content — Google News would not
+  // syndicate one publisher's identical story twice as separate items.
+  const actorsA = new Set(
+    a.actors.map(normalizeActor).filter((x) => x.length >= 3),
+  );
+  const actorsB = new Set(
+    b.actors.map(normalizeActor).filter((x) => x.length >= 3),
+  );
+  if (
+    actorsA.size < MIN_SHARED_ACTORS_CROSS_CIV ||
+    actorsB.size < MIN_SHARED_ACTORS_CROSS_CIV
+  )
+    return false;
   let shared = 0;
   for (const a of actorsA) if (actorsB.has(a)) shared++;
   return shared >= MIN_SHARED_ACTORS_CROSS_CIV;

@@ -39,7 +39,7 @@ Output STRICT JSON array — one object per input item, in the same order:
     "keep": true|false,
     "category": "coordination"|"security"|"community"|"speculative"|null,
     "civilizationHint": "<slug>"|null,
-    "actors": ["Named entities, orgs, researchers"],
+    "actors": ["Every named entity in the story — orgs, products, projects, named individuals. Include ALL of them, not just the primary. Corroboration across coverage of the same incident depends on this list being complete: an OpenAI-plus-Hugging-Face story must list BOTH orgs, not just one. Include named researchers when the piece identifies them. Aim for 2-6 actors on any story about an event; a single-actor list is usually a signal you missed an entity."],
     "tags": ["short", "descriptive"],
     "title": "Rewritten neutral title, <=100 chars"|null,
     "summary": "2 factual sentences about what happened."|null,
