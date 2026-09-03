@@ -24,6 +24,7 @@ export interface LabelMark {
   text: string;
   priority: number; // higher first
   w?: number; // measured/estimated width; defaults to text.length × ch + 4
+  prefer?: "ew" | "ns"; // anchor order: east/west first (names) or north/south first (captions)
 }
 
 export interface PlacedLabel {
@@ -77,6 +78,13 @@ export function placeLabels(
         { x: m.x + diag, y: m.y + diag + h - 3, anchor: "start", box: { x: m.x + diag, y: m.y + diag, w, h } },
         { x: m.x - diag, y: m.y + diag + h - 3, anchor: "end", box: { x: m.x - diag - w, y: m.y + diag, w, h } },
       );
+    }
+    if (m.prefer === "ns") {
+      // north, south, then east, west, then the diagonals — for a caption
+      // that should sit above or below its group, not beside it
+      const order = [3, 2, 0, 1, 4, 5, 6, 7, 11, 10, 8, 9, 12, 13, 14, 15];
+      const re = order.map((i) => candidates[i]).filter(Boolean);
+      candidates.splice(0, candidates.length, ...re);
     }
     const pick = candidates.find(
       (c) =>

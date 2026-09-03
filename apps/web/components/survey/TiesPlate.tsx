@@ -169,16 +169,21 @@ export function TiesPlate({
       .map((s) => {
         const pts = s.members.map((id) => nodeById.get(id)).filter((n): n is LaidNode => !!n && visible.has(n.id));
         if (pts.length < SITUATION_MIN) return null;
+        // Anchor the caption at the group's centroid with the group's
+        // bounding radius, preferring north/south, so its box lands above
+        // or below the group rather than on its marks.
         const cx = pts.reduce((a, p) => a + p.x, 0) / pts.length;
-        const top = pts.reduce((a, p) => Math.min(a, p.y - p.r), Infinity);
+        const cy = pts.reduce((a, p) => a + p.y, 0) / pts.length;
+        const reach = pts.reduce((a, p) => Math.max(a, Math.hypot(p.x - cx, p.y - cy) + p.r), 0);
         return {
           id: `sit:${s.key}`,
           x: cx,
-          y: top - 2,
-          r: 0,
+          y: cy,
+          r: reach,
           text: s.name.toUpperCase(),
           w: s.name.length * CAPTION_CH + 4,
           priority: s.size, // below every name
+          prefer: "ns" as const,
         };
       })
       .filter((c): c is NonNullable<typeof c> => c !== null);
