@@ -23,6 +23,7 @@ export interface LabelMark {
   r: number;
   text: string;
   priority: number; // higher first
+  w?: number; // measured/estimated width; defaults to text.length × ch + 4
 }
 
 export interface PlacedLabel {
@@ -57,7 +58,7 @@ export function placeLabels(
   const ordered = [...marks].sort((a, b) => b.priority - a.priority || a.id.localeCompare(b.id));
 
   for (const m of ordered) {
-    const w = m.text.length * opts.ch + 4;
+    const w = m.w ?? m.text.length * opts.ch + 4;
     const h = opts.lh;
     // Two rings of anchors: close to the disc, then a step further out —
     // a name a few pixels from its mark still reads as its name, and the

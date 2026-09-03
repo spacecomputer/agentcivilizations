@@ -821,3 +821,41 @@ tr.is-near .rowlink { font-weight: 700; }
   display: inline-block; margin: 6px 12px;
   font-family: var(--face-mono); font-size: 12px; letter-spacing: 0.05em;
 }
+
+/* Plate II — find a file, situation captions */
+.plate-find {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+.plate-find label { display: inline-flex; align-items: center; gap: 10px; flex: 1; }
+.plate-find .find-label { color: var(--ink-dim); white-space: nowrap; }
+.plate-find input[type="search"] {
+  flex: 1;
+  max-width: 360px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
+  padding: 4px 0;
+  font-family: var(--face-mono);
+  font-size: 13px;
+  color: var(--ink);
+}
+.plate-find input[type="search"]::placeholder { color: var(--ink-dim); }
+.plate-find input[type="search"]:focus { outline: none; border-bottom-color: var(--ink); }
+.plate-situation {
+  font-family: var(--face-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  fill: var(--ink-dim);
+  paint-order: stroke;
+  stroke: var(--ground);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}

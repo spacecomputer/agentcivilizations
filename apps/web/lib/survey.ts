@@ -27,8 +27,11 @@ import { normalizeActor } from "@agent-civilizations/schema";
 //             pair of actors bind tightly (1.0); a pair found together in
 //             twenty files binds weakly (0.05)
 //   strong    df ≤ STRONG_DF
-//   drawn     in full when df < UBIQ, or when the tie is among the K
-//             strongest of either file; otherwise a hairline
+//   drawn     in full when the tie rests on a specific actor and df < UBIQ,
+//             or when it is among the K strongest of either file;
+//             otherwise a hairline
+//   situation a group bound by ties with df ≤ BIND_DF, named by the two
+//             actors most particular to it
 //
 // Order is by id everywhere — ingestion order never moves a mark.
 
@@ -59,11 +62,34 @@ export interface TieEdge {
   drawn: boolean; // strong or full
 }
 
+// A situation is a group of files bound by specific ties — shared actors
+// that appear together in BIND_DF files or fewer — named by the two
+// actors most particular to the group. Deterministic: a union-find over
+// binding ties, keyed by its sorted member ids. No algorithm that can
+// churn between visits, no colour, no hull.
+export interface Situation {
+  key: string;
+  name: string; // "Palo Alto Networks / Unit 42"
+  actors: string[]; // the naming actors, display spelling
+  members: string[]; // file ids, sorted
+  size: number;
+  strongestDf: number; // the tightest binding tie in the group
+}
+
+export interface IsolatedFile {
+  id: string;
+  name: string;
+  entries: number;
+}
+
 export interface Ties {
   nodes: TieNode[]; // id order
   edges: TieEdge[]; // key order
   order: string[]; // node ids, the table's order (specific degree desc, then id)
   isolatedIds: string[]; // files with entries but no tie
+  isolated: IsolatedFile[]; // the same, with names — reachable by find-a-file
+  situations: Situation[]; // size desc, then tightest binding, then key
+  bindDf: number;
   components: string[][]; // over all ties; size desc, then first id
   ubiqThreshold: number;
   ubiquitousActors: Array<{ actor: string; files: number }>;
@@ -83,6 +109,7 @@ export interface Ties {
 
 export const MIN_SHARED = 2;
 export const STRONG_DF = 3;
+export const BIND_DF = 8; // a tie binds a situation when its actors appear together in 8 files or fewer
 
 export function ubiqThresholdFor(filesWithActors: number): number {
   return Math.max(8, Math.ceil(0.06 * filesWithActors));
@@ -188,11 +215,13 @@ export function buildTies(civs: Civilization[], events: Event[]): Ties {
   // Nodes.
   const nodes: TieNode[] = [];
   const isolatedIds: string[] = [];
+  const isolated: IsolatedFile[] = [];
   for (const id of ids) {
     const c = civById.get(id)!;
     const list = incident.get(id) ?? [];
     if (list.length === 0) {
       isolatedIds.push(id);
+      isolated.push({ id, name: c.name, entries: entries.get(id) ?? 0 });
       continue;
     }
     let best: TieEdge | null = null;
@@ -238,6 +267,61 @@ export function buildTies(civs: Civilization[], events: Event[]): Ties {
   }
   components.sort((a, b) => b.length - a.length || a[0].localeCompare(b[0]));
 
+  // Situations: union-find over binding ties (df ≤ BIND_DF).
+  const parent = new Map<string, string>();
+  const find = (x: string): string => {
+    let p = parent.get(x) ?? x;
+    while (p !== (parent.get(p) ?? p)) p = parent.get(p) ?? p;
+    parent.set(x, p);
+    return p;
+  };
+  const union = (a: string, b: string) => {
+    const ra = find(a);
+    const rb = find(b);
+    if (ra === rb) return;
+    // deterministic: the lexically smaller root wins
+    if (ra < rb) parent.set(rb, ra);
+    else parent.set(ra, rb);
+  };
+  const bindingEdges = edges.filter((e) => e.df <= BIND_DF);
+  for (const e of bindingEdges) union(e.source, e.target);
+  const groups = new Map<string, string[]>();
+  for (const e of bindingEdges) {
+    for (const id of [e.source, e.target]) {
+      const root = find(id);
+      const g = groups.get(root) ?? [];
+      if (!g.includes(id)) g.push(id);
+      groups.set(root, g);
+    }
+  }
+  const situations: Situation[] = [];
+  for (const members of groups.values()) {
+    if (members.length < 2) continue;
+    members.sort();
+    const memberSet = new Set(members);
+    const tally = new Map<string, number>();
+    for (const id of members) for (const a of actorsByCiv.get(id) ?? []) tally.set(a, (tally.get(a) ?? 0) + 1);
+    const naming = [...tally.entries()]
+      .filter(([a]) => !isUbiq(a))
+      .map(([a, c]) => ({ a, c, lift: c / (civsByActor.get(a)?.size ?? 1) }))
+      .sort((p, q) => q.lift - p.lift || q.c - p.c || p.a.localeCompare(q.a))
+      .slice(0, 2);
+    if (naming.length === 0) continue; // the record cannot name it; the threshold is wrong, not the plate
+    let strongestDf = Infinity;
+    for (const e of bindingEdges)
+      if (memberSet.has(e.source) && memberSet.has(e.target)) strongestDf = Math.min(strongestDf, e.df);
+    const actors = naming.map((x) => spelling.get(x.a) ?? x.a);
+    situations.push({
+      key: String(djb2(members.join(","))),
+      name: actors.join(" / "),
+      actors,
+      members,
+      size: members.length,
+      strongestDf: strongestDf === Infinity ? BIND_DF : strongestDf,
+    });
+  }
+  situations.sort((a, b) => b.size - a.size || a.strongestDf - b.strongestDf || a.key.localeCompare(b.key));
+
   const order = [...nodes]
     .sort((a, b) => b.degree - a.degree || b.degreeAll - a.degreeAll || a.id.localeCompare(b.id))
     .map((n) => n.id);
@@ -252,6 +336,9 @@ export function buildTies(civs: Civilization[], events: Event[]): Ties {
     edges: edges.sort((a, b) => a.key.localeCompare(b.key)),
     order,
     isolatedIds,
+    isolated,
+    situations,
+    bindDf: BIND_DF,
     components,
     ubiqThreshold: UBIQ,
     ubiquitousActors,

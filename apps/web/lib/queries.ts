@@ -9,7 +9,11 @@ import {
   limit,
   orderBy,
   query,
+  startAfter,
   where,
+  type Query,
+  type QueryConstraint,
+  type QueryDocumentSnapshot,
 } from "firebase/firestore";
 import { getDb } from "./firebase";
 import type {
@@ -92,6 +96,29 @@ export async function allRoots(): Promise<Root[]> {
   const q = query(collection(db, "roots"), orderBy(documentId(), "asc"));
   const snap = await getDocs(q);
   return snap.docs.map((d) => d.data() as Root);
+}
+
+// Every civilization, paged by lastEventAt so the survey never truncates
+// the register unannounced. `limited` is true only if the hard ceiling
+// was reached — the page prints that in its footer.
+export async function allCivilizationsPaged(
+  max = 5000,
+): Promise<{ civs: Civilization[]; limited: boolean }> {
+  const db = getDb();
+  const out: Civilization[] = [];
+  let cursor: QueryDocumentSnapshot | null = null;
+  const PAGE = 500;
+  while (out.length < max) {
+    const constraints: QueryConstraint[] = [orderBy("lastEventAt", "desc")];
+    if (cursor) constraints.push(startAfter(cursor));
+    constraints.push(limit(PAGE));
+    const q: Query = query(collection(db, "civilizations"), ...constraints);
+    const snap = await getDocs(q);
+    for (const d of snap.docs) out.push(d.data() as Civilization);
+    if (snap.docs.length < PAGE) return { civs: out, limited: false };
+    cursor = snap.docs[snap.docs.length - 1];
+  }
+  return { civs: out, limited: true };
 }
 
 export async function activeCivilizations(n = 200): Promise<Civilization[]> {

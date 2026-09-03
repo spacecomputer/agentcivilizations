@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Ties, TieEdge, TieNode } from "@/lib/survey";
 import { layoutTies, labelBudget, type LaidEdge, type LaidNode } from "@/lib/survey-layout";
-import { placeLabels, type Box } from "@/lib/labels";
+import { placeLabels, type Box, type PlacedLabel } from "@/lib/labels";
 import { callNumber } from "@/lib/format";
 import { Mark } from "./Mark";
 
@@ -23,8 +23,10 @@ export const TIE_STROKE = {
 } as const;
 
 const LABEL_CH = 6.6; // Archivo 500 at 12 px, average advance
+const CAPTION_CH = 7.6; // Plex Mono caps at 12 px with tracking
 const LABEL_LH = 14;
 const HIT_WIDTH = 10;
+const SITUATION_MIN = 3; // situations of three or more files are captioned on the plate
 export const HAIRLINE_CAP_PER_FILE = 4; // beyond four hairlines per file the mesh is a field, not marks
 
 export const CONFIDENCE_LINE = {
@@ -39,6 +41,8 @@ export function markLine(n: TieNode): string {
 export type Reading =
   | { kind: "node"; id: string }
   | { kind: "tie"; key: string }
+  | { kind: "alone"; id: string }
+  | { kind: "nomatch"; query: string }
   | null;
 
 // ---- samples for the key on the leaf ----------------------------------
@@ -95,6 +99,7 @@ export function TiesPlate({
   const [active, setActive] = useState<string | null>(null);
   const [focused, setFocused] = useState<string | null>(null);
   const [reading, setReadingState] = useState<Reading>(null);
+  const [query, setQuery] = useState("");
   // JSX types <a> as HTMLAnchorElement even inside <svg>; at runtime it is
   // an SVGAElement — both expose focus(), which is all we call.
   const refs = useRef(new Map<string, HTMLAnchorElement>());
@@ -113,6 +118,7 @@ export function TiesPlate({
 
   const nodeById = useMemo(() => new Map(layout.nodes.map((n) => [n.id, n])), [layout]);
   const edgeByKey = useMemo(() => new Map(layout.edges.map((e) => [e.key, e])), [layout]);
+  const isolatedById = useMemo(() => new Map(ties.isolated.map((f) => [f.id, f])), [ties]);
 
   // Visible set: filtered files are restyled, or hidden entirely.
   const visible = useMemo(() => {
@@ -127,8 +133,9 @@ export function TiesPlate({
     [visible, kept],
   );
 
-  // Labels: names, placed without overprinting; the discs are obstacles.
-  const labels = useMemo(() => {
+  // Names and situation captions, placed together without overprinting;
+  // discs are obstacles, names take priority over captions.
+  const placed = useMemo(() => {
     const budget = labelBudget(layout.nodes.length);
     const obstacles: Box[] = layout.nodes.map((n) => ({
       x: n.x - n.r - 3,
@@ -139,7 +146,7 @@ export function TiesPlate({
     if (layout.inset) {
       obstacles.push({ x: layout.inset.x, y: layout.inset.y, w: layout.inset.w, h: 18 });
     }
-    const candidates = [...layout.nodes]
+    const names = [...layout.nodes]
       .filter((n) => visible.has(n.id))
       .sort(
         (a, b) =>
@@ -154,18 +161,40 @@ export function TiesPlate({
         y: n.y,
         r: n.r,
         text: n.name,
-        priority: n.degree * Math.sqrt(n.entries) + n.degreeAll / 100,
+        w: n.name.length * LABEL_CH + 4,
+        priority: 1000 + n.degree * Math.sqrt(n.entries) + n.degreeAll / 100,
       }));
+    const captions = ties.situations
+      .filter((s) => s.size >= SITUATION_MIN)
+      .map((s) => {
+        const pts = s.members.map((id) => nodeById.get(id)).filter((n): n is LaidNode => !!n && visible.has(n.id));
+        if (pts.length < SITUATION_MIN) return null;
+        const cx = pts.reduce((a, p) => a + p.x, 0) / pts.length;
+        const top = pts.reduce((a, p) => Math.min(a, p.y - p.r), Infinity);
+        return {
+          id: `sit:${s.key}`,
+          x: cx,
+          y: top - 2,
+          r: 0,
+          text: s.name.toUpperCase(),
+          w: s.name.length * CAPTION_CH + 4,
+          priority: s.size, // below every name
+        };
+      })
+      .filter((c): c is NonNullable<typeof c> => c !== null);
+    const all = placeLabels([...names, ...captions], obstacles, {
+      ch: LABEL_CH,
+      lh: LABEL_LH,
+      gap: 5,
+      bounds: { x: 0, y: 0, w: layout.width, h: layout.height },
+    });
     return {
-      placed: placeLabels(candidates, obstacles, {
-        ch: LABEL_CH,
-        lh: LABEL_LH,
-        gap: 5,
-        bounds: { x: 0, y: 0, w: layout.width, h: layout.height },
-      }),
-      candidates: candidates.length,
+      names: all.filter((l) => !l.id.startsWith("sit:")),
+      captions: all.filter((l) => l.id.startsWith("sit:")),
+      nameCandidates: names.length,
+      captionCandidates: captions.length,
     };
-  }, [layout, visible]);
+  }, [layout, visible, ties, nodeById]);
 
   const order = useMemo(() => ties.order.filter((id) => visible.has(id)), [ties, visible]);
   useEffect(() => {
@@ -178,7 +207,9 @@ export function TiesPlate({
         const same =
           (prev === null && r === null) ||
           (prev?.kind === "node" && r?.kind === "node" && prev.id === r.id) ||
-          (prev?.kind === "tie" && r?.kind === "tie" && prev.key === r.key);
+          (prev?.kind === "tie" && r?.kind === "tie" && prev.key === r.key) ||
+          (prev?.kind === "alone" && r?.kind === "alone" && prev.id === r.id) ||
+          (prev?.kind === "nomatch" && r?.kind === "nomatch" && prev.query === r.query);
         if (same) return prev;
         onReading?.(r);
         return r;
@@ -208,6 +239,45 @@ export function TiesPlate({
     [order],
   );
 
+  // Find a file: exact name, then exact id, then the first name or id that
+  // starts with the query. A tied file is focused (which fills the reading
+  // line and scrolls the plate); a file without ties is reported as such.
+  const findFile = useCallback(
+    (raw: string) => {
+      const q = raw.trim().toLowerCase();
+      if (!q) return;
+      const pool = [
+        ...ties.nodes.map((n) => ({ id: n.id, name: n.name, tied: true })),
+        ...ties.isolated.map((f) => ({ id: f.id, name: f.name, tied: false })),
+      ];
+      const hit =
+        pool.find((p) => p.name.toLowerCase() === q) ??
+        pool.find((p) => p.id.toLowerCase() === q) ??
+        pool.find((p) => p.name.toLowerCase().startsWith(q) || p.id.toLowerCase().startsWith(q));
+      if (!hit) {
+        setReading({ kind: "nomatch", query: raw.trim() });
+        return;
+      }
+      if (hit.tied && nodeById.has(hit.id)) {
+        setActive(hit.id);
+        const el = refs.current.get(hit.id);
+        if (el) {
+          el.focus();
+          const n = nodeById.get(hit.id)!;
+          const scroller = wrap.current?.parentElement;
+          if (scroller && scroller.scrollWidth > scroller.clientWidth) {
+            scroller.scrollTo({ left: Math.max(0, n.x - scroller.clientWidth / 2) });
+          }
+        } else {
+          setReading({ kind: "node", id: hit.id }); // hidden by a filter; still readable
+        }
+        return;
+      }
+      setReading({ kind: "alone", id: hit.id });
+    },
+    [ties, nodeById, setReading],
+  );
+
   const hairlines = layout.edges.filter((e) => !e.drawn && edgeVisible(e));
   const hairlineCap = HAIRLINE_CAP_PER_FILE * layout.nodes.length;
   const showHairlines = drawHairlines && hairlines.length <= hairlineCap;
@@ -222,13 +292,47 @@ export function TiesPlate({
     e.key === litTie || (litNode !== null && (e.source === litNode || e.target === litNode)) ||
     (readNode !== null && (e.source === readNode || e.target === readNode));
 
-  const readingLine = renderReading(reading, nodeById, edgeByKey, ties);
+  const readingLine = renderReading(reading, nodeById, edgeByKey, isolatedById, ties);
 
   return (
     <div ref={wrap} className="plate-canvas">
-      <a className="sr-only-focusable" href="#plate-2-tables">
-        Skip to the tables of record
-      </a>
+      <div className="plate-find mono">
+        <a className="sr-only-focusable" href="#plate-2-tables">
+          Skip to the tables of record
+        </a>
+        <label>
+          <span className="find-label">FIND A FILE</span>
+          <input
+            type="search"
+            list="plate2-files"
+            autoComplete="off"
+            spellCheck={false}
+            value={query}
+            placeholder="name or call number"
+            aria-label="Find a file on this plate, tied or not"
+            onChange={(e) => {
+              setQuery(e.target.value);
+              // A datalist pick arrives as a change whose value matches an option exactly.
+              const v = e.target.value;
+              if (ties.nodes.some((n) => n.name === v) || ties.isolated.some((f) => f.name === v)) findFile(v);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                findFile(query);
+              }
+            }}
+          />
+        </label>
+        <datalist id="plate2-files">
+          {ties.nodes.map((n) => (
+            <option key={n.id} value={n.name}>{callNumber(n.id)}</option>
+          ))}
+          {ties.isolated.map((f) => (
+            <option key={f.id} value={f.name}>{`${callNumber(f.id)} · without ties`}</option>
+          ))}
+        </datalist>
+      </div>
       <svg
         ref={svgRef}
         className="ties"
@@ -258,7 +362,6 @@ export function TiesPlate({
             return (
               <g key={e.key}>
                 <line x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} stroke={s.stroke} strokeWidth={s.width} />
-                {/* pointer-only twin: a wide invisible hit target that fills the reading line */}
                 <line
                   x1={e.x1}
                   y1={e.y1}
@@ -299,6 +402,22 @@ export function TiesPlate({
             )}
           </g>
         )}
+
+        {/* situation captions — mono caps with a hairline beneath, no hulls */}
+        <g aria-hidden="true">
+          {placed.captions.map((c) => {
+            const w = c.text.length * CAPTION_CH;
+            const x0 = c.anchor === "end" ? c.x - w : c.anchor === "middle" ? c.x - w / 2 : c.x;
+            return (
+              <g key={c.id}>
+                <text x={c.x} y={c.y} textAnchor={c.anchor} className="plate-situation">
+                  {c.text}
+                </text>
+                <line x1={x0} y1={c.y + 3} x2={x0 + w} y2={c.y + 3} stroke="var(--rule)" strokeWidth={1} />
+              </g>
+            );
+          })}
+        </g>
 
         {/* marks — one tab stop, roving tabindex in the table's order */}
         <g>
@@ -347,9 +466,8 @@ export function TiesPlate({
 
         {/* names — placed, haloed, never overprinting */}
         <g aria-hidden="true">
-          {labels.placed.map((l) => {
-            const filtered = !kept.has(l.id);
-            if (filtered) return null;
+          {placed.names.map((l: PlacedLabel) => {
+            if (!kept.has(l.id)) return null;
             return (
               <text key={l.id} x={l.x} y={l.y} textAnchor={l.anchor} className="plate-label">
                 {l.text}
@@ -363,7 +481,7 @@ export function TiesPlate({
         {readingLine}
       </div>
       <div className="plate-figure-foot mono dim">
-        {`${labels.placed.length} OF ${labels.candidates} NAMES PLACED · ${drawn.length} TIES DRAWN IN FULL · ${
+        {`${placed.names.length} OF ${placed.nameCandidates} NAMES PLACED · ${placed.captions.length} OF ${placed.captionCandidates} SITUATIONS CAPTIONED · ${drawn.length} TIES DRAWN IN FULL · ${
           showHairlines ? `${hairlines.length} HAIRLINES` : `${hairlines.length} HAIRLINES NOT DRAWN`
         }`}
       </div>
@@ -394,15 +512,17 @@ function renderReading(
   reading: Reading,
   nodeById: Map<string, LaidNode>,
   edgeByKey: Map<string, LaidEdge>,
+  isolatedById: Map<string, { id: string; name: string; entries: number }>,
   ties: Ties,
 ) {
   if (reading?.kind === "node") {
-    const n = nodeById.get(reading.id);
+    const n = nodeById.get(reading.id) ?? ties.nodes.find((x) => x.id === reading.id);
     if (!n) return "Mark a file to read its ties.";
     const incident = ties.edges
       .filter((e) => e.source === n.id || e.target === n.id)
       .sort((a, b) => b.weight - a.weight || a.key.localeCompare(b.key))
       .slice(0, 3);
+    const situation = ties.situations.find((s) => s.members.includes(n.id));
     return (
       <>
         <div className="reading-head">
@@ -410,10 +530,11 @@ function renderReading(
           {n.category.toUpperCase()} · {n.confirmed ? CONFIDENCE_LINE.confirmed : CONFIDENCE_LINE.candidate} ·{" "}
           {n.entries} {n.entries === 1 ? "entry" : "entries"} · {n.degreeAll} {n.degreeAll === 1 ? "tie" : "ties"},{" "}
           {n.degree} drawn in full
+          {situation && <> · situation {situation.name.toUpperCase()}</>}
         </div>
         {incident.map((e) => {
           const otherId = e.source === n.id ? e.target : e.source;
-          const other = nodeById.get(otherId);
+          const other = nodeById.get(otherId) ?? ties.nodes.find((x) => x.id === otherId);
           return (
             <div key={e.key} className="reading-tie">
               — {other?.name ?? otherId} · together in {e.df} files · <ActorList e={e} />
@@ -434,6 +555,19 @@ function renderReading(
         <ActorList e={e} />
       </div>
     );
+  }
+  if (reading?.kind === "alone") {
+    const f = isolatedById.get(reading.id);
+    if (!f) return "Mark a file to read its ties.";
+    return (
+      <div className="reading-head">
+        <a href={`/civilization?id=${encodeURIComponent(f.id)}`}>{f.name}</a> · {callNumber(f.id)} has no tie: its{" "}
+        {f.entries} {f.entries === 1 ? "entry shares" : "entries share"} no two actors with another file.
+      </div>
+    );
+  }
+  if (reading?.kind === "nomatch") {
+    return <div className="reading-head">No file named &ldquo;{reading.query}&rdquo; on this plate.</div>;
   }
   return "Mark a file to read its ties — point, or press Tab then the arrow keys.";
 }

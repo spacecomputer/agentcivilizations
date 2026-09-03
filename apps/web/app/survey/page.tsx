@@ -6,7 +6,7 @@ import type {
   Civilization,
   Event,
 } from "@agent-civilizations/schema";
-import { activeCivilizations, allEvents, actorRegistryAll } from "@/lib/queries";
+import { allCivilizationsPaged, allEvents, actorRegistryAll } from "@/lib/queries";
 import { buildCadence, buildOrigins, buildTies } from "@/lib/survey";
 import {
   TiesPlate,
@@ -56,10 +56,12 @@ export default function SurveyPage() {
   const [highlight, setHighlight] = useState<string | null>(null);
   const [reading, setReading] = useState<Reading>(null);
 
+  const [civsLimited, setCivsLimited] = useState(false);
   useEffect(() => {
-    Promise.all([activeCivilizations(400), allEvents(), actorRegistryAll().catch(() => [])])
+    Promise.all([allCivilizationsPaged(), allEvents(), actorRegistryAll().catch(() => [])])
       .then(([c, e, r]) => {
-        setCivs(c);
+        setCivs(c.civs);
+        setCivsLimited(c.limited);
         setEvents(e);
         setRegistry(r);
       })
@@ -307,7 +309,7 @@ export default function SurveyPage() {
               <h2 id="plate-2">Plate II — Ties</h2>
               <span className="mono dim">
                 {ties.counts.files} FILES · {ties.counts.ties} TIES · {ties.counts.drawn} DRAWN IN FULL ·{" "}
-                {ties.counts.withoutTies} WITHOUT TIES
+                {ties.counts.withoutTies} WITHOUT TIES · {ties.situations.length} SITUATIONS
                 {filtering && ` · ${kept.size} MATCH THE FILTER`}
               </span>
             </div>
@@ -459,6 +461,47 @@ export default function SurveyPage() {
                   </details>
                 )}
               </div>
+
+              <h3>Situations</h3>
+              <p className="plate-note">
+                A situation is a group of files bound by specific ties — shared actors that appear together
+                in {ties.bindDf} files or fewer — named by the two actors most particular to the group.
+                Groups are a deterministic function of the ledger and carry no colour and no outline; those
+                of three or more files are captioned on the plate where a caption can be placed.
+              </p>
+              <div className="tablewrap">
+                <table>
+                  <caption className="sr-only">Situations, largest first</caption>
+                  <thead>
+                    <tr>
+                      <th>Situation</th>
+                      <th>Files</th>
+                      <th>Tightest binding</th>
+                      <th>Members</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ties.situations.map((sit) => (
+                      <tr key={sit.key}>
+                        <td className="mono">{sit.name.toUpperCase()}</td>
+                        <td className="mono">{sit.size}</td>
+                        <td className="mono">together in {sit.strongestDf} files</td>
+                        <td>
+                          {sit.members.map((id, i) => (
+                            <span key={id}>
+                              {i > 0 && ", "}
+                              <a href={fileHref(id)}>{nodeById.get(id)?.name ?? civById.get(id)?.name ?? id}</a>
+                            </span>
+                          ))}
+                        </td>
+                      </tr>
+                    ))}
+                    {ties.situations.length === 0 && (
+                      <tr><td colSpan={4} className="dim">No two files are bound by a specific tie yet.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </section>
 
@@ -485,6 +528,7 @@ export default function SurveyPage() {
           <p className="mono dim" style={{ fontSize: 12 }}>
             SURVEY DRAWN IN THIS BROWSER FROM {events!.length} ENTRIES ACROSS {civs!.length} FILES ·{" "}
             SPONSOR REGISTRY {registry.length} ENTRIES · ORIGINS REVISED NIGHTLY 01:00 UTC
+            {civsLimited && " · SURVEY LIMITED TO THE 5,000 MOST RECENTLY WRITTEN FILES"}
           </p>
         </>
       )}
