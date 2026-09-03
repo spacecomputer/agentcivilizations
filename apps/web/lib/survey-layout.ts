@@ -59,6 +59,18 @@ export interface Layout {
   inset: Inset | null;
 }
 
+// Shared drawing constants for both plates — one tie vocabulary, one
+// label metric, so the key on either leaf describes the same marks.
+export const TIE_STROKE = {
+  strong: { stroke: "var(--ink)", width: 2.25 },
+  full: { stroke: "var(--ink-dim)", width: 1.25 },
+  hairline: { stroke: "var(--ink-dim)", width: 0.5 },
+} as const;
+export const LABEL_CH = 6.6; // Archivo 500 at 12 px, average advance
+export const CAPTION_CH = 7.6; // Plex Mono caps at 12 px with tracking
+export const LABEL_LH = 14;
+export const HIT_WIDTH = 10;
+
 const SEED = 20260901; // the day the register opened
 const PAD = 28;
 const BIG = 6; // components of this size or more take the main field

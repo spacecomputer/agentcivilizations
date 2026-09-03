@@ -9,9 +9,13 @@
 import type {
   Category,
   Civilization,
+  CivilizationOrigin,
   CivilizationStatus,
   Event,
   Origin,
+  OriginProvenance,
+  Sponsor,
+  UnplacedReason,
 } from "@agent-civilizations/schema";
 import { normalizeActor } from "@agent-civilizations/schema";
 
@@ -432,124 +436,346 @@ export function buildCadence(
 }
 
 // --------------------------------------------------------------- origins
+//
+// The seat model. A file's origin is the headquarters of its party of
+// record — the first located organisation in its ranked actor list. A
+// PLACE is a (city, country); a SEAT is a place, or a group of places
+// within CLUSTER_KM in one country, drawn at the headquarters of the
+// party that placed most of its files — coordinates are never averaged,
+// so a mark never drifts. Ties are aggregated by seat pair. A tie
+// endpoint with no files is never a seat. Unplaced files are grouped by
+// the reason the job recorded.
 
-export interface OriginPoint {
+export const CLUSTER_KM = 100;
+
+export interface OriginParty {
+  actorId: string;
+  name: string;
+  files: number;
+  provenance: OriginProvenance;
+  provenanceRef?: string;
+}
+export interface ProvenanceTally { curated: number; wikidata: number; inferred: number }
+export type CategoryTally = Record<Category, number>;
+
+export interface OriginPlace {
   key: string;
   city: string;
   country: string;
   lat: number;
   lng: number;
   civs: Civilization[];
-  dominantCategory: Category;
-  provenance: Origin["provenance"];
+  parties: OriginParty[];
+  provenance: ProvenanceTally;
+  categories: CategoryTally;
 }
-export interface OriginTie {
-  from: OriginPoint;
-  to: OriginPoint;
-  civ: Civilization;
+export interface OriginSeat {
+  key: string; // the lead place's key
+  name: string; // "San Francisco +6"
+  city: string;
+  country: string;
+  lat: number;
+  lng: number;
+  members: OriginPlace[]; // lead first
+  civs: Civilization[];
+  files: number;
+  parties: OriginParty[]; // merged across members, files desc
+  provenance: ProvenanceTally;
+  categories: CategoryTally;
+  cited: boolean; // no inferred placements here
+  mixed: boolean; // inferred and cited placements together
+  pairKeys: string[];
+}
+export interface OriginPair {
+  key: string;
+  from: OriginSeat;
+  to: OriginSeat | TieOnlySeat;
+  civs: Civilization[];
+  partyPairs: Array<{ a: string; b: string; n: number }>;
+}
+export interface TieOnlySeat {
+  key: string;
+  city: string;
+  country: string;
+  lat: number;
+  lng: number;
+  civs: Civilization[]; // files whose second party sits here
+  tieOnly: true;
+}
+export interface UnplacedGroup {
+  reason: UnplacedReason;
+  civs: Civilization[];
 }
 export interface Origins {
-  points: OriginPoint[];
-  ties: OriginTie[];
-  unplaced: Civilization[];
-  pending: Civilization[];
+  seats: OriginSeat[]; // files desc, then key
+  pairs: OriginPair[]; // files desc, then key
+  tieOnly: TieOnlySeat[];
+  withinSeat: number; // files whose second party sits in the same seat
+  unplaced: UnplacedGroup[];
+  pending: Civilization[]; // never visited by the origins job
+  surveyedAt: string | null;
+  placedAt: Map<string, string>; // civ id → seat key
   byCountry: Array<{ country: string; files: number }>;
+  counts: {
+    placed: number;
+    seats: number;
+    places: number;
+    clusteredPlaces: number; // places sharing a mark with a lead
+    unplaced: number;
+    pending: number;
+    byReason: Record<UnplacedReason, number>;
+  };
+  nMax: number; // files at the largest seat
 }
 
-// A point is a place as a reader means it — city and country — not a
-// coordinate. Two sponsors a mile apart in the same city share a mark;
-// their coordinates are averaged so the mark sits between them.
-function pointKey(o: Origin): string {
-  if (o.city && o.country) return `${o.city.toLowerCase()}|${o.country.toLowerCase()}`;
-  return `${(o.lat ?? 0).toFixed(1)},${(o.lng ?? 0).toFixed(1)}`;
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const R = 6371;
+  const toR = (d: number) => (d * Math.PI) / 180;
+  const dLat = toR(b.lat - a.lat);
+  const dLng = toR(b.lng - a.lng);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toR(a.lat)) * Math.cos(toR(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+export function normaliseCity(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/,?\s*d\.?\s*c\.?$/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+function placeKey(o: Origin): string {
+  return `${normaliseCity(o.city ?? "")}|${(o.country ?? "").toUpperCase()}`;
+}
+
+const emptyCategories = (): CategoryTally => ({ coordination: 0, security: 0, community: 0, speculative: 0 });
+const emptyProvenance = (): ProvenanceTally => ({ curated: 0, wikidata: 0, inferred: 0 });
+
+// The party that placed a file: the job's record when present, else the
+// first non-excluded located sponsor. One function, used by page and plate.
+export function placingSponsor(co: CivilizationOrigin): Sponsor | null {
+  if (co.placedBy) {
+    const s = co.sponsors.find((x) => x.actorId === co.placedBy!.actorId);
+    if (s) return s;
+    return { actorId: co.placedBy.actorId, actorName: co.placedBy.actorName, mentions: co.placedBy.mentions, origin: co.origin };
+  }
+  return co.sponsors.find((s) => !s.excluded && s.origin && s.origin.provenance !== "unplaced") ?? null;
+}
+function located(o: Origin | undefined): o is Origin & { lat: number; lng: number } {
+  return (
+    !!o &&
+    o.provenance !== "unplaced" &&
+    typeof o.lat === "number" &&
+    typeof o.lng === "number" &&
+    Number.isFinite(o.lat) &&
+    Number.isFinite(o.lng)
+  );
 }
 
 export function buildOrigins(civs: Civilization[]): Origins {
-  const points = new Map<string, OriginPoint>();
-  const coordSums = new Map<string, { lat: number; lng: number; n: number }>();
-  const unplaced: Civilization[] = [];
+  const sorted = [...civs].sort((a, b) => a.id.localeCompare(b.id));
+  type PlaceAcc = OriginPlace & { coordVotes: Map<string, { lat: number; lng: number; n: number }> };
+  const places = new Map<string, PlaceAcc>();
+  const unplacedBy = new Map<UnplacedReason, Civilization[]>();
   const pending: Civilization[] = [];
-  const ties: OriginTie[] = [];
+  let surveyedAt: string | null = null;
+  const placedParty = new Map<string, Sponsor>(); // civ id → placing sponsor
 
-  const upsert = (o: Origin, c: Civilization): OriginPoint => {
-    const key = pointKey(o);
-    const p = points.get(key) ?? {
-      key,
-      city: o.city ?? "—",
-      country: o.country ?? "—",
-      lat: o.lat!,
-      lng: o.lng!,
-      civs: [],
-      dominantCategory: c.category,
-      provenance: o.provenance,
-    };
-    points.set(key, p);
-    const sum = coordSums.get(key) ?? { lat: 0, lng: 0, n: 0 };
-    sum.lat += o.lat!;
-    sum.lng += o.lng!;
-    sum.n++;
-    coordSums.set(key, sum);
-    p.lat = sum.lat / sum.n;
-    p.lng = sum.lng / sum.n;
-    return p;
-  };
-
-  for (const c of [...civs].sort((a, b) => a.id.localeCompare(b.id))) {
+  for (const c of sorted) {
     const co = c.origin;
-    if (!co) {
-      pending.push(c);
+    if (!co) { pending.push(c); continue; }
+    if (co.updatedAt && (!surveyedAt || co.updatedAt > surveyedAt)) surveyedAt = co.updatedAt;
+    const party = placingSponsor(co);
+    const o = party?.origin ?? co.origin;
+    if (!party || !located(o)) {
+      const reason: UnplacedReason =
+        co.reason ?? (co.sponsors.length === 0 ? "no-organisation" : "not-located");
+      const list = unplacedBy.get(reason) ?? [];
+      if (!unplacedBy.has(reason)) unplacedBy.set(reason, list);
+      list.push(c);
       continue;
     }
-    const o = co.origin;
-    if (
-      o.provenance === "unplaced" ||
-      typeof o.lat !== "number" ||
-      typeof o.lng !== "number" ||
-      !Number.isFinite(o.lat) ||
-      !Number.isFinite(o.lng)
-    ) {
-      unplaced.push(c);
-      continue;
-    }
-    const p = upsert(o, c);
+    placedParty.set(c.id, party);
+    const key = placeKey(o);
+    const p: PlaceAcc =
+      places.get(key) ??
+      {
+        key,
+        city: o.city ?? "—",
+        country: (o.country ?? "—").toUpperCase(),
+        lat: o.lat,
+        lng: o.lng,
+        civs: [],
+        parties: [],
+        provenance: emptyProvenance(),
+        categories: emptyCategories(),
+        coordVotes: new Map(),
+      };
+    places.set(key, p);
     p.civs.push(c);
-    if (o.provenance === "curated") p.provenance = "curated";
-    const second = co.sponsors.find(
-      (s) =>
-        s.origin &&
-        s.origin.provenance !== "unplaced" &&
-        typeof s.origin.lat === "number" &&
-        typeof s.origin.lng === "number" &&
-        pointKey(s.origin) !== p.key,
-    );
-    if (second?.origin) {
-      const q = upsert(second.origin, c);
-      ties.push({ from: p, to: q, civ: c });
+    p.categories[c.category]++;
+    if (o.provenance === "curated" || o.provenance === "wikidata" || o.provenance === "inferred") p.provenance[o.provenance]++;
+    const pk = party.actorId;
+    const existing = p.parties.find((x) => x.actorId === pk);
+    if (existing) existing.files++;
+    else p.parties.push({ actorId: pk, name: party.actorName, files: 1, provenance: o.provenance, ...(o.provenanceRef && { provenanceRef: o.provenanceRef }) });
+    const v = p.coordVotes.get(pk) ?? { lat: o.lat, lng: o.lng, n: 0 };
+    v.n++;
+    p.coordVotes.set(pk, v);
+  }
+
+  // A place is drawn at the headquarters of the party that placed most of
+  // its files — never an average.
+  for (const p of places.values()) {
+    p.parties.sort((a, b) => b.files - a.files || a.name.localeCompare(b.name));
+    const lead = p.parties[0];
+    const v = lead ? p.coordVotes.get(lead.actorId) : undefined;
+    if (v) { p.lat = v.lat; p.lng = v.lng; }
+  }
+
+  // Seats: places within CLUSTER_KM in one country share a mark at the
+  // lead place's coordinates.
+  const orderedPlaces = [...places.values()].sort((a, b) => b.civs.length - a.civs.length || a.key.localeCompare(b.key));
+  const seats: OriginSeat[] = [];
+  const seatOfPlace = new Map<string, OriginSeat>();
+  for (const p of orderedPlaces) {
+    const home = seats.find((s) => s.country === p.country && haversineKm(s, p) <= CLUSTER_KM);
+    if (home) {
+      home.members.push(p);
+      seatOfPlace.set(p.key, home);
+    } else {
+      const seat: OriginSeat = {
+        key: p.key,
+        name: p.city,
+        city: p.city,
+        country: p.country,
+        lat: p.lat,
+        lng: p.lng,
+        members: [p],
+        civs: [],
+        files: 0,
+        parties: [],
+        provenance: emptyProvenance(),
+        categories: emptyCategories(),
+        cited: true,
+        mixed: false,
+        pairKeys: [],
+      };
+      seats.push(seat);
+      seatOfPlace.set(p.key, seat);
     }
   }
-
-  for (const p of points.values()) {
-    const tally = new Map<Category, number>();
-    for (const c of p.civs) tally.set(c.category, (tally.get(c.category) ?? 0) + 1);
-    let best: Category = p.civs[0]?.category ?? "coordination";
-    let n = 0;
-    for (const [k, v] of tally) if (v > n) { best = k; n = v; }
-    p.dominantCategory = best;
+  const placedAt = new Map<string, string>();
+  for (const s of seats) {
+    const partyMap = new Map<string, OriginParty>();
+    for (const m of s.members) {
+      s.civs.push(...m.civs);
+      for (const c of m.civs) placedAt.set(c.id, s.key);
+      s.provenance.curated += m.provenance.curated;
+      s.provenance.wikidata += m.provenance.wikidata;
+      s.provenance.inferred += m.provenance.inferred;
+      for (const k of Object.keys(s.categories) as Category[]) s.categories[k] += m.categories[k];
+      for (const p of m.parties) {
+        const e = partyMap.get(p.actorId);
+        if (e) e.files += p.files;
+        else partyMap.set(p.actorId, { ...p });
+      }
+    }
+    s.files = s.civs.length;
+    s.parties = [...partyMap.values()].sort((a, b) => b.files - a.files || a.name.localeCompare(b.name));
+    s.name = s.members.length > 1 ? `${s.city} +${s.members.length - 1}` : s.city;
+    s.cited = s.provenance.inferred === 0;
+    s.mixed = s.provenance.inferred > 0 && s.provenance.curated + s.provenance.wikidata > 0;
+    s.civs.sort((a, b) => a.id.localeCompare(b.id));
   }
+  seats.sort((a, b) => b.files - a.files || a.key.localeCompare(b.key));
 
+  // Pairs: a file whose first and second parties sit in different seats.
+  const pairMap = new Map<string, OriginPair>();
+  const tieOnlyMap = new Map<string, TieOnlySeat>();
+  let withinSeat = 0;
+  for (const c of sorted) {
+    const co = c.origin;
+    const first = placedParty.get(c.id);
+    const fromKey = placedAt.get(c.id);
+    if (!co || !first || !fromKey) continue;
+    const fromSeat = seatOfPlace.get(fromKey) ?? seats.find((s) => s.key === fromKey);
+    if (!fromSeat) continue;
+    const second = co.sponsors.find((s) => s.actorId !== first.actorId && !s.excluded && located(s.origin));
+    if (!second || !located(second.origin)) continue;
+    const toPlaceKey = placeKey(second.origin);
+    const toSeat = seatOfPlace.get(toPlaceKey);
+    if (toSeat && toSeat.key === fromSeat.key) { withinSeat++; continue; }
+    let to: OriginSeat | TieOnlySeat;
+    if (toSeat) to = toSeat;
+    else {
+      const t: TieOnlySeat =
+        tieOnlyMap.get(toPlaceKey) ??
+        {
+          key: toPlaceKey,
+          city: second.origin.city ?? "—",
+          country: (second.origin.country ?? "—").toUpperCase(),
+          lat: second.origin.lat,
+          lng: second.origin.lng,
+          civs: [],
+          tieOnly: true as const,
+        };
+      tieOnlyMap.set(toPlaceKey, t);
+      t.civs.push(c);
+      to = t;
+    }
+    const key = [fromSeat.key, to.key].sort().join("|");
+    const pair: OriginPair =
+      pairMap.get(key) ?? { key, from: fromSeat, to, civs: [], partyPairs: [] };
+    pairMap.set(key, pair);
+    pair.civs.push(c);
+    const pp = pair.partyPairs.find((x) => x.a === first.actorName && x.b === second.actorName);
+    if (pp) pp.n++;
+    else pair.partyPairs.push({ a: first.actorName, b: second.actorName, n: 1 });
+    if (!fromSeat.pairKeys.includes(key)) fromSeat.pairKeys.push(key);
+    if (!("tieOnly" in to) && !to.pairKeys.includes(key)) to.pairKeys.push(key);
+  }
+  const pairs = [...pairMap.values()].sort((a, b) => b.civs.length - a.civs.length || a.key.localeCompare(b.key));
+  for (const p of pairs) p.partyPairs.sort((a, b) => b.n - a.n || a.a.localeCompare(b.a));
+
+  const reasons: UnplacedReason[] = ["not-located", "no-organisation", "no-actors"];
+  const unplaced: UnplacedGroup[] = reasons
+    .filter((r) => (unplacedBy.get(r) ?? []).length > 0)
+    .map((r) => ({ reason: r, civs: unplacedBy.get(r)! }));
+  const byReason: Record<UnplacedReason, number> = {
+    "no-actors": unplacedBy.get("no-actors")?.length ?? 0,
+    "no-organisation": unplacedBy.get("no-organisation")?.length ?? 0,
+    "not-located": unplacedBy.get("not-located")?.length ?? 0,
+  };
   const byCountryMap = new Map<string, number>();
-  for (const p of points.values())
-    byCountryMap.set(p.country, (byCountryMap.get(p.country) ?? 0) + p.civs.length);
+  for (const s of seats) byCountryMap.set(s.country, (byCountryMap.get(s.country) ?? 0) + s.files);
   const byCountry = [...byCountryMap.entries()]
     .map(([country, files]) => ({ country, files }))
     .sort((a, b) => b.files - a.files || a.country.localeCompare(b.country));
+  const placed = seats.reduce((n, s) => n + s.files, 0);
 
   return {
-    points: [...points.values()].sort((a, b) => b.civs.length - a.civs.length || a.key.localeCompare(b.key)),
-    ties,
+    seats,
+    pairs,
+    tieOnly: [...tieOnlyMap.values()].sort((a, b) => a.key.localeCompare(b.key)),
+    withinSeat,
     unplaced,
     pending,
+    surveyedAt,
+    placedAt,
     byCountry,
+    counts: {
+      placed,
+      seats: seats.length,
+      places: places.size,
+      clusteredPlaces: places.size - seats.length,
+      unplaced: byReason["no-actors"] + byReason["no-organisation"] + byReason["not-located"],
+      pending: pending.length,
+      byReason,
+    },
+    nMax: seats[0]?.files ?? 1,
   };
 }
 

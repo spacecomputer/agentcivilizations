@@ -119,9 +119,23 @@ export const ActorKind = z.enum([
   "agent-framework",
   "individual",
   "publication",
+  "product",
+  "protocol",
   "unknown",
 ]);
 export type ActorKind = z.infer<typeof ActorKind>;
+
+// Only organisations place a file. People, author groups, publications,
+// products and protocols are recorded in the registry — with a citable
+// rule — and never place. (Reader-facing copy calls a placing actor a
+// "party of record"; the identifiers here stay.)
+export const PLACING_KINDS: ReadonlySet<ActorKind> = new Set<ActorKind>([
+  "lab",
+  "company",
+  "university",
+  "government",
+  "agent-framework",
+]);
 
 // One document per normalized actor in the `actorRegistry` collection.
 export const ActorRegistryEntry = z.object({
@@ -130,26 +144,62 @@ export const ActorRegistryEntry = z.object({
   aliases: z.array(z.string()).default([]),
   kind: ActorKind,
   homepage: z.string().url().optional(),
+  // For products and protocols: the registry id of the organisation that
+  // makes them. "GPT-5-mini" names OpenAI; naming a product counts as
+  // naming its maker.
+  productOf: z.string().optional(),
   origin: Origin,
   eventCount: z.number().int().nonnegative().default(0),
   civilizationCount: z.number().int().nonnegative().default(0),
+  placedCount: z.number().int().nonnegative().optional(), // files this actor placed
   updatedAt: z.string().datetime(),
 });
 export type ActorRegistryEntry = z.infer<typeof ActorRegistryEntry>;
+
+export const SponsorExclusion = z.enum([
+  "publication",
+  "individual",
+  "collective",
+  "product",
+  "protocol",
+  "unknown",
+]);
+export type SponsorExclusion = z.infer<typeof SponsorExclusion>;
 
 export const Sponsor = z.object({
   actorId: z.string(),
   actorName: z.string(),
   mentions: z.number().int().nonnegative(),
   origin: Origin.optional(),
+  // Set when this actor can never place a file, with the kind that
+  // excludes it. Absent for organisations (placed or not yet located).
+  excluded: SponsorExclusion.optional(),
 });
 export type Sponsor = z.infer<typeof Sponsor>;
 
+export const UnplacedReason = z.enum([
+  "no-actors", // the file's entries name no actor at all
+  "no-organisation", // every named actor is a person, group, product or publication
+  "not-located", // an organisation is named but has no located headquarters
+]);
+export type UnplacedReason = z.infer<typeof UnplacedReason>;
+
 export const CivilizationOrigin = z.object({
-  // The dominant sponsor's origin; provenance "unplaced" when no sponsor
+  // The placing party's origin; provenance "unplaced" when no organisation
   // could be located.
   origin: Origin,
-  sponsors: z.array(Sponsor).default([]), // top sponsors by mention count
+  sponsors: z.array(Sponsor).default([]), // ranked by mention count
+  // Who placed the file, and at what rank among its named actors — a
+  // file placed by its third-most-named actor says so.
+  placedBy: z
+    .object({
+      actorId: z.string(),
+      actorName: z.string(),
+      rank: z.number().int().min(1),
+      mentions: z.number().int().nonnegative(),
+    })
+    .optional(),
+  reason: UnplacedReason.optional(),
   updatedAt: z.string().datetime(),
 });
 export type CivilizationOrigin = z.infer<typeof CivilizationOrigin>;

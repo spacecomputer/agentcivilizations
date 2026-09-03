@@ -1,10 +1,22 @@
 "use client";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { Ties, TieEdge, TieNode } from "@/lib/survey";
-import { layoutTies, labelBudget, type LaidEdge, type LaidNode } from "@/lib/survey-layout";
+import {
+  layoutTies,
+  labelBudget,
+  TIE_STROKE,
+  LABEL_CH,
+  CAPTION_CH,
+  LABEL_LH,
+  HIT_WIDTH,
+  type LaidEdge,
+  type LaidNode,
+} from "@/lib/survey-layout";
 import { placeLabels, type Box, type PlacedLabel } from "@/lib/labels";
 import { callNumber } from "@/lib/format";
 import { Mark } from "./Mark";
+
+export { TIE_STROKE };
 
 // Plate II — ties. Files are marks; a tie is two files whose entries
 // share at least two named actors — the predicate cross-civilization
@@ -16,16 +28,6 @@ import { Mark } from "./Mark";
 // 12 px is 12 px on every viewport. A survey does not redraw itself:
 // the layout is computed once per ledger; filters restyle, never move.
 
-export const TIE_STROKE = {
-  strong: { stroke: "var(--ink)", width: 2.25 },
-  full: { stroke: "var(--ink-dim)", width: 1.25 },
-  hairline: { stroke: "var(--ink-dim)", width: 0.5 },
-} as const;
-
-const LABEL_CH = 6.6; // Archivo 500 at 12 px, average advance
-const CAPTION_CH = 7.6; // Plex Mono caps at 12 px with tracking
-const LABEL_LH = 14;
-const HIT_WIDTH = 10;
 const SITUATION_MIN = 3; // situations of three or more files are captioned on the plate
 export const HAIRLINE_CAP_PER_FILE = 4; // beyond four hairlines per file the mesh is a field, not marks
 

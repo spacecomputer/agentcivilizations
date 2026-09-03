@@ -7,7 +7,7 @@ import type {
   Event,
 } from "@agent-civilizations/schema";
 import { allCivilizationsPaged, allEvents, actorRegistryAll } from "@/lib/queries";
-import { buildCadence, buildOrigins, buildTies } from "@/lib/survey";
+import { buildCadence, buildTies } from "@/lib/survey";
 import {
   TiesPlate,
   MarkSample,
@@ -15,7 +15,17 @@ import {
   type Reading,
 } from "@/components/survey/TiesPlate";
 import { CadencePlate } from "@/components/survey/CadencePlate";
-import { OriginsPlate } from "@/components/survey/OriginsPlate";
+import {
+  OriginsPlate,
+  SeatSample,
+  ReferenceCircles,
+  OriginTieSample,
+  seatSlug,
+  type OriginReading,
+  type OriginLayoutInfo,
+} from "@/components/survey/OriginsPlate";
+import { buildOrigins as _buildOrigins, placingSponsor, CLUSTER_KM } from "@/lib/survey";
+import { floorFiles, fmtLat, fmtLng, TIE_STRONG_FILES, PAIR_CAPTION_MIN } from "@/lib/origins-layout";
 import { CategoryLabel } from "@/components/Glyph";
 import { CivSeal } from "@/components/CivSeal";
 import { callNumber, utcDay } from "@/lib/format";
@@ -55,6 +65,10 @@ export default function SurveyPage() {
   const [failed, setFailed] = useState(false);
   const [highlight, setHighlight] = useState<string | null>(null);
   const [reading, setReading] = useState<Reading>(null);
+  const [originHighlight, setOriginHighlight] = useState<string | null>(null);
+  const [originReading, setOriginReading] = useState<OriginReading>(null);
+  const [layout, setLayout] = useState<OriginLayoutInfo | null>(null);
+  const onLayout = useMemo(() => (info: OriginLayoutInfo) => setLayout(info), []);
 
   const [civsLimited, setCivsLimited] = useState(false);
   useEffect(() => {
@@ -95,7 +109,16 @@ export default function SurveyPage() {
   const filtering = cats.size < CATEGORIES.length;
 
   const cadence = useMemo(() => (filtered ? buildCadence(filtered.civs, filtered.events) : null), [filtered]);
-  const origins = useMemo(() => (filtered ? buildOrigins(filtered.civs) : null), [filtered]);
+  // Plate I is laid out once from the whole surveyed ledger; the filter
+  // restyles it through a kept set and never moves a mark.
+  const origins = useMemo(() => (civs ? _buildOrigins(civs) : null), [civs]);
+  const confirmedCivIds = useMemo(() => new Set((events ?? []).filter((e) => e.confidence === "confirmed").map((e) => e.civilizationId)), [events]);
+  const keptFiles = useMemo(
+    () => new Set((civs ?? []).filter((c) => cats.has(c.category) && (!confirmedOnly || confirmedCivIds.has(c.id))).map((c) => c.id)),
+    [civs, cats, confirmedOnly, confirmedCivIds],
+  );
+  const originFiltering = cats.size < CATEGORIES.length || confirmedOnly;
+  const readSeatKey = originReading?.kind === "seat" ? originReading.key : null;
 
   const toggleCat = (c: Category) =>
     setCats((prev) => {
@@ -109,8 +132,7 @@ export default function SurveyPage() {
     () =>
       [...registry]
         .filter((r) => r.kind !== "publication")
-        .sort((a, b) => b.civilizationCount - a.civilizationCount || b.eventCount - a.eventCount || a.id.localeCompare(b.id))
-        .slice(0, 40),
+        .sort((a, b) => b.civilizationCount - a.civilizationCount || b.eventCount - a.eventCount || a.id.localeCompare(b.id)),
     [registry],
   );
 
@@ -180,127 +202,298 @@ export default function SurveyPage() {
             <div className="plate-head">
               <h2 id="plate-1">Plate I — Origins</h2>
               <span className="mono dim">
-                {origins.points.reduce((n, p) => n + p.civs.length, 0)} FILES PLACED ·{" "}
-                {origins.unplaced.length} UNPLACED · {origins.pending.length} NOT YET SURVEYED
+                {origins.counts.placed} FILES PLACED AT {origins.counts.seats} SEATS · {origins.counts.unplaced} UNPLACED
+                {origins.counts.unplaced > 0 && (
+                  <> — {origins.counts.byReason["not-located"]} PARTY NOT LOCATED · {origins.counts.byReason["no-organisation"]} NO PARTY NAMED{origins.counts.byReason["no-actors"] > 0 && <> · {origins.counts.byReason["no-actors"]} NO ACTORS</>}</>
+                )}
+                {origins.counts.pending > 0 && <> · {origins.counts.pending} AWAITING THE NIGHTLY SURVEY</>}
+                {origins.surveyedAt && <> · SURVEYED {utcDay(origins.surveyedAt)}</>}
+                {originFiltering && <> · {origins.seats.reduce((n, st) => n + st.civs.filter((c) => keptFiles.has(c.id)).length, 0)} MATCH THE FILTER</>}
               </span>
             </div>
-            <div className="plate-figure">
-              <OriginsPlate origins={origins} />
-            </div>
-            <p className="plate-note">
-              A file sits at the headquarters of its dominant sponsor — the named organisation its
-              entries mention most. Filled marks are cited: a curated seed or a Wikidata headquarters
-              claim. Hollow marks are the model&apos;s inference. Bronze ties join the two sponsors of a
-              multi-origin file. Sponsor is not perpetrator: a file placed at San Francisco is a file
-              whose entries <em>name</em> a San Francisco sponsor. Publications are sources of record,
-              never sponsors, and place nothing.
-            </p>
 
-            <div className="tablewrap">
-              <table>
-                <caption className="sr-only">Files by sponsor headquarters</caption>
-                <thead>
-                  <tr>
-                    <th>City</th>
-                    <th>Country</th>
-                    <th>Files</th>
-                    <th>Provenance</th>
-                    <th>Files placed here</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {origins.points.map((p) => (
-                    <tr key={p.key}>
-                      <td>{p.city}</td>
-                      <td className="mono">{p.country}</td>
-                      <td className="mono">{p.civs.length}</td>
-                      <td>
-                        <span className={`prov ${p.provenance}`}>{p.provenance.toUpperCase()}</span>
-                      </td>
-                      <td>
-                        {p.civs.slice(0, 6).map((c, i) => (
-                          <span key={c.id}>
-                            {i > 0 && ", "}
-                            <a href={fileHref(c.id)}>{c.name}</a>
-                          </span>
-                        ))}
-                        {p.civs.length > 6 && <span className="dim"> +{p.civs.length - 6} more</span>}
-                      </td>
-                    </tr>
-                  ))}
-                  {origins.points.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="dim">
-                        No files placed yet. The origins survey runs nightly at 01:00 UTC.
-                      </td>
-                    </tr>
+            {layout && (
+              <div className="plate-key mono" id="plate-1-key">
+                <span className="key-group">
+                  <span className="key-item"><span className="sr-only">; </span><ReferenceCircles K={layout.K} nMax={origins.nMax} /> SIZE · FILES, AREA TRUE · SEATS OF FEWER THAN {floorFiles(layout.K)} FILES DRAWN AT THE MINIMUM</span>
+                </span>
+                <span className="key-group">
+                  <span className="key-item"><span className="sr-only">; </span><SeatSample cited /> FILLED · CITED — CURATED SEED OR WIKIDATA HEADQUARTERS</span>
+                  <span className="key-item"><span className="sr-only">; </span><SeatSample cited={false} /> HOLLOW · INFERRED BY THE MODEL, PROVISIONAL</span>
+                  <span className="key-item"><span className="sr-only">; </span><SeatSample cited mixed /> DASHED RING · SOME FILES HERE ARE INFERRED</span>
+                </span>
+                <span className="key-group">
+                  <span className="key-item"><span className="sr-only">; </span>TIE · A FILE WHOSE FIRST AND SECOND PARTIES SIT IN TWO SEATS</span>
+                  <span className="key-item"><span className="sr-only">; </span><OriginTieSample cls="hairline" /> 1 FILE</span>
+                  <span className="key-item"><span className="sr-only">; </span><OriginTieSample cls="full" /> 2–{TIE_STRONG_FILES - 1} FILES</span>
+                  <span className="key-item"><span className="sr-only">; </span><OriginTieSample cls="strong" /> {TIE_STRONG_FILES} OR MORE · STRONG, COUNTED FROM {PAIR_CAPTION_MIN}</span>
+                </span>
+                <span className="key-group">
+                  <span className="key-item"><span className="sr-only">; </span>SEATS WITHIN {CLUSTER_KM} KM IN ONE COUNTRY SHARE A MARK</span>
+                  <span className="key-item"><span className="sr-only">; </span>BOUNDS {fmtLat(layout.band.s)}–{fmtLat(layout.band.n)} · {fmtLng(layout.band.w)}–{fmtLng(layout.band.e)} · EVERY SEAT AND TIE LIES WITHIN</span>
+                  {layout.moved > 0 && (
+                    <span className="key-item"><span className="sr-only">; </span>A HAIRLINE LEADS A MOVED MARK TO ITS TRUE POSITION · {layout.moved} MOVED APART THIS RENDER</span>
                   )}
-                </tbody>
-              </table>
-            </div>
-
-            {origins.unplaced.length > 0 && (
-              <details>
-                <summary className="mono dim">
-                  UNPLACED — {origins.unplaced.length} {origins.unplaced.length === 1 ? "file" : "files"} whose sponsors could not be located
-                </summary>
-                <p className="plate-note">
-                  {origins.unplaced.map((c, i) => (
-                    <span key={c.id}>
-                      {i > 0 && " · "}
-                      <a href={fileHref(c.id)}>{c.name}</a>
-                    </span>
-                  ))}
-                </p>
-              </details>
+                </span>
+                <span className="key-group">
+                  {cats.size === 1 ? (
+                    <span className="key-item"><span className="sr-only">; </span><CategoryLabel category={[...cats][0]} /> INKED · ONE CATEGORY IN THE FILTER</span>
+                  ) : (
+                    <span className="key-item"><span className="sr-only">; </span>MARKS CARRY NO CATEGORY · FILTER TO ONE CATEGORY TO INK THE PLATE</span>
+                  )}
+                </span>
+              </div>
             )}
 
-            {sponsorsRanked.length > 0 && (
-              <>
-                <h3>Sponsors of record</h3>
-                <div className="tablewrap">
-                  <table>
-                    <caption className="sr-only">Sponsors of record, by files named</caption>
-                    <thead>
-                      <tr>
-                        <th>Sponsor</th>
-                        <th>Kind</th>
-                        <th>Headquarters</th>
-                        <th>Files</th>
-                        <th>Entries</th>
-                        <th>Provenance</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sponsorsRanked.map((r) => (
-                        <tr key={r.id}>
+            <div className="plate-figure">
+              <OriginsPlate
+                origins={origins}
+                kept={keptFiles}
+                cats={cats}
+                hideFiltered={hideFiltered}
+                highlight={originHighlight}
+                onReading={setOriginReading}
+                onLayout={onLayout}
+              />
+            </div>
+
+            <p className="plate-note" id="plate-1-note">
+              A file is placed at the seat of its party of record — the organisation its entries name most,
+              taking the first of them that could be located. A product name counts as naming its maker:
+              GPT names OpenAI, Claude names Anthropic. Publications are sources of record, never parties,
+              and place nothing; people, author groups and protocols are recorded but never place a file.
+              Naming is not sponsorship and not blame: a file placed at {origins.seats[0]?.name ?? "a seat"} is a
+              file whose entries <em>name</em> an organisation seated there — as maker, target or witness.
+              Filled marks are cited, by a curated entry or a Wikidata headquarters claim; hollow marks were
+              placed by inference and are provisional; a dashed ring means some files at a seat are
+              inferred. A seat is drawn at the headquarters of the party that placed most of its files; places
+              within {CLUSTER_KM} km in one country share a mark. A line joins a file&apos;s first seat to its
+              second where two named parties sit apart; its weight is the number of files.
+              {origins.seats[0] && (
+                <>
+                  {" "}{origins.seats[0].files} of {origins.counts.placed} placed files sit at {origins.seats[0].name}
+                  {origins.seats[0].parties.length >= 2 && (
+                    <>, {origins.seats[0].parties[0].files + origins.seats[0].parties[1].files} of them by {origins.seats[0].parties[0].name} or {origins.seats[0].parties[1].name}</>
+                  )}.
+                </>
+              )}{" "}
+              Filtering restyles the plate; a file&apos;s seat does not depend on its entries&apos; confidence, so
+              CONFIRMED ENTRIES ONLY marks which files are corroborated without moving any. Mark a seat — point
+              at it, or press Tab and then the arrow keys — to read its parties beneath the plate; the tables
+              carry every seat, every party and every file.
+            </p>
+
+            <div id="plate-1-tables">
+              <h3>Seats of the parties of record</h3>
+              <div className="tablewrap">
+                <table>
+                  <caption className="sr-only">Seats, largest first, with parties, provenance and category tallies</caption>
+                  <thead>
+                    <tr>
+                      <th>Seat</th>
+                      <th>Country</th>
+                      <th>Files</th>
+                      <th>Parties</th>
+                      <th>Provenance</th>
+                      <th>Categories</th>
+                      <th>Ties</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {origins.seats.map((st) => {
+                      const nKept = st.civs.filter((c) => keptFiles.has(c.id)).length;
+                      const isReading = readSeatKey === st.key;
+                      return (
+                        <tr
+                          key={st.key}
+                          id={`seat-${seatSlug(st.key)}`}
+                          data-seat={st.key}
+                          tabIndex={-1}
+                          className={`${isReading ? "is-reading" : ""}${nKept === 0 && originFiltering ? " filtered" : ""}`.trim() || undefined}
+                          aria-current={isReading ? "true" : undefined}
+                          onMouseEnter={() => setOriginHighlight(st.key)}
+                          onMouseLeave={() => setOriginHighlight(null)}
+                          onFocusCapture={() => setOriginHighlight(st.key)}
+                          onBlurCapture={() => setOriginHighlight(null)}
+                        >
                           <td>
-                            {r.homepage ? (
-                              <a href={r.homepage} target="_blank" rel="noreferrer noopener">
-                                {r.name}
-                              </a>
-                            ) : (
-                              r.name
+                            <span className="rowlink">{st.name}</span>
+                            {st.members.length > 1 && (
+                              <span className="mono dim" style={{ display: "block", fontSize: 12 }}>
+                                {st.members.map((m) => `${m.city} ${m.civs.length}`).join(" · ")}
+                              </span>
                             )}
                           </td>
-                          <td className="mono">{r.kind}</td>
+                          <td className="mono">{st.country}</td>
+                          <td className="mono">{originFiltering && nKept !== st.files ? `${nKept} of ${st.files}` : st.files}</td>
                           <td>
-                            {r.origin.provenance === "unplaced"
-                              ? <span className="dim">—</span>
-                              : `${r.origin.city ?? "—"}, ${r.origin.country ?? "—"}`}
+                            {st.parties.slice(0, 3).map((p, i) => (
+                              <span key={p.actorId}>{i > 0 && ", "}{p.name} <span className="mono dim">{p.files}</span></span>
+                            ))}
+                            {st.parties.length > 3 && <span className="dim"> +{st.parties.length - 3}</span>}
                           </td>
-                          <td className="mono">{r.civilizationCount}</td>
-                          <td className="mono">{r.eventCount}</td>
+                          <td className="mono">
+                            <span className="prov curated">CURATED {st.provenance.curated}</span>
+                            {st.provenance.wikidata > 0 && <> <span className="prov wikidata">WIKIDATA {st.provenance.wikidata}</span></>}
+                            {st.provenance.inferred > 0 && <> <span className="prov inferred">INFERRED {st.provenance.inferred}</span></>}
+                          </td>
                           <td>
-                            <ProvenanceMark p={r.origin.provenance} pref={r.origin.provenanceRef} />
+                            {(Object.keys(st.categories) as Category[]).filter((k) => st.categories[k] > 0).map((k, i) => (
+                              <span key={k}>{i > 0 && " "}<CategoryLabel category={k} /> <span className="mono dim">{st.categories[k]}</span></span>
+                            ))}
                           </td>
+                          <td className="mono">{st.pairKeys.length}</td>
                         </tr>
-                      ))}
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <details>
+                <summary className="mono dim">EVERY PLACED FILE, BY SEAT ({origins.counts.placed})</summary>
+                <div className="tablewrap">
+                  <table>
+                    <caption className="sr-only">Every placed file with the party that placed it</caption>
+                    <thead>
+                      <tr><th>File</th><th>Category</th><th>Seat</th><th>Placed by</th><th>Provenance</th></tr>
+                    </thead>
+                    <tbody>
+                      {origins.seats.flatMap((st) =>
+                        st.civs.map((c) => {
+                          const co = c.origin!;
+                          const by = co.placedBy;
+                          const sp = placingSponsor(co);
+                          const o = sp?.origin ?? co.origin;
+                          const rank = by?.rank ?? (sp ? co.sponsors.indexOf(sp) + 1 : 0);
+                          const first = co.sponsors[0];
+                          return (
+                            <tr key={c.id} data-file={c.id} data-seat={st.key} className={originFiltering && !keptFiles.has(c.id) ? "filtered" : undefined}>
+                              <td>
+                                <span className="civrow-name">
+                                  <CivSeal id={c.id} category={c.category} size={22} />
+                                  <a className="rowlink" href={fileHref(c.id)}>{c.name}</a>
+                                </span>
+                              </td>
+                              <td><CategoryLabel category={c.category} /></td>
+                              <td><a href={`#seat-${seatSlug(st.key)}`}>{st.name}</a></td>
+                              <td>
+                                {sp?.actorName ?? "—"}{rank > 1 && first && <span className="dim"> · its {rank === 2 ? "2nd" : rank === 3 ? "3rd" : `${rank}th`} party — its 1st, {first.actorName}, is {first.excluded ? `not a party (${first.excluded})` : "unplaced"}</span>}
+                              </td>
+                              <td>
+                                {o.provenance === "wikidata" && o.provenanceRef ? (
+                                  <a className="prov wikidata" href={`https://www.wikidata.org/wiki/${o.provenanceRef.replace("wikidata:", "")}`} target="_blank" rel="noreferrer noopener">WIKIDATA {o.provenanceRef.replace("wikidata:", "")}</a>
+                                ) : (
+                                  <span className={`prov ${o.provenance}`}>{o.provenance.toUpperCase()}</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        }),
+                      )}
                     </tbody>
                   </table>
                 </div>
-              </>
-            )}
+              </details>
+
+              <h3>Ties by seat pair</h3>
+              <div className="tablewrap">
+                <table>
+                  <caption className="sr-only">Files whose first and second parties sit in two seats, by pair</caption>
+                  <thead>
+                    <tr><th>Seat</th><th>Seat</th><th>Files</th><th>Parties</th><th>Files listed</th></tr>
+                  </thead>
+                  <tbody>
+                    {origins.pairs.map((p) => (
+                      <tr
+                        key={p.key}
+                        data-pair={p.key}
+                        onMouseEnter={() => setOriginHighlight(p.key)}
+                        onMouseLeave={() => setOriginHighlight(null)}
+                      >
+                        <td><a href={`#seat-${seatSlug(p.from.key)}`}>{p.from.name}</a></td>
+                        <td>{"tieOnly" in p.to ? <span>{p.to.city} <span className="dim">— no file placed here</span></span> : <a href={`#seat-${seatSlug(p.to.key)}`}>{p.to.name}</a>}</td>
+                        <td className="mono">{p.civs.length}</td>
+                        <td>{p.partyPairs.slice(0, 2).map((x, i) => <span key={i}>{i > 0 && ", "}{x.a} × {x.b} <span className="mono dim">{x.n}</span></span>)}</td>
+                        <td>{p.civs.slice(0, 4).map((c, i) => <span key={c.id}>{i > 0 && ", "}<a href={fileHref(c.id)}>{c.name}</a></span>)}{p.civs.length > 4 && <span className="dim"> +{p.civs.length - 4}</span>}</td>
+                      </tr>
+                    ))}
+                    {origins.pairs.length === 0 && <tr><td colSpan={5} className="dim">No file has two located parties in different seats.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+
+              {origins.unplaced.length > 0 && (
+                <div id="plate-1-unplaced">
+                  <h3>Unplaced</h3>
+                  {origins.unplaced.map((g) => (
+                    <div className="tablewrap" key={g.reason}>
+                      <table>
+                        <caption className="mono dim" style={{ textAlign: "left", padding: "6px 0" }}>
+                          {g.reason === "not-located" && <>PARTY NAMED, NOT LOCATED ({g.civs.length})</>}
+                          {g.reason === "no-organisation" && <>NO PARTY NAMED ({g.civs.length}) — the entries name people, papers or groups, not an organisation</>}
+                          {g.reason === "no-actors" && <>NO ACTORS NAMED ({g.civs.length})</>}
+                        </caption>
+                        <thead>
+                          <tr><th>File</th><th>{g.reason === "not-located" ? "Party named" : "Names in its entries"}</th><th>Category</th></tr>
+                        </thead>
+                        <tbody>
+                          {g.civs.map((c) => {
+                            const sponsors = c.origin?.sponsors ?? [];
+                            return (
+                              <tr key={c.id} data-file={c.id}>
+                                <td><a className="rowlink" href={fileHref(c.id)}>{c.name}</a></td>
+                                <td className="mono">
+                                  {sponsors.slice(0, 4).map((sp, i) => (
+                                    <span key={sp.actorId}>{i > 0 && ", "}{sp.actorName}{sp.excluded && <span className="dim"> ({sp.excluded})</span>}{!sp.excluded && (!sp.origin || sp.origin.provenance === "unplaced") && <span className="prov unplaced"> UNPLACED</span>}</span>
+                                  ))}
+                                  {sponsors.length === 0 && <span className="dim">—</span>}
+                                </td>
+                                <td><CategoryLabel category={c.category} /></td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {sponsorsRanked.length > 0 && (
+                <>
+                  <h3>Parties of record</h3>
+                  <div className="tablewrap">
+                    <table>
+                      <caption className="sr-only">Parties of record, by files in which they are named</caption>
+                      <thead>
+                        <tr>
+                          <th>Party</th>
+                          <th>Kind</th>
+                          <th>Seat</th>
+                          <th>Files naming it</th>
+                          <th>Files placed here</th>
+                          <th>Entries</th>
+                          <th>Provenance</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sponsorsRanked.slice(0, 40).map((r) => <PartyRow key={r.id} r={r} origins={origins} setOriginHighlight={setOriginHighlight} />)}
+                      </tbody>
+                    </table>
+                    {sponsorsRanked.length > 40 && (
+                      <details>
+                        <summary className="mono dim">THE REMAINING {sponsorsRanked.length - 40} PARTIES</summary>
+                        <table>
+                          <tbody>
+                            {sponsorsRanked.slice(40).map((r) => <PartyRow key={r.id} r={r} origins={origins} setOriginHighlight={setOriginHighlight} />)}
+                          </tbody>
+                        </table>
+                      </details>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </section>
 
           {/* ---------------- Plate II ---------------- */}
@@ -569,6 +762,43 @@ function TieRow({
           <span key={`u${i}`}>{(i > 0 || e.specificActors.length > 0) && ", "}<span className="tie-actor-ubiq">{a}</span></span>
         ))}
       </td>
+    </tr>
+  );
+}
+
+function PartyRow({
+  r,
+  origins,
+  setOriginHighlight,
+}: {
+  r: ActorRegistryEntry;
+  origins: ReturnType<typeof _buildOrigins>;
+  setOriginHighlight: (v: string | null) => void;
+}) {
+  const seat = origins.seats.find((st) => st.parties.some((p) => p.actorId === r.id));
+  const placedHere = seat?.parties.find((p) => p.actorId === r.id)?.files ?? 0;
+  const excluded = !["lab", "company", "university", "government", "agent-framework"].includes(r.kind);
+  return (
+    <tr
+      data-party={r.id}
+      onMouseEnter={() => seat && setOriginHighlight(seat.key)}
+      onMouseLeave={() => setOriginHighlight(null)}
+    >
+      <td>{r.homepage ? <a href={r.homepage} target="_blank" rel="noreferrer noopener">{r.name}</a> : r.name}</td>
+      <td className="mono">{r.kind}{r.productOf && <span className="dim"> · of {r.productOf}</span>}</td>
+      <td>
+        {seat ? (
+          <a href={`#seat-${seatSlug(seat.key)}`}>{seat.name}, {seat.country}</a>
+        ) : r.origin.provenance === "unplaced" ? (
+          <span className="prov unplaced">UNPLACED</span>
+        ) : (
+          <span className="dim">{r.origin.city ?? "—"}, {r.origin.country ?? "—"} · places no file</span>
+        )}
+      </td>
+      <td className="mono">{r.civilizationCount}</td>
+      <td className="mono">{excluded ? <span className="dim">—</span> : placedHere}</td>
+      <td className="mono">{r.eventCount}</td>
+      <td><ProvenanceMark p={r.origin.provenance} pref={r.origin.provenanceRef} /></td>
     </tr>
   );
 }

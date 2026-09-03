@@ -859,3 +859,12 @@ tr.is-near .rowlink { font-weight: 700; }
   stroke-linejoin: round;
   pointer-events: none;
 }
+
+/* Plate I — origins: canvas, provenance mark, targeted rows, filtered rows */
+.plate-canvas > svg.origins { display: block; width: auto; height: auto; min-width: 960px; }
+.prov.inferred { color: var(--ink); border-bottom: 1px dashed var(--ink-dim); }
+tr:target td { border-left: 2px solid var(--ink); }
+tr:target td:first-child { padding-left: 10px; }
+tr[id^="seat-"] { scroll-margin-top: 16px; }
+tr.filtered td { color: var(--ink-dim); }
+tr.filtered .rowlink { color: var(--ink-dim); font-weight: 400; }

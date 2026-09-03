@@ -40,6 +40,10 @@ export interface PlaceOptions {
   lh: number; // line height / box height
   gap?: number; // clearance from the disc edge
   bounds: Box;
+  // Anchor rings, as extra clearance beyond the disc: the ties plate uses
+  // two; the origins plate adds a third so a small displaced mark in a
+  // dense region can still carry its name.
+  rings?: number[];
 }
 
 export function overlaps(a: Box, b: Box): boolean {
@@ -52,6 +56,7 @@ export function placeLabels(
   opts: PlaceOptions,
 ): PlacedLabel[] {
   const gap = opts.gap ?? 4;
+  const rings = opts.rings ?? [0, 11];
   const inset = 3;
   const bounds = opts.bounds;
   const taken: Box[] = [...obstacles];
@@ -65,7 +70,7 @@ export function placeLabels(
     // a name a few pixels from its mark still reads as its name, and the
     // second ring clears neighbouring discs in a dense core.
     const candidates: Array<{ x: number; y: number; anchor: PlacedLabel["anchor"]; box: Box }> = [];
-    for (const extra of [0, 11]) {
+    for (const extra of rings) {
       const d = m.r + gap + extra;
       const diag = d * 0.7071;
       candidates.push(
@@ -82,7 +87,8 @@ export function placeLabels(
     if (m.prefer === "ns") {
       // north, south, then east, west, then the diagonals — for a caption
       // that should sit above or below its group, not beside it
-      const order = [3, 2, 0, 1, 4, 5, 6, 7, 11, 10, 8, 9, 12, 13, 14, 15];
+      const perRing = [3, 2, 0, 1, 4, 5, 6, 7];
+      const order = rings.flatMap((_, ri) => perRing.map((i) => i + ri * 8));
       const re = order.map((i) => candidates[i]).filter(Boolean);
       candidates.splice(0, candidates.length, ...re);
     }
