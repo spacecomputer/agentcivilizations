@@ -448,6 +448,14 @@ export function buildCadence(
 
 export const CLUSTER_KM = 100;
 
+// One curated region may be drawn as an inset at a second scale when
+// three or more places of one seat fall within its radius. Printed on
+// the leaf; a second qualifying region is listed, never drawn.
+export interface Region { key: string; name: string; lat: number; lng: number; radiusKm: number }
+export const REGIONS: Region[] = [{ key: "bay", name: "THE BAY", lat: 37.6, lng: -122.2, radiusKm: 70 }];
+export const INSET_MIN_PLACES = 3;
+export const INSET_CLUSTER_KM = 5; // Stanford folds into Palo Alto; Cupertino and San Jose stay apart
+
 export interface OriginParty {
   actorId: string;
   name: string;
@@ -506,12 +514,40 @@ export interface UnplacedGroup {
   reason: UnplacedReason;
   civs: Civilization[];
 }
+export interface InsetMember {
+  key: string; // lead place key
+  city: string;
+  lat: number;
+  lng: number;
+  places: OriginPlace[];
+  civs: Civilization[];
+  parties: OriginParty[];
+  provenance: ProvenanceTally;
+  cited: boolean;
+  mixed: boolean;
+}
+export interface OriginInset {
+  region: Region;
+  seat: OriginSeat; // the aggregate mark on the world plate
+  members: InsetMember[]; // files desc
+  files: number;
+  places: number;
+}
+export interface UnlocatedActor {
+  actorId: string;
+  actorName: string;
+  files: number; // files it would place
+  entries: number; // mentions across those files
+}
 export interface Origins {
   seats: OriginSeat[]; // files desc, then key
   pairs: OriginPair[]; // files desc, then key
   tieOnly: TieOnlySeat[];
   withinSeat: number; // files whose second party sits in the same seat
   unplaced: UnplacedGroup[];
+  unlocatedActors: UnlocatedActor[]; // the seed worklist, files desc
+  inset: OriginInset | null;
+  insetOverflow: number; // further regions that qualified but are not drawn
   pending: Civilization[]; // never visited by the origins job
   surveyedAt: string | null;
   placedAt: Map<string, string>; // civ id → seat key
@@ -749,6 +785,77 @@ export function buildOrigins(civs: Civilization[]): Origins {
     "no-organisation": unplacedBy.get("no-organisation")?.length ?? 0,
     "not-located": unplacedBy.get("not-located")?.length ?? 0,
   };
+  // Inset regions: the first region with INSET_MIN_PLACES places of one
+  // seat inside its radius is drawn; members fold at INSET_CLUSTER_KM.
+  let inset: OriginInset | null = null;
+  let insetOverflow = 0;
+  for (const region of REGIONS) {
+    let best: { seat: OriginSeat; places: OriginPlace[] } | null = null;
+    for (const seat of seats) {
+      const inside = seat.members.filter((m) => haversineKm(m, region) <= region.radiusKm);
+      if (inside.length >= INSET_MIN_PLACES && (!best || inside.length > best.places.length)) best = { seat, places: inside };
+    }
+    if (!best) continue;
+    if (inset) { insetOverflow++; continue; }
+    const members: InsetMember[] = [];
+    for (const pl of [...best.places].sort((a, b) => b.civs.length - a.civs.length || a.key.localeCompare(b.key))) {
+      const home = members.find((m) => haversineKm(m, pl) <= INSET_CLUSTER_KM);
+      if (home) {
+        home.places.push(pl);
+        home.civs.push(...pl.civs);
+        for (const p of pl.parties) {
+          const e = home.parties.find((x) => x.actorId === p.actorId);
+          if (e) e.files += p.files;
+          else home.parties.push({ ...p });
+        }
+        home.provenance.curated += pl.provenance.curated;
+        home.provenance.wikidata += pl.provenance.wikidata;
+        home.provenance.inferred += pl.provenance.inferred;
+      } else {
+        members.push({
+          key: pl.key,
+          city: pl.city,
+          lat: pl.lat,
+          lng: pl.lng,
+          places: [pl],
+          civs: [...pl.civs],
+          parties: pl.parties.map((p) => ({ ...p })),
+          provenance: { ...pl.provenance },
+          cited: true,
+          mixed: false,
+        });
+      }
+    }
+    for (const m of members) {
+      m.parties.sort((a, b) => b.files - a.files || a.name.localeCompare(b.name));
+      m.civs.sort((a, b) => a.id.localeCompare(b.id));
+      m.cited = m.provenance.inferred === 0;
+      m.mixed = m.provenance.inferred > 0 && m.provenance.curated + m.provenance.wikidata > 0;
+    }
+    members.sort((a, b) => b.civs.length - a.civs.length || a.key.localeCompare(b.key));
+    inset = { region, seat: best.seat, members, files: members.reduce((n, m) => n + m.civs.length, 0), places: best.places.length };
+  }
+
+  // The seed worklist: organisations named in unplaced files that have
+  // no located headquarters, ranked by the files they would place.
+  const unlocatedMap = new Map<string, UnlocatedActor>();
+  for (const c of unplacedBy.get("not-located") ?? []) {
+    const co = c.origin!;
+    const names =
+      co.unlocated ??
+      co.sponsors.filter((s) => !s.excluded && (!s.origin || s.origin.provenance === "unplaced")).map((s) => ({ actorId: s.actorId, actorName: s.actorName, mentions: s.mentions }));
+    const seen = new Set<string>();
+    for (const u of names) {
+      if (seen.has(u.actorId)) continue; // older docs may carry one entry per spelling
+      seen.add(u.actorId);
+      const e = unlocatedMap.get(u.actorId) ?? { actorId: u.actorId, actorName: u.actorName, files: 0, entries: 0 };
+      e.files++;
+      e.entries += u.mentions;
+      unlocatedMap.set(u.actorId, e);
+    }
+  }
+  const unlocatedActors = [...unlocatedMap.values()].sort((a, b) => b.files - a.files || b.entries - a.entries || a.actorName.localeCompare(b.actorName));
+
   const byCountryMap = new Map<string, number>();
   for (const s of seats) byCountryMap.set(s.country, (byCountryMap.get(s.country) ?? 0) + s.files);
   const byCountry = [...byCountryMap.entries()]
@@ -762,6 +869,9 @@ export function buildOrigins(civs: Civilization[]): Origins {
     tieOnly: [...tieOnlyMap.values()].sort((a, b) => a.key.localeCompare(b.key)),
     withinSeat,
     unplaced,
+    unlocatedActors,
+    inset,
+    insetOverflow,
     pending,
     surveyedAt,
     placedAt,

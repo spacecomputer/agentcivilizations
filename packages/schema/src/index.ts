@@ -200,6 +200,12 @@ export const CivilizationOrigin = z.object({
     })
     .optional(),
   reason: UnplacedReason.optional(),
+  // For reason "not-located": the organisations named in the file's
+  // entries that have no located headquarters yet — the public worklist
+  // for the curated seed, ranked by mentions.
+  unlocated: z
+    .array(z.object({ actorId: z.string(), actorName: z.string(), mentions: z.number().int().nonnegative() }))
+    .optional(),
   updatedAt: z.string().datetime(),
 });
 export type CivilizationOrigin = z.infer<typeof CivilizationOrigin>;

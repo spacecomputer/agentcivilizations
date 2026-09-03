@@ -868,3 +868,7 @@ tr:target td:first-child { padding-left: 10px; }
 tr[id^="seat-"] { scroll-margin-top: 16px; }
 tr.filtered td { color: var(--ink-dim); }
 tr.filtered .rowlink { color: var(--ink-dim); font-weight: 400; }
+
+/* Find controls keep the leaf's focus outline; near-emboldening survives a filter */
+.plate-find input[type="search"]:focus { outline: 2px solid var(--cat-coordination); outline-offset: 2px; border-bottom-color: var(--ink); }
+tr.filtered.is-near .rowlink { font-weight: 700; }

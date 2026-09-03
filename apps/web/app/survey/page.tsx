@@ -24,7 +24,7 @@ import {
   type OriginReading,
   type OriginLayoutInfo,
 } from "@/components/survey/OriginsPlate";
-import { buildOrigins as _buildOrigins, placingSponsor, CLUSTER_KM } from "@/lib/survey";
+import { buildOrigins as _buildOrigins, placingSponsor, CLUSTER_KM, INSET_MIN_PLACES, INSET_CLUSTER_KM } from "@/lib/survey";
 import { floorFiles, fmtLat, fmtLng, TIE_STRONG_FILES, PAIR_CAPTION_MIN } from "@/lib/origins-layout";
 import { CategoryLabel } from "@/components/Glyph";
 import { CivSeal } from "@/components/CivSeal";
@@ -37,6 +37,7 @@ import { callNumber, utcDay } from "@/lib/format";
 
 const CATEGORIES: Category[] = ["coordination", "security", "community", "speculative"];
 const TIES_TABLE_FIRST = 60;
+const UNLOCATED_TABLE_FIRST = 60; // the worklist prints this many rows, then a counted foot
 
 function ProvenanceMark({ p, pref }: { p: string; pref?: string }) {
   if (p === "wikidata" && pref?.startsWith("wikidata:")) {
@@ -118,7 +119,28 @@ export default function SurveyPage() {
     [civs, cats, confirmedOnly, confirmedCivIds],
   );
   const originFiltering = cats.size < CATEGORIES.length || confirmedOnly;
-  const readSeatKey = originReading?.kind === "seat" ? originReading.key : null;
+  const readSeatKey =
+    originReading?.kind === "seat" ? originReading.key
+    : originReading?.kind === "file" ? (origins?.placedAt.get(originReading.id) ?? null)
+    : originReading?.kind === "party" ? (origins?.seats.find((s) => s.parties.some((p) => p.actorId === originReading.id))?.key ?? null)
+    : null;
+  const readFileId = originReading?.kind === "file" ? originReading.id : null;
+  // Two-way sync: a hovered party lights the seat where it places files
+  // and emboldens every file it placed; a hovered file lights its seat.
+  const near = useMemo(() => {
+    const files = new Set<string>();
+    let seat: string | null = null;
+    if (origins && originHighlight?.startsWith("party:")) {
+      const id = originHighlight.slice(6);
+      for (const st of origins.seats) {
+        for (const c of st.civs) {
+          const sp = c.origin ? placingSponsor(c.origin) : null;
+          if (sp?.actorId === id) { files.add(c.id); seat = st.key; }
+        }
+      }
+    }
+    return { files, seat };
+  }, [origins, originHighlight]);
 
   const toggleCat = (c: Category) =>
     setCats((prev) => {
@@ -230,6 +252,9 @@ export default function SurveyPage() {
                 </span>
                 <span className="key-group">
                   <span className="key-item"><span className="sr-only">; </span>SEATS WITHIN {CLUSTER_KM} KM IN ONE COUNTRY SHARE A MARK</span>
+                  {layout.inset && (
+                    <span className="key-item"><span className="sr-only">; </span>INSET · A SEAT WHOSE PLACES ARE {INSET_MIN_PLACES} OR MORE WITHIN {layout.inset.radiusKm} KM OF {layout.inset.name} · DRAWN ONCE, AT {layout.inset.scale}× THE PLATE'S SCALE · PLACES WITHIN {INSET_CLUSTER_KM} KM SHARE A MARK{origins.insetOverflow > 0 && <> · +{origins.insetOverflow} REGION IN THE TABLE</>}</span>
+                  )}
                   <span className="key-item"><span className="sr-only">; </span>BOUNDS {fmtLat(layout.band.s)}–{fmtLat(layout.band.n)} · {fmtLng(layout.band.w)}–{fmtLng(layout.band.e)} · EVERY SEAT AND TIE LIES WITHIN</span>
                   {layout.moved > 0 && (
                     <span className="key-item"><span className="sr-only">; </span>A HAIRLINE LEADS A MOVED MARK TO ITS TRUE POSITION · {layout.moved} MOVED APART THIS RENDER</span>
@@ -248,6 +273,8 @@ export default function SurveyPage() {
             <div className="plate-figure">
               <OriginsPlate
                 origins={origins}
+                civs={civs ?? []}
+                registry={registry}
                 kept={keptFiles}
                 cats={cats}
                 hideFiltered={hideFiltered}
@@ -309,7 +336,7 @@ export default function SurveyPage() {
                           id={`seat-${seatSlug(st.key)}`}
                           data-seat={st.key}
                           tabIndex={-1}
-                          className={`${isReading ? "is-reading" : ""}${nKept === 0 && originFiltering ? " filtered" : ""}`.trim() || undefined}
+                          className={`${isReading ? "is-reading" : ""}${near.seat === st.key ? " is-near" : ""}${nKept === 0 && originFiltering ? " filtered" : ""}`.trim() || undefined}
                           aria-current={isReading ? "true" : undefined}
                           onMouseEnter={() => setOriginHighlight(st.key)}
                           onMouseLeave={() => setOriginHighlight(null)}
@@ -367,7 +394,18 @@ export default function SurveyPage() {
                           const rank = by?.rank ?? (sp ? co.sponsors.indexOf(sp) + 1 : 0);
                           const first = co.sponsors[0];
                           return (
-                            <tr key={c.id} data-file={c.id} data-seat={st.key} className={originFiltering && !keptFiles.has(c.id) ? "filtered" : undefined}>
+                            <tr
+                              key={c.id}
+                              data-file={c.id}
+                              data-seat={st.key}
+                              data-party={sp?.actorId}
+                              className={`${readFileId === c.id ? "is-reading" : ""}${near.files.has(c.id) ? " is-near" : ""}${originFiltering && !keptFiles.has(c.id) ? " filtered" : ""}`.trim() || undefined}
+                              aria-current={readFileId === c.id ? "true" : undefined}
+                              onMouseEnter={() => setOriginHighlight(`file:${c.id}`)}
+                              onMouseLeave={() => setOriginHighlight(null)}
+                              onFocusCapture={() => setOriginHighlight(`file:${c.id}`)}
+                              onBlurCapture={() => setOriginHighlight(null)}
+                            >
                               <td>
                                 <span className="civrow-name">
                                   <CivSeal id={c.id} category={c.category} size={22} />
@@ -377,7 +415,7 @@ export default function SurveyPage() {
                               <td><CategoryLabel category={c.category} /></td>
                               <td><a href={`#seat-${seatSlug(st.key)}`}>{st.name}</a></td>
                               <td>
-                                {sp?.actorName ?? "—"}{rank > 1 && first && <span className="dim"> · its {rank === 2 ? "2nd" : rank === 3 ? "3rd" : `${rank}th`} party — its 1st, {first.actorName}, is {first.excluded ? `not a party (${first.excluded})` : "unplaced"}</span>}
+                                {sp?.actorName ?? "—"}{rank > 1 && first && first.actorId !== sp?.actorId && <span className="dim"> · its {rank === 2 ? "2nd" : rank === 3 ? "3rd" : `${rank}th`} party — its 1st, {first.actorName}, is {first.excluded ? `not a party (${first.excluded})` : "unplaced"}</span>}
                               </td>
                               <td>
                                 {o.provenance === "wikidata" && o.provenanceRef ? (
@@ -409,6 +447,8 @@ export default function SurveyPage() {
                         data-pair={p.key}
                         onMouseEnter={() => setOriginHighlight(p.key)}
                         onMouseLeave={() => setOriginHighlight(null)}
+                        onFocusCapture={() => setOriginHighlight(p.key)}
+                        onBlurCapture={() => setOriginHighlight(null)}
                       >
                         <td><a href={`#seat-${seatSlug(p.from.key)}`}>{p.from.name}</a></td>
                         <td>{"tieOnly" in p.to ? <span>{p.to.city} <span className="dim">— no file placed here</span></span> : <a href={`#seat-${seatSlug(p.to.key)}`}>{p.to.name}</a>}</td>
@@ -457,6 +497,47 @@ export default function SurveyPage() {
                     </div>
                   ))}
                 </div>
+              )}
+
+              {origins.unlocatedActors.length > 0 && (
+                <>
+                  <h3>Organisations not yet located</h3>
+                  <p className="dim">
+                    Named in unplaced files, with no located headquarters — the worklist for the curated seed, by the files each would place.
+                  </p>
+                  <div className="tablewrap">
+                    <table>
+                      <caption className="sr-only">Organisations not yet located, by files they would place</caption>
+                      <thead>
+                        <tr><th>Name</th><th>Files it would place</th><th>Entries naming it</th><th>Standing</th></tr>
+                      </thead>
+                      <tbody>
+                        {origins.unlocatedActors.slice(0, UNLOCATED_TABLE_FIRST).map((u) => {
+                          const e = registry.find((r) => r.id === u.actorId);
+                          return (
+                            <tr key={u.actorId} data-party={u.actorId} onMouseEnter={() => setOriginHighlight(`party:${u.actorId}`)} onMouseLeave={() => setOriginHighlight(null)}>
+                              <td className="mono">{u.actorName}</td>
+                              <td className="mono">{u.files}</td>
+                              <td className="mono">{u.entries}</td>
+                              <td className="mono">
+                                {e ? (
+                                  <><span className="prov unplaced">UNPLACED</span>{e.origin.provenanceRef && <span className="dim"> · {e.origin.provenanceRef}</span>}{e.kind !== "unknown" && <span className="dim"> · {e.kind}</span>}</>
+                                ) : (
+                                  <span className="dim">not in the registry — below the lookup threshold</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                    {origins.unlocatedActors.length > UNLOCATED_TABLE_FIRST && (
+                      <p className="mono dim">
+                        {origins.unlocatedActors.length - UNLOCATED_TABLE_FIRST} MORE · AT MOST {origins.unlocatedActors[UNLOCATED_TABLE_FIRST].files} {origins.unlocatedActors[UNLOCATED_TABLE_FIRST].files === 1 ? "FILE" : "FILES"} EACH
+                      </p>
+                    )}
+                  </div>
+                </>
               )}
 
               {sponsorsRanked.length > 0 && (
@@ -776,18 +857,22 @@ function PartyRow({
   setOriginHighlight: (v: string | null) => void;
 }) {
   const seat = origins.seats.find((st) => st.parties.some((p) => p.actorId === r.id));
-  const placedHere = seat?.parties.find((p) => p.actorId === r.id)?.files ?? 0;
+  const placedHere = r.placedCount ?? seat?.parties.find((p) => p.actorId === r.id)?.files ?? 0;
   const excluded = !["lab", "company", "university", "government", "agent-framework"].includes(r.kind);
   return (
     <tr
       data-party={r.id}
-      onMouseEnter={() => seat && setOriginHighlight(seat.key)}
+      onMouseEnter={() => setOriginHighlight(`party:${r.id}`)}
       onMouseLeave={() => setOriginHighlight(null)}
+      onFocusCapture={() => setOriginHighlight(`party:${r.id}`)}
+      onBlurCapture={() => setOriginHighlight(null)}
     >
       <td>{r.homepage ? <a href={r.homepage} target="_blank" rel="noreferrer noopener">{r.name}</a> : r.name}</td>
       <td className="mono">{r.kind}{r.productOf && <span className="dim"> · of {r.productOf}</span>}</td>
       <td>
-        {seat ? (
+        {excluded ? (
+          <span className="dim">never places</span>
+        ) : seat ? (
           <a href={`#seat-${seatSlug(seat.key)}`}>{seat.name}, {seat.country}</a>
         ) : r.origin.provenance === "unplaced" ? (
           <span className="prov unplaced">UNPLACED</span>

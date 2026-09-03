@@ -75,12 +75,36 @@ interface Tally {
 // Names that denote a group of people rather than an organisation. They
 // are recorded as kind "collective" and never looked up or placed.
 const COLLECTIVE_TAIL =
-  /\b(authors?|researchers?|users?|developers?|maintainers?|contributors?|attackers?|hackers?|scammers?|operators?|actors?|litigants?|team|et al\.?|community|staff|employees|volunteers)\b\s*(\([^)]*\))?\s*$/i;
+  /\b(authors?|researchers?|users?|developers?|maintainers?|contributors?|attackers?|hackers?|scammers?|operators?|actors?|litigants?|judges?|victims?|customers?|clients?|participants?|workers?|experts?|analysts?|engineers?|students?|reviewers?|moderators?|members?|founders?|agents|bots|models|entrants?|patients?|swarms?|firms|companies|startups|vendors|providers|organi[sz]ations|institutions|banks|governments|regulators|nations|countries|people|citizens|consumers|players|readers|subscribers|households|families|officials|lawmakers|legislators|executives|leaders|investors|shareholders|creditors|buyers|sellers|traders|team|et al\.?|community|staff|employees|volunteers)\b\s*(\([^)]*\))?\s*$/i;
 const COLLECTIVE_WHOLE =
   /^(researchers|attackers|users|hackers|unknown|the team|a team|scammers|operators|threat actors?|individual litigant|court(?: \(.*\))?)$/i;
 export function isCollectiveName(raw: string): boolean {
   const s = raw.trim();
   return COLLECTIVE_WHOLE.test(s) || COLLECTIVE_TAIL.test(s);
+}
+
+// A name shaped like a person's — two or three capitalised words with no
+// organisation word among them — is recorded as an individual when it is
+// not in the registry. Registered names never pass through this rule; a
+// wrong call is visible on the leaf as "(individual)" and is corrected by
+// a seed entry.
+const ORG_TOKENS =
+  /^(ai|labs?|lab|inc|corp|corporation|co|ltd|llc|plc|gmbh|sa|ag|group|partners|ventures|capital|finance|financial|bank|technologies|technology|tech|systems|networks?|security|cloud|software|services|solutions|foundation|institute|university|college|school|agency|council|commission|ministry|department|bureau|exchange|media|news|press|times|journal|health|energy|motors|airlines?|studios?|games|research|analytics|robotics|dynamics|intelligence|computing|digital|global|international|national|federal|state|city|county|society|association|union|alliance|consortium|project|initiative|platform|protocol|network|fund|trust|holdings|industries|electronics|semiconductor|telecom|mobile|wireless|payments?|insurance|logistics|automotive|aerospace|defense|defence|pharma|biotech|medical|hospital|clinic|police|court|army|navy|force|command|center|centre|office|authority|regulator|board|committee|party|government|house|senate|congress|parliament|assembly|federation|league|club|team|works|web|online|app|apps|store|shop|market|markets|exchange|coin|chain|ledger|dao|open|openai|deepmind|meta|google|microsoft|amazon|apple|nvidia|ibm|area|bay|valley|region|district|coast|island|street|avenue|road|park|square|north|south|east|west)$/i;
+export function looksLikePerson(raw: string): boolean {
+  const s = raw.trim();
+  if (/[0-9&@,/()"]/.test(s)) return false; // a period is allowed only as an initial's
+  const tokens = s.split(/\s+/);
+  if (tokens.length < 2 || tokens.length > 4) return false;
+  const particles = new Set(["de", "da", "di", "du", "del", "della", "van", "von", "der", "den", "la", "le", "al", "bin", "ibn", "y", "e"]);
+  let capitalised = 0;
+  for (const t of tokens) {
+    if (ORG_TOKENS.test(t)) return false;
+    if (particles.has(t.toLowerCase())) continue;
+    // "Anying", "Jean-Luc", "O'Brien", "J."
+    if (!/^[A-Z][a-z'’]+(-[A-Za-z][a-z'’]+)*$/.test(t) && !/^[A-Z]\.$/.test(t)) return false; // an initial needs its period
+    capitalised++;
+  }
+  return capitalised >= 2 && capitalised <= 3;
 }
 
 function isoCountry(v: unknown): string | undefined {
@@ -670,17 +694,22 @@ export async function runOrigins(opts: {
     if (!civIds.has(civId)) continue;
     const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
     const sponsors: Sponsor[] = [];
+    const unlocated: NonNullable<CivilizationOrigin["unlocated"]> = [];
     let placedBy: CivilizationOrigin["placedBy"] | undefined;
     let dominantOrigin: Origin | null = null;
     let anyOrganisation = false;
     let rank = 0;
     for (const [slug, mentions] of ranked) {
-      rank++;
       const r = resolveActor(byActor.get(slug)?.name ?? slug, aliasIndex);
       const e = r ? registry.get(r.id) : undefined;
       const name = e?.name ?? byActor.get(slug)?.name ?? slug;
       if (e?.kind === "publication") continue; // sources of record, never parties
-      const excluded = e ? exclusionFor(e.kind) : undefined;
+      rank++; // rank among parties, not among raw names
+      const excluded = e
+        ? exclusionFor(e.kind)
+        : isCollectiveName(name) ? ("collective" as const)
+        : looksLikePerson(name) ? ("individual" as const)
+        : undefined;
       if (!excluded) anyOrganisation = true;
       const sponsor: Sponsor = {
         actorId: e?.id ?? slug,
@@ -690,6 +719,13 @@ export async function runOrigins(opts: {
         ...(excluded && { excluded }),
       };
       if (sponsors.length < TOP_SPONSORS) sponsors.push(sponsor);
+      if (!excluded && (!e || e.origin.provenance === "unplaced")) {
+        // one entry per registry id — two spellings of one name are one party
+        const uid = e?.id ?? slug;
+        const prev = unlocated.find((u) => u.actorId === uid);
+        if (prev) prev.mentions += mentions;
+        else unlocated.push({ actorId: uid, actorName: name, mentions });
+      }
       if (!dominantOrigin && !excluded && e && e.origin.provenance !== "unplaced") {
         dominantOrigin = e.origin;
         placedBy = { actorId: e.id, actorName: e.name, rank, mentions };
@@ -709,6 +745,7 @@ export async function runOrigins(opts: {
       sponsors,
       ...(placedBy && { placedBy }),
       ...(reason && { reason }),
+      ...(reason === "not-located" && unlocated.length > 0 && { unlocated: unlocated.slice(0, 8) }),
       updatedAt: now,
     };
     batch.update(db.collection("civilizations").doc(civId), { origin: co });
@@ -755,4 +792,4 @@ export async function runOrigins(opts: {
 }
 
 // Exposed for tests.
-export const _internal = { kindFromDescription, ORG_WORDS, isCollectiveName, resolveActor, nameMatches, exclusionFor };
+export const _internal = { kindFromDescription, ORG_WORDS, isCollectiveName, looksLikePerson, resolveActor, nameMatches, exclusionFor };

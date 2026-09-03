@@ -5,7 +5,13 @@
 import assert from "node:assert/strict";
 import { _internal } from "../lib-modules/origins.js";
 
-const { isCollectiveName, resolveActor, kindFromDescription, nameMatches, exclusionFor } = _internal;
+const { isCollectiveName, looksLikePerson, resolveActor, kindFromDescription, nameMatches, exclusionFor } = _internal;
+
+// ---- person-name rule (applied only to names not in the registry) ----
+for (const n of ["Anying Chen", "Aleksandr Smechov", "Peiying Zhu", "Ameya Ketkar", "Jean-Luc de Villiers", "Maria del Carmen Ruiz", "J. Robert Oppenheimer"])
+  assert.equal(looksLikePerson(n), true, `person: ${n}`);
+for (const n of ["Palo Alto Networks", "Cascadia Web Services", "Biggo Finance", "Scale AI", "Mezmo", "Agentimus", "OpenAI", "Reserve Bank", "Softaculous", "AIR Security", "Y Combinator", "Anthropic PBC", "Cognition Labs", "Turing Institute", "Bay Area", "Model Context Protocol"])
+  assert.equal(looksLikePerson(n), false, `not a person: ${n}`);
 
 // ---- collective gate ----
 for (const n of [
@@ -17,8 +23,15 @@ for (const n of [
   "Court (Connecticut)",
   "infostealer operators",
   "OpenEnv community",
+  "11 LLM judges",
+  "2,500 downstream users",
+  "enterprise customers",
+  "AI agents",
+  "72 benchmark entrants",
+  "affected patients (millions)",
+  "AI agent swarm",
 ]) assert.equal(isCollectiveName(n), true, `collective: ${n}`);
-for (const n of ["OpenAI", "Hugging Face", "Palo Alto Networks", "National Payments Corporation of India", "Reuters"])
+for (const n of ["OpenAI", "Hugging Face", "Palo Alto Networks", "National Payments Corporation of India", "Reuters", "Turing", "Scale AI", "Members Exchange", "Bell Labs", "Cisco Systems"])
   assert.equal(isCollectiveName(n), false, `not collective: ${n}`);
 
 // ---- alias resolution ----
