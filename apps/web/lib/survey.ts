@@ -168,8 +168,11 @@ export function buildTies(civs: Civilization[], events: Event[]): Ties {
     }
   }
 
-  // Drawn-in-full rule: df < UBIQ, or among the K strongest ties of either
-  // file. Strong: df ≤ STRONG_DF.
+  // Drawn-in-full rule, printable in one sentence: a tie is drawn in full
+  // when it rests on at least one specific actor and its actors appear
+  // together in fewer than UBIQ files, or when it is among the K
+  // strongest ties of either file. Ties resting on ubiquitous names
+  // alone are hairlines unless top-K. Strong: df ≤ STRONG_DF.
   const drawnKeys = new Set<string>();
   for (const [, list] of incident) {
     const top = [...list].sort((a, b) => b.weight - a.weight || a.key.localeCompare(b.key)).slice(0, K);
@@ -177,7 +180,7 @@ export function buildTies(civs: Civilization[], events: Event[]): Ties {
   }
   for (const e of edges) {
     if (e.df <= STRONG_DF) e.cls = "strong";
-    else if (e.df < UBIQ || drawnKeys.has(e.key)) e.cls = "full";
+    else if ((e.specificActors.length > 0 && e.df < UBIQ) || drawnKeys.has(e.key)) e.cls = "full";
     else e.cls = "hairline";
     e.drawn = e.cls !== "hairline";
   }

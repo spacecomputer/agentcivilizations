@@ -314,15 +314,15 @@ export default function SurveyPage() {
 
             <div className="plate-key mono" id="plate-2-key">
               <span className="key-group">
-                <span className="key-item"><MarkSample confirmed /> HOLDS CONFIRMED ENTRIES</span>
-                <span className="key-item"><MarkSample confirmed={false} /> CANDIDATES ONLY</span>
-                <span className="key-item"><MarkSample confirmed={false} dormant /> DORMANT OR EXTINCT</span>
-                <span className="key-item">SIZE · ENTRIES</span>
+                <span className="key-item"><span className="sr-only">; </span><MarkSample confirmed /> HOLDS CONFIRMED ENTRIES</span>
+                <span className="key-item"><span className="sr-only">; </span><MarkSample confirmed={false} /> CANDIDATES ONLY</span>
+                <span className="key-item"><span className="sr-only">; </span><MarkSample confirmed={false} dormant /> DORMANT OR EXTINCT</span>
+                <span className="key-item"><span className="sr-only">; </span>SIZE · ENTRIES</span>
               </span>
               <span className="key-group">
-                <span className="key-item"><TieSample cls="strong" /> STRONG · ACTORS TOGETHER IN {ties.strongDf} FILES OR FEWER</span>
-                <span className="key-item"><TieSample cls="full" /> DRAWN IN FULL · TOGETHER IN FEWER THAN {ties.ubiqThreshold}, OR AMONG A FILE&apos;S {ties.topK} STRONGEST</span>
-                <span className="key-item"><TieSample cls="hairline" /> HAIRLINE · TOGETHER IN {ties.ubiqThreshold} FILES OR MORE</span>
+                <span className="key-item"><span className="sr-only">; </span><TieSample cls="strong" /> STRONG · ACTORS TOGETHER IN {ties.strongDf} FILES OR FEWER</span>
+                <span className="key-item"><span className="sr-only">; </span><TieSample cls="full" /> DRAWN IN FULL · A SPECIFIC ACTOR, TOGETHER IN FEWER THAN {ties.ubiqThreshold} FILES, OR AMONG A FILE&apos;S {ties.topK} STRONGEST</span>
+                <span className="key-item"><span className="sr-only">; </span><TieSample cls="hairline" /> HAIRLINE · UBIQUITOUS NAMES ONLY, OR TOGETHER IN {ties.ubiqThreshold} FILES OR MORE</span>
               </span>
               <span className="key-group">
                 {CATEGORIES.map((c) => (
@@ -349,9 +349,9 @@ export default function SurveyPage() {
               {ties.maxDf} binds weakly. {ties.ubiquitousActors.map((u) => u.actor).join(", ")}{" "}
               {ties.ubiquitousActors.length === 1 ? "is" : "are"} each named in {ties.ubiqThreshold} or more
               files and count as ubiquitous; {ties.counts.ubiquitousOnly} of {ties.counts.ties} ties rest on
-              ubiquitous names alone. A tie is drawn in full when its actors appear together in fewer than{" "}
-              {ties.ubiqThreshold} files, or when it is among the {ties.topK} strongest ties of either file;
-              the other {ties.counts.hairline} are hairlines. Distance on the plate is not a measure. Mark a
+              ubiquitous names alone. A tie is drawn in full when it rests on at least one specific actor and its
+              actors appear together in fewer than {ties.ubiqThreshold} files, or when it is among the{" "}
+              {ties.topK} strongest ties of either file; the other {ties.counts.hairline} are hairlines. Distance on the plate is not a measure. Mark a
               file — point at it, or press Tab and then the arrow keys — to read its record and its ties
               beneath the plate; the tables carry every file and every tie.
             </p>

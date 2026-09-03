@@ -168,7 +168,7 @@ export function layoutTies(ties: Ties, width: number): Layout {
     const idOf = (n: string | number | SimNode) => (typeof n === "object" ? n.id : String(n));
     const link = forceLink<SimNode, SimLink>(links)
       .id((d) => d.id)
-      .distance((l) => (l.strong ? 44 : l.drawn ? 78 : 120))
+      .distance((l) => (l.strong ? 60 : l.drawn ? 100 : 150))
       .strength((l) => {
         const s = idOf(l.source);
         const t = idOf(l.target);
@@ -183,10 +183,10 @@ export function layoutTies(ties: Ties, width: number): Layout {
     const sim = forceSimulation<SimNode>(nodes)
       .randomSource(mulberry32(SEED + ci))
       .force("link", link)
-      .force("charge", forceManyBody<SimNode>().strength(-140).distanceMax(260))
-      .force("x", forceX<SimNode>(cx).strength(0.05))
-      .force("y", forceY<SimNode>(cy).strength(0.07))
-      .force("collide", forceCollide<SimNode>((n) => n.r + 4).iterations(3))
+      .force("charge", forceManyBody<SimNode>().strength(-210).distanceMax(340))
+      .force("x", forceX<SimNode>(cx).strength(0.035))
+      .force("y", forceY<SimNode>(cy).strength(0.05))
+      .force("collide", forceCollide<SimNode>((n) => n.r + 6).iterations(3))
       .force("boundary", boundaryForce(box))
       .stop();
     for (let i = 0; i < MAIN_TICKS; i++) sim.tick();
@@ -194,12 +194,24 @@ export function layoutTies(ties: Ties, width: number): Layout {
     sim.force("link", null).force("charge", null).force("x", null).force("y", null);
     sim.alpha(0.3);
     for (let i = 0; i < SETTLE_TICKS; i++) sim.tick();
+    // Centre the component in its box by translation — never by scaling.
+    // The centring forces are kept weak so ties, not the frame, shape the
+    // cluster; this step just puts the finished shape where it belongs.
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const n of nodes) {
+      minX = Math.min(minX, (n.x ?? cx) - n.r);
+      maxX = Math.max(maxX, (n.x ?? cx) + n.r);
+      minY = Math.min(minY, (n.y ?? cy) - n.r);
+      maxY = Math.max(maxY, (n.y ?? cy) + n.r);
+    }
+    const dx = cx - (minX + maxX) / 2;
+    const dy = cy - (minY + maxY) / 2;
     for (const n of nodes) {
       const base = byId.get(n.id)!;
       laid.set(n.id, {
         ...base,
-        x: Math.round((n.x ?? cx) * 10) / 10,
-        y: Math.round((n.y ?? cy) * 10) / 10,
+        x: Math.round(((n.x ?? cx) + dx) * 10) / 10,
+        y: Math.round(((n.y ?? cy) + dy) * 10) / 10,
         r: n.r,
         comp: compIndex.get(n.id) ?? 0,
         inset: false,

@@ -59,19 +59,24 @@ export function placeLabels(
   for (const m of ordered) {
     const w = m.text.length * opts.ch + 4;
     const h = opts.lh;
-    const d = m.r + gap;
-    const diag = d * 0.7071;
-    // (text x, text y baseline, anchor, box)
-    const candidates: Array<{ x: number; y: number; anchor: PlacedLabel["anchor"]; box: Box }> = [
-      { x: m.x + d, y: m.y + 4, anchor: "start", box: { x: m.x + d, y: m.y - h / 2, w, h } },
-      { x: m.x - d, y: m.y + 4, anchor: "end", box: { x: m.x - d - w, y: m.y - h / 2, w, h } },
-      { x: m.x, y: m.y + d + h - 3, anchor: "middle", box: { x: m.x - w / 2, y: m.y + d, w, h } },
-      { x: m.x, y: m.y - d - 3, anchor: "middle", box: { x: m.x - w / 2, y: m.y - d - h, w, h } },
-      { x: m.x + diag, y: m.y - diag, anchor: "start", box: { x: m.x + diag, y: m.y - diag - h + 3, w, h } },
-      { x: m.x - diag, y: m.y - diag, anchor: "end", box: { x: m.x - diag - w, y: m.y - diag - h + 3, w, h } },
-      { x: m.x + diag, y: m.y + diag + h - 3, anchor: "start", box: { x: m.x + diag, y: m.y + diag, w, h } },
-      { x: m.x - diag, y: m.y + diag + h - 3, anchor: "end", box: { x: m.x - diag - w, y: m.y + diag, w, h } },
-    ];
+    // Two rings of anchors: close to the disc, then a step further out —
+    // a name a few pixels from its mark still reads as its name, and the
+    // second ring clears neighbouring discs in a dense core.
+    const candidates: Array<{ x: number; y: number; anchor: PlacedLabel["anchor"]; box: Box }> = [];
+    for (const extra of [0, 11]) {
+      const d = m.r + gap + extra;
+      const diag = d * 0.7071;
+      candidates.push(
+        { x: m.x + d, y: m.y + 4, anchor: "start", box: { x: m.x + d, y: m.y - h / 2, w, h } },
+        { x: m.x - d, y: m.y + 4, anchor: "end", box: { x: m.x - d - w, y: m.y - h / 2, w, h } },
+        { x: m.x, y: m.y + d + h - 3, anchor: "middle", box: { x: m.x - w / 2, y: m.y + d, w, h } },
+        { x: m.x, y: m.y - d - 3, anchor: "middle", box: { x: m.x - w / 2, y: m.y - d - h, w, h } },
+        { x: m.x + diag, y: m.y - diag, anchor: "start", box: { x: m.x + diag, y: m.y - diag - h + 3, w, h } },
+        { x: m.x - diag, y: m.y - diag, anchor: "end", box: { x: m.x - diag - w, y: m.y - diag - h + 3, w, h } },
+        { x: m.x + diag, y: m.y + diag + h - 3, anchor: "start", box: { x: m.x + diag, y: m.y + diag, w, h } },
+        { x: m.x - diag, y: m.y + diag + h - 3, anchor: "end", box: { x: m.x - diag - w, y: m.y + diag, w, h } },
+      );
+    }
     const pick = candidates.find(
       (c) =>
         c.box.x >= bounds.x + inset &&
