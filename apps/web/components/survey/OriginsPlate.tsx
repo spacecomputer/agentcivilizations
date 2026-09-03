@@ -5,6 +5,7 @@ import { feature } from "topojson-client";
 import type { GeometryCollection, Topology } from "topojson-specification";
 import land110 from "world-atlas/land-110m.json";
 import type { Origins } from "@/lib/survey";
+import { placeLabels } from "@/lib/labels";
 
 // Plate I — origins. Files placed at their dominant sponsor's
 // headquarters. Filled marks are cited (curated seed or a Wikidata
@@ -47,41 +48,23 @@ export function OriginsPlate({
       const [x, y] = geo.project(p.lng, p.lat);
       return { p, x, y, r: 3 + Math.sqrt(p.civs.length) * 2.6 };
     });
-    // Greedy label placement, biggest first. Each label tries four
-    // anchors — right, left, below, above its mark — and takes the first
-    // that neither overlaps a placed label nor leaves the plate. A label
-    // with no clear anchor is skipped; the table beneath carries it.
-    const CH = 7.2; // ≈ px per character at 12px mono
-    type Box = { x: number; y: number; w: number; h: number };
-    const boxes: Box[] = [];
-    const labelled: Array<{ x: number; y: number; text: string; anchor: "start" | "end" }> = [];
-    const overlaps = (a: Box, b: Box) =>
-      a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
-    for (const m of placed.slice(0, LABELS)) {
-      const text = `${m.p.city} · ${m.p.civs.length}`;
-      const w = text.length * CH;
-      const h = 13;
-      const candidates: Array<{ x: number; y: number; anchor: "start" | "end"; box: Box }> = [
-        { x: m.x + m.r + 4, y: m.y + 4, anchor: "start", box: { x: m.x + m.r + 4, y: m.y - 9, w, h } },
-        { x: m.x - m.r - 4, y: m.y + 4, anchor: "end", box: { x: m.x - m.r - 4 - w, y: m.y - 9, w, h } },
-        { x: m.x - w / 2, y: m.y + m.r + 13, anchor: "start", box: { x: m.x - w / 2, y: m.y + m.r + 2, w, h } },
-        { x: m.x - w / 2, y: m.y - m.r - 4, anchor: "start", box: { x: m.x - w / 2, y: m.y - m.r - 15, w, h } },
-      ];
-      const pick = candidates.find(
-        (c) =>
-          c.box.x >= 2 &&
-          c.box.x + c.box.w <= width - 2 &&
-          c.box.y >= 2 &&
-          c.box.y + c.box.h <= height - 2 &&
-          !boxes.some((b) => overlaps(b, c.box)),
-      );
-      if (pick) {
-        boxes.push(pick.box);
-        labelled.push({ x: pick.x, y: pick.y, text, anchor: pick.anchor });
-      }
-    }
+    // Labels through the shared placer (lib/labels.ts): biggest first,
+    // eight anchors, every mark's disc an obstacle, skipped when there is
+    // no clear anchor — the table beneath carries the rest.
+    const labelled = placeLabels(
+      placed.slice(0, LABELS).map((m, i) => ({
+        id: m.p.key,
+        x: m.x,
+        y: m.y,
+        r: m.r,
+        text: `${m.p.city} · ${m.p.civs.length}`,
+        priority: LABELS - i,
+      })),
+      placed.map((m) => ({ x: m.x - m.r - 2, y: m.y - m.r - 2, w: 2 * (m.r + 2), h: 2 * (m.r + 2) })),
+      { ch: 7.2, lh: 13, gap: 4, bounds: { x: 0, y: 0, w: width, h: height } },
+    );
     return { placed, labelled };
-  }, [origins, geo]);
+  }, [origins, geo, width, height]);
 
   const placedFiles = origins.points.reduce((n, p) => n + p.civs.length, 0);
 
@@ -141,7 +124,7 @@ export function OriginsPlate({
       </g>
       <g>
         {marks.labelled.map((l) => (
-          <text key={l.text} x={l.x} y={l.y} textAnchor={l.anchor} className="plate-text">
+          <text key={l.id} x={l.x} y={l.y} textAnchor={l.anchor} className="plate-text">
             {l.text}
           </text>
         ))}

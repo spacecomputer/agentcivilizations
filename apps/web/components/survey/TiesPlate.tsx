@@ -1,148 +1,439 @@
 "use client";
-import { useMemo } from "react";
-import {
-  forceCenter,
-  forceCollide,
-  forceLink,
-  forceManyBody,
-  forceSimulation,
-  forceX,
-  forceY,
-  type SimulationLinkDatum,
-  type SimulationNodeDatum,
-} from "d3-force";
-import type { TieNode, Ties } from "@/lib/survey";
-import { mulberry32 } from "@/lib/survey";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { Ties, TieEdge, TieNode } from "@/lib/survey";
+import { layoutTies, labelBudget, type LaidEdge, type LaidNode } from "@/lib/survey-layout";
+import { placeLabels, type Box } from "@/lib/labels";
+import { callNumber } from "@/lib/format";
+import { Mark } from "./Mark";
 
-// Plate II — ties. Files are nodes; an edge exists where two files share
-// at least two named actors — the same predicate cross-civilization
-// corroboration uses, so the plate is that mechanism made visible.
-// Layout is force-directed but seeded, so the survey draws the same
-// way on every visit: a survey that redraws itself isn't a survey.
+// Plate II — ties. Files are marks; a tie is two files whose entries
+// share at least two named actors — the predicate cross-civilization
+// corroboration uses. The plate draws what the record can stand behind:
+// ties in three ruled weights on contrast-verified tokens, names placed
+// without overprinting, the category glyph cut into every mark, and a
+// reading line beneath that prints the marked file's record for anyone
+// without a mouse. The canvas renders at one unit per CSS pixel, so
+// 12 px is 12 px on every viewport. A survey does not redraw itself:
+// the layout is computed once per ledger; filters restyle, never move.
 
-interface SimNode extends TieNode, SimulationNodeDatum {}
-interface SimLink extends SimulationLinkDatum<SimNode> {
-  weight: number;
-  actors: string[];
+export const TIE_STROKE = {
+  strong: { stroke: "var(--ink)", width: 2.25 },
+  full: { stroke: "var(--ink-dim)", width: 1.25 },
+  hairline: { stroke: "var(--ink-dim)", width: 0.5 },
+} as const;
+
+const LABEL_CH = 6.6; // Archivo 500 at 12 px, average advance
+const LABEL_LH = 14;
+const HIT_WIDTH = 10;
+export const HAIRLINE_CAP_PER_FILE = 4; // beyond four hairlines per file the mesh is a field, not marks
+
+export const CONFIDENCE_LINE = {
+  confirmed: "HOLDS CONFIRMED ENTRIES — corroborated by independent sources",
+  candidate: "CANDIDATES ONLY — reported, not yet corroborated",
+} as const;
+
+export function markLine(n: TieNode): string {
+  return `${n.name} · ${callNumber(n.id)} · ${n.category.toUpperCase()} · ${n.confirmed ? CONFIDENCE_LINE.confirmed : CONFIDENCE_LINE.candidate} · ${n.entries} ${n.entries === 1 ? "entry" : "entries"} · ${n.degreeAll} ${n.degreeAll === 1 ? "tie" : "ties"}, ${n.degree} drawn in full${n.status !== "active" ? ` · ${n.status.toUpperCase()}` : ""}`;
 }
 
-const SEED = 20260901; // the day the register opened
-const LABELS = 28;
+export type Reading =
+  | { kind: "node"; id: string }
+  | { kind: "tie"; key: string }
+  | null;
 
-function radius(n: TieNode): number {
-  return 4 + Math.sqrt(Math.max(1, n.eventCount)) * 2.4;
+// ---- samples for the key on the leaf ----------------------------------
+export function MarkSample({
+  confirmed,
+  dormant = false,
+}: {
+  confirmed: boolean;
+  dormant?: boolean;
+}) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true" style={{ verticalAlign: "-6px" }}>
+      <circle
+        cx="11"
+        cy="11"
+        r="8"
+        fill={confirmed ? "var(--ink)" : "var(--ground)"}
+        stroke="var(--ink)"
+        strokeWidth="1.4"
+        strokeDasharray={dormant ? "3 2" : undefined}
+      />
+    </svg>
+  );
 }
+export function TieSample({ cls }: { cls: keyof typeof TIE_STROKE }) {
+  const s = TIE_STROKE[cls];
+  return (
+    <svg width="34" height="10" viewBox="0 0 34 10" aria-hidden="true" style={{ verticalAlign: "-1px" }}>
+      <line x1="1" y1="5" x2="33" y2="5" stroke={s.stroke} strokeWidth={s.width} />
+    </svg>
+  );
+}
+
+// ------------------------------------------------------------------------
 
 export function TiesPlate({
   ties,
-  width = 960,
-  height = 600,
+  kept,
+  hideFiltered,
+  drawHairlines,
+  highlight,
+  onReading,
 }: {
   ties: Ties;
-  width?: number;
-  height?: number;
+  kept: Set<string>; // files matching the category filter
+  hideFiltered: boolean;
+  drawHairlines: boolean;
+  highlight?: string | null; // a file id or tie key lit from the tables
+  onReading?: (r: Reading) => void;
 }) {
-  const layout = useMemo(() => {
-    const nodes: SimNode[] = ties.nodes.map((n) => ({ ...n }));
-    const byId = new Set(nodes.map((n) => n.id));
-    const links: SimLink[] = ties.edges
-      .filter((e) => byId.has(e.source) && byId.has(e.target))
-      .map((e) => ({ source: e.source, target: e.target, weight: e.weight, actors: e.actors }));
-    const maxW = links.reduce((m, l) => Math.max(m, l.weight), 0.001);
+  const wrap = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [width, setWidth] = useState(960);
+  const [active, setActive] = useState<string | null>(null);
+  const [focused, setFocused] = useState<string | null>(null);
+  const [reading, setReadingState] = useState<Reading>(null);
+  // JSX types <a> as HTMLAnchorElement even inside <svg>; at runtime it is
+  // an SVGAElement — both expose focus(), which is all we call.
+  const refs = useRef(new Map<string, HTMLAnchorElement>());
 
-    const sim = forceSimulation<SimNode>(nodes)
-      .randomSource(mulberry32(SEED))
-      .force(
-        "link",
-        forceLink<SimNode, SimLink>(links)
-          .id((d) => d.id)
-          .distance((l) => 36 + 70 * (1 - l.weight / maxW))
-          .strength((l) => 0.25 + 0.6 * (l.weight / maxW)),
-      )
-      .force("charge", forceManyBody<SimNode>().strength(-95))
-      .force("center", forceCenter(width / 2, height / 2))
-      .force("x", forceX<SimNode>(width / 2).strength(0.045))
-      .force("y", forceY<SimNode>(height / 2).strength(0.07))
-      .force("collide", forceCollide<SimNode>((n) => radius(n) + 3))
-      .stop();
-    for (let i = 0; i < 320; i++) sim.tick();
+  useLayoutEffect(() => {
+    const el = wrap.current;
+    if (!el) return;
+    const measure = () => setWidth(Math.floor(el.clientWidth) || 960);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
-    const pad = 26;
-    for (const n of nodes) {
-      n.x = Math.max(pad, Math.min(width - pad, n.x ?? width / 2));
-      n.y = Math.max(pad, Math.min(height - pad, n.y ?? height / 2));
+  const layout = useMemo(() => layoutTies(ties, width), [ties, width]);
+
+  const nodeById = useMemo(() => new Map(layout.nodes.map((n) => [n.id, n])), [layout]);
+  const edgeByKey = useMemo(() => new Map(layout.edges.map((e) => [e.key, e])), [layout]);
+
+  // Visible set: filtered files are restyled, or hidden entirely.
+  const visible = useMemo(() => {
+    const set = new Set<string>();
+    for (const n of layout.nodes) if (!hideFiltered || kept.has(n.id)) set.add(n.id);
+    return set;
+  }, [layout, kept, hideFiltered]);
+
+  const edgeVisible = useCallback(
+    (e: LaidEdge) =>
+      visible.has(e.source) && visible.has(e.target) && kept.has(e.source) && kept.has(e.target),
+    [visible, kept],
+  );
+
+  // Labels: names, placed without overprinting; the discs are obstacles.
+  const labels = useMemo(() => {
+    const budget = labelBudget(layout.nodes.length);
+    const obstacles: Box[] = layout.nodes.map((n) => ({
+      x: n.x - n.r - 3,
+      y: n.y - n.r - 3,
+      w: 2 * (n.r + 3),
+      h: 2 * (n.r + 3),
+    }));
+    if (layout.inset) {
+      obstacles.push({ x: layout.inset.x, y: layout.inset.y, w: layout.inset.w, h: 18 });
     }
-    const labelled = new Set(
-      [...nodes]
-        .sort((a, b) => b.degree * b.eventCount - a.degree * a.eventCount)
-        .slice(0, LABELS)
-        .map((n) => n.id),
-    );
-    return { nodes, links, maxW, labelled };
-  }, [ties, width, height]);
+    const candidates = [...layout.nodes]
+      .filter((n) => visible.has(n.id))
+      .sort(
+        (a, b) =>
+          b.degree * Math.sqrt(b.entries) - a.degree * Math.sqrt(a.entries) ||
+          b.degreeAll - a.degreeAll ||
+          a.id.localeCompare(b.id),
+      )
+      .slice(0, budget)
+      .map((n) => ({
+        id: n.id,
+        x: n.x,
+        y: n.y,
+        r: n.r,
+        text: n.name,
+        priority: n.degree * Math.sqrt(n.entries) + n.degreeAll / 100,
+      }));
+    return {
+      placed: placeLabels(candidates, obstacles, {
+        ch: LABEL_CH,
+        lh: LABEL_LH,
+        gap: 5,
+        bounds: { x: 0, y: 0, w: layout.width, h: layout.height },
+      }),
+      candidates: candidates.length,
+    };
+  }, [layout, visible]);
 
-  const { nodes, links, maxW, labelled } = layout;
+  const order = useMemo(() => ties.order.filter((id) => visible.has(id)), [ties, visible]);
+  useEffect(() => {
+    if (!active || !visible.has(active)) setActive(order[0] ?? null);
+  }, [order, active, visible]);
+
+  const setReading = useCallback(
+    (r: Reading) => {
+      setReadingState((prev) => {
+        const same =
+          (prev === null && r === null) ||
+          (prev?.kind === "node" && r?.kind === "node" && prev.id === r.id) ||
+          (prev?.kind === "tie" && r?.kind === "tie" && prev.key === r.key);
+        if (same) return prev;
+        onReading?.(r);
+        return r;
+      });
+    },
+    [onReading],
+  );
+
+  const onKeyDown = useCallback(
+    (ev: React.KeyboardEvent<SVGSVGElement>) => {
+      const el = document.activeElement as Element | null;
+      if (!el || !svgRef.current?.contains(el) || !el.hasAttribute("data-file")) return;
+      const cur = el.getAttribute("data-file")!;
+      const i = order.indexOf(cur);
+      let next: string | undefined;
+      if (ev.key === "ArrowRight" || ev.key === "ArrowDown") next = order[Math.min(order.length - 1, i + 1)];
+      else if (ev.key === "ArrowLeft" || ev.key === "ArrowUp") next = order[Math.max(0, i - 1)];
+      else if (ev.key === "Home") next = order[0];
+      else if (ev.key === "End") next = order[order.length - 1];
+      else return;
+      ev.preventDefault();
+      if (next && next !== cur) {
+        setActive(next);
+        refs.current.get(next)?.focus();
+      }
+    },
+    [order],
+  );
+
+  const hairlines = layout.edges.filter((e) => !e.drawn && edgeVisible(e));
+  const hairlineCap = HAIRLINE_CAP_PER_FILE * layout.nodes.length;
+  const showHairlines = drawHairlines && hairlines.length <= hairlineCap;
+  const drawn = layout.edges
+    .filter((e) => e.drawn && edgeVisible(e))
+    .sort((a, b) => a.weight - b.weight || a.key.localeCompare(b.key)); // strongest painted last
+
+  const litNode = highlight && nodeById.has(highlight) ? highlight : null;
+  const litTie = highlight && edgeByKey.has(highlight) ? highlight : null;
+  const readNode = reading?.kind === "node" ? reading.id : null;
+  const emphasised = (e: LaidEdge) =>
+    e.key === litTie || (litNode !== null && (e.source === litNode || e.target === litNode)) ||
+    (readNode !== null && (e.source === readNode || e.target === readNode));
+
+  const readingLine = renderReading(reading, nodeById, edgeByKey, ties);
 
   return (
-    <svg
-      viewBox={`0 0 ${width} ${height}`}
-      role="img"
-      aria-label={`Plate II, ties: ${nodes.length} files joined by ${links.length} ties of shared actors.`}
-    >
-      <g>
-        {links.map((l, i) => {
-          const s = l.source as SimNode;
-          const t = l.target as SimNode;
-          const w = l.weight / maxW;
-          return (
+    <div ref={wrap} className="plate-canvas">
+      <a className="sr-only-focusable" href="#plate-2-tables">
+        Skip to the tables of record
+      </a>
+      <svg
+        ref={svgRef}
+        className="ties"
+        width={layout.width}
+        height={layout.height}
+        viewBox={`0 0 ${layout.width} ${layout.height}`}
+        role="group"
+        aria-labelledby="plate-2"
+        aria-describedby="plate-2-key plate-2-note"
+        tabIndex={-1}
+        onKeyDown={onKeyDown}
+        onPointerLeave={() => setReading(null)}
+      >
+        {/* ties — hairlines as one path, then full, then strong */}
+        <g aria-hidden="true">
+          {showHairlines && hairlines.length > 0 && (
+            <path
+              d={hairlines.map((e) => `M${e.x1} ${e.y1}L${e.x2} ${e.y2}`).join("")}
+              fill="none"
+              stroke={TIE_STROKE.hairline.stroke}
+              strokeWidth={TIE_STROKE.hairline.width}
+              vectorEffect="non-scaling-stroke"
+            />
+          )}
+          {drawn.map((e) => {
+            const s = emphasised(e) ? TIE_STROKE.strong : TIE_STROKE[e.cls];
+            return (
+              <g key={e.key}>
+                <line x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2} stroke={s.stroke} strokeWidth={s.width} />
+                {/* pointer-only twin: a wide invisible hit target that fills the reading line */}
+                <line
+                  x1={e.x1}
+                  y1={e.y1}
+                  x2={e.x2}
+                  y2={e.y2}
+                  stroke="transparent"
+                  strokeWidth={HIT_WIDTH}
+                  style={{ pointerEvents: "stroke" }}
+                  onPointerEnter={() => setReading({ kind: "tie", key: e.key })}
+                />
+              </g>
+            );
+          })}
+        </g>
+
+        {/* inset caption and rule */}
+        {layout.inset && (
+          <g aria-hidden="true">
+            <text x={layout.inset.x} y={layout.inset.y + 11} className="plate-caption">
+              {`OUTLYING · ${layout.inset.groups} ${layout.inset.groups === 1 ? "GROUP" : "GROUPS"} · ${layout.inset.files} FILES`}
+            </text>
             <line
-              key={i}
-              x1={s.x}
-              y1={s.y}
-              x2={t.x}
-              y2={t.y}
-              stroke="var(--ink-dim)"
-              strokeWidth={0.75 + 2 * w}
-              strokeOpacity={0.3 + 0.55 * w}
-            >
-              <title>
-                {`${s.name} — ${t.name}\nshared: ${l.actors.join(", ")}`}
-              </title>
-            </line>
-          );
-        })}
-      </g>
-      <g>
-        {nodes.map((n) => {
-          const r = radius(n);
-          const ink = `var(--cat-${n.category})`;
-          return (
-            <a key={n.id} href={`/civilization?id=${encodeURIComponent(n.id)}`} className="plate-node">
-              <circle
-                cx={n.x}
-                cy={n.y}
-                r={r}
-                fill={n.confirmed ? ink : "var(--ground)"}
-                stroke={ink}
-                strokeWidth={1.4}
-                strokeDasharray={n.status === "active" ? undefined : "3 2"}
-              />
-              <title>
-                {`${n.name}\n${n.eventCount} ${n.eventCount === 1 ? "entry" : "entries"} · ${n.degree} ${n.degree === 1 ? "tie" : "ties"} · ${n.confirmed ? "has confirmed entries" : "candidate entries only"}`}
-              </title>
-              {labelled.has(n.id) && (
-                <text
-                  x={(n.x ?? 0) + r + 4}
-                  y={(n.y ?? 0) + 4}
-                  className="plate-text"
-                >
-                  {n.id}
-                </text>
-              )}
-            </a>
-          );
-        })}
-      </g>
-    </svg>
+              x1={layout.inset.x}
+              y1={layout.inset.y + 16}
+              x2={layout.inset.x + layout.inset.w}
+              y2={layout.inset.y + 16}
+              stroke="var(--rule)"
+              strokeWidth={1}
+            />
+            {layout.inset.overflowGroups > 0 && (
+              <text
+                x={layout.inset.x}
+                y={layout.inset.y + layout.inset.h - 4}
+                className="plate-caption"
+              >
+                {`+ ${layout.inset.overflowGroups} ${layout.inset.overflowGroups === 1 ? "GROUP" : "GROUPS"} IN THE TABLE`}
+              </text>
+            )}
+          </g>
+        )}
+
+        {/* marks — one tab stop, roving tabindex in the table's order */}
+        <g>
+          {layout.nodes.map((n) => {
+            if (!visible.has(n.id)) return null;
+            const filtered = !kept.has(n.id);
+            const isActive = n.id === active;
+            const ring = n.id === focused || n.id === litNode;
+            return (
+              <a
+                key={n.id}
+                ref={(el) => {
+                  if (el) refs.current.set(n.id, el);
+                  else refs.current.delete(n.id);
+                }}
+                href={`/civilization?id=${encodeURIComponent(n.id)}`}
+                className={`plate-node${filtered ? " filtered" : ""}`}
+                data-file={n.id}
+                tabIndex={isActive ? 0 : -1}
+                aria-label={markLine(n)}
+                onFocus={() => {
+                  setFocused(n.id);
+                  setActive(n.id);
+                  setReading({ kind: "node", id: n.id });
+                }}
+                onBlur={() => setFocused((f) => (f === n.id ? null : f))}
+                onPointerEnter={() => setReading({ kind: "node", id: n.id })}
+              >
+                <title>{markLine(n)}</title>
+                {ring && (
+                  <circle cx={n.x} cy={n.y} r={n.r + 4} fill="none" stroke="var(--cat-coordination)" strokeWidth={2} />
+                )}
+                <Mark
+                  cx={n.x}
+                  cy={n.y}
+                  r={n.r}
+                  category={n.category}
+                  confirmed={n.confirmed}
+                  status={n.status}
+                  filtered={filtered}
+                />
+              </a>
+            );
+          })}
+        </g>
+
+        {/* names — placed, haloed, never overprinting */}
+        <g aria-hidden="true">
+          {labels.placed.map((l) => {
+            const filtered = !kept.has(l.id);
+            if (filtered) return null;
+            return (
+              <text key={l.id} x={l.x} y={l.y} textAnchor={l.anchor} className="plate-label">
+                {l.text}
+              </text>
+            );
+          })}
+        </g>
+      </svg>
+
+      <div className="plate-reading mono" role="status" aria-live="polite">
+        {readingLine}
+      </div>
+      <div className="plate-figure-foot mono dim">
+        {`${labels.placed.length} OF ${labels.candidates} NAMES PLACED · ${drawn.length} TIES DRAWN IN FULL · ${
+          showHairlines ? `${hairlines.length} HAIRLINES` : `${hairlines.length} HAIRLINES NOT DRAWN`
+        }`}
+      </div>
+    </div>
   );
+}
+
+function ActorList({ e }: { e: TieEdge }) {
+  return (
+    <>
+      {e.specificActors.map((a, i) => (
+        <span key={`s${i}`}>
+          {i > 0 && ", "}
+          <span className="tie-actor">{a}</span>
+        </span>
+      ))}
+      {e.ubiquitousActors.map((a, i) => (
+        <span key={`u${i}`}>
+          {(i > 0 || e.specificActors.length > 0) && ", "}
+          <span className="tie-actor-ubiq">{a}</span>
+        </span>
+      ))}
+    </>
+  );
+}
+
+function renderReading(
+  reading: Reading,
+  nodeById: Map<string, LaidNode>,
+  edgeByKey: Map<string, LaidEdge>,
+  ties: Ties,
+) {
+  if (reading?.kind === "node") {
+    const n = nodeById.get(reading.id);
+    if (!n) return "Mark a file to read its ties.";
+    const incident = ties.edges
+      .filter((e) => e.source === n.id || e.target === n.id)
+      .sort((a, b) => b.weight - a.weight || a.key.localeCompare(b.key))
+      .slice(0, 3);
+    return (
+      <>
+        <div className="reading-head">
+          <a href={`/civilization?id=${encodeURIComponent(n.id)}`}>{n.name}</a> · {callNumber(n.id)} ·{" "}
+          {n.category.toUpperCase()} · {n.confirmed ? CONFIDENCE_LINE.confirmed : CONFIDENCE_LINE.candidate} ·{" "}
+          {n.entries} {n.entries === 1 ? "entry" : "entries"} · {n.degreeAll} {n.degreeAll === 1 ? "tie" : "ties"},{" "}
+          {n.degree} drawn in full
+        </div>
+        {incident.map((e) => {
+          const otherId = e.source === n.id ? e.target : e.source;
+          const other = nodeById.get(otherId);
+          return (
+            <div key={e.key} className="reading-tie">
+              — {other?.name ?? otherId} · together in {e.df} files · <ActorList e={e} />
+            </div>
+          );
+        })}
+      </>
+    );
+  }
+  if (reading?.kind === "tie") {
+    const e = edgeByKey.get(reading.key);
+    if (!e) return "Mark a file to read its ties.";
+    const a = nodeById.get(e.source);
+    const b = nodeById.get(e.target);
+    return (
+      <div className="reading-head">
+        {a?.name ?? e.source} — {b?.name ?? e.target} · {e.cls.toUpperCase()} · actors together in {e.df} files ·{" "}
+        <ActorList e={e} />
+      </div>
+    );
+  }
+  return "Mark a file to read its ties — point, or press Tab then the arrow keys.";
 }

@@ -8,12 +8,17 @@ import type {
 } from "@agent-civilizations/schema";
 import { activeCivilizations, allEvents, actorRegistryAll } from "@/lib/queries";
 import { buildCadence, buildOrigins, buildTies } from "@/lib/survey";
-import { TiesPlate } from "@/components/survey/TiesPlate";
+import {
+  TiesPlate,
+  MarkSample,
+  TieSample,
+  type Reading,
+} from "@/components/survey/TiesPlate";
 import { CadencePlate } from "@/components/survey/CadencePlate";
 import { OriginsPlate } from "@/components/survey/OriginsPlate";
 import { CategoryLabel } from "@/components/Glyph";
 import { CivSeal } from "@/components/CivSeal";
-import { utcDay } from "@/lib/format";
+import { callNumber, utcDay } from "@/lib/format";
 
 // The Survey — the register's atlas leaf. Three plates drawn from the
 // public ledger, each with its ruled-table twin beneath it: the table is
@@ -21,6 +26,7 @@ import { utcDay } from "@/lib/format";
 // wants numbers rather than pictures gets.
 
 const CATEGORIES: Category[] = ["coordination", "security", "community", "speculative"];
+const TIES_TABLE_FIRST = 60;
 
 function ProvenanceMark({ p, pref }: { p: string; pref?: string }) {
   if (p === "wikidata" && pref?.startsWith("wikidata:")) {
@@ -34,13 +40,21 @@ function ProvenanceMark({ p, pref }: { p: string; pref?: string }) {
   return <span className={`prov ${p}`}>{p.toUpperCase()}</span>;
 }
 
+function fileHref(id: string) {
+  return `/civilization?id=${encodeURIComponent(id)}`;
+}
+
 export default function SurveyPage() {
   const [civs, setCivs] = useState<Civilization[] | null>(null);
   const [events, setEvents] = useState<Event[] | null>(null);
   const [registry, setRegistry] = useState<ActorRegistryEntry[]>([]);
   const [cats, setCats] = useState<Set<Category>>(new Set(CATEGORIES));
   const [confirmedOnly, setConfirmedOnly] = useState(false);
+  const [hideFiltered, setHideFiltered] = useState(false);
+  const [drawHairlines, setDrawHairlines] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [highlight, setHighlight] = useState<string | null>(null);
+  const [reading, setReading] = useState<Reading>(null);
 
   useEffect(() => {
     Promise.all([activeCivilizations(400), allEvents(), actorRegistryAll().catch(() => [])])
@@ -52,6 +66,9 @@ export default function SurveyPage() {
       .catch(() => setFailed(true));
   }, []);
 
+  // Plates I and III follow the filter; Plate II is laid out once from the
+  // unfiltered ledger and restyled (confirmed-only changes the predicate,
+  // so it carries its own seeded layout).
   const filtered = useMemo(() => {
     if (!civs || !events) return null;
     const keepCiv = new Set(civs.filter((c) => cats.has(c.category)).map((c) => c.id));
@@ -63,24 +80,20 @@ export default function SurveyPage() {
     return { civs: cv, events: ev };
   }, [civs, events, cats, confirmedOnly]);
 
-  const ties = useMemo(() => (filtered ? buildTies(filtered.civs, filtered.events) : null), [filtered]);
+  const tiesAll = useMemo(() => (civs && events ? buildTies(civs, events) : null), [civs, events]);
+  const tiesConfirmed = useMemo(
+    () => (civs && events ? buildTies(civs, events.filter((e) => e.confidence === "confirmed")) : null),
+    [civs, events],
+  );
+  const ties = confirmedOnly ? tiesConfirmed : tiesAll;
+  const kept = useMemo(
+    () => new Set((ties?.nodes ?? []).filter((n) => cats.has(n.category)).map((n) => n.id)),
+    [ties, cats],
+  );
+  const filtering = cats.size < CATEGORIES.length;
+
   const cadence = useMemo(() => (filtered ? buildCadence(filtered.civs, filtered.events) : null), [filtered]);
   const origins = useMemo(() => (filtered ? buildOrigins(filtered.civs) : null), [filtered]);
-
-  const strongestTie = useMemo(() => {
-    if (!ties) return new Map<string, { other: string; actors: string[] }>();
-    const m = new Map<string, { other: string; actors: string[]; w: number }>();
-    for (const e of ties.edges) {
-      for (const [a, b] of [
-        [e.source, e.target],
-        [e.target, e.source],
-      ]) {
-        const cur = m.get(a);
-        if (!cur || e.weight > cur.w) m.set(a, { other: b, actors: e.actors, w: e.weight });
-      }
-    }
-    return m;
-  }, [ties]);
 
   const toggleCat = (c: Category) =>
     setCats((prev) => {
@@ -90,15 +103,34 @@ export default function SurveyPage() {
       return next;
     });
 
-  const registryById = useMemo(() => new Map(registry.map((r) => [r.id, r])), [registry]);
   const sponsorsRanked = useMemo(
     () =>
       [...registry]
         .filter((r) => r.kind !== "publication")
-        .sort((a, b) => b.civilizationCount - a.civilizationCount || b.eventCount - a.eventCount)
+        .sort((a, b) => b.civilizationCount - a.civilizationCount || b.eventCount - a.eventCount || a.id.localeCompare(b.id))
         .slice(0, 40),
     [registry],
   );
+
+  const nodeById = useMemo(() => new Map((ties?.nodes ?? []).map((n) => [n.id, n])), [ties]);
+  const civById = useMemo(() => new Map((civs ?? []).map((c) => [c.id, c])), [civs]);
+  const readNode = reading?.kind === "node" ? reading.id : null;
+  const nearIds = useMemo(() => {
+    if (!ties || !readNode) return new Set<string>();
+    const s = new Set<string>();
+    for (const e of ties.edges) {
+      if (e.source === readNode) s.add(e.target);
+      else if (e.target === readNode) s.add(e.source);
+    }
+    return s;
+  }, [ties, readNode]);
+
+  const tiesSorted = useMemo(
+    () => (ties ? [...ties.edges].sort((a, b) => b.weight - a.weight || a.key.localeCompare(b.key)) : []),
+    [ties],
+  );
+  const hairlineCount = ties ? ties.edges.filter((e) => !e.drawn).length : 0;
+  const hairlineCap = ties ? 4 * ties.nodes.length : 0;
 
   return (
     <>
@@ -127,6 +159,18 @@ export default function SurveyPage() {
               <input type="checkbox" checked={confirmedOnly} onChange={(e) => setConfirmedOnly(e.target.checked)} />
               <span className="mono">CONFIRMED ENTRIES ONLY</span>
             </label>
+            {filtering && (
+              <label>
+                <input type="checkbox" checked={hideFiltered} onChange={(e) => setHideFiltered(e.target.checked)} />
+                <span className="mono">HIDE FILTERED ({ties.nodes.length - kept.size})</span>
+              </label>
+            )}
+            {hairlineCount > hairlineCap && (
+              <label>
+                <input type="checkbox" checked={drawHairlines} onChange={(e) => setDrawHairlines(e.target.checked)} />
+                <span className="mono">DRAW HAIRLINE TIES ({hairlineCount})</span>
+              </label>
+            )}
           </div>
 
           {/* ---------------- Plate I ---------------- */}
@@ -152,6 +196,7 @@ export default function SurveyPage() {
 
             <div className="tablewrap">
               <table>
+                <caption className="sr-only">Files by sponsor headquarters</caption>
                 <thead>
                   <tr>
                     <th>City</th>
@@ -174,7 +219,7 @@ export default function SurveyPage() {
                         {p.civs.slice(0, 6).map((c, i) => (
                           <span key={c.id}>
                             {i > 0 && ", "}
-                            <a href={`/civilization?id=${encodeURIComponent(c.id)}`}>{c.name}</a>
+                            <a href={fileHref(c.id)}>{c.name}</a>
                           </span>
                         ))}
                         {p.civs.length > 6 && <span className="dim"> +{p.civs.length - 6} more</span>}
@@ -201,7 +246,7 @@ export default function SurveyPage() {
                   {origins.unplaced.map((c, i) => (
                     <span key={c.id}>
                       {i > 0 && " · "}
-                      <a href={`/civilization?id=${encodeURIComponent(c.id)}`}>{c.name}</a>
+                      <a href={fileHref(c.id)}>{c.name}</a>
                     </span>
                   ))}
                 </p>
@@ -213,6 +258,7 @@ export default function SurveyPage() {
                 <h3>Sponsors of record</h3>
                 <div className="tablewrap">
                   <table>
+                    <caption className="sr-only">Sponsors of record, by files named</caption>
                     <thead>
                       <tr>
                         <th>Sponsor</th>
@@ -260,57 +306,159 @@ export default function SurveyPage() {
             <div className="plate-head">
               <h2 id="plate-2">Plate II — Ties</h2>
               <span className="mono dim">
-                {ties.nodes.length} FILES · {ties.edges.length} TIES · {ties.isolated} STANDING ALONE
+                {ties.counts.files} FILES · {ties.counts.ties} TIES · {ties.counts.drawn} DRAWN IN FULL ·{" "}
+                {ties.counts.withoutTies} WITHOUT TIES
+                {filtering && ` · ${kept.size} MATCH THE FILTER`}
               </span>
             </div>
-            <div className="plate-figure">
-              <TiesPlate ties={ties} />
+
+            <div className="plate-key mono" id="plate-2-key">
+              <span className="key-group">
+                <span className="key-item"><MarkSample confirmed /> HOLDS CONFIRMED ENTRIES</span>
+                <span className="key-item"><MarkSample confirmed={false} /> CANDIDATES ONLY</span>
+                <span className="key-item"><MarkSample confirmed={false} dormant /> DORMANT OR EXTINCT</span>
+                <span className="key-item">SIZE · ENTRIES</span>
+              </span>
+              <span className="key-group">
+                <span className="key-item"><TieSample cls="strong" /> STRONG · ACTORS TOGETHER IN {ties.strongDf} FILES OR FEWER</span>
+                <span className="key-item"><TieSample cls="full" /> DRAWN IN FULL · TOGETHER IN FEWER THAN {ties.ubiqThreshold}, OR AMONG A FILE&apos;S {ties.topK} STRONGEST</span>
+                <span className="key-item"><TieSample cls="hairline" /> HAIRLINE · TOGETHER IN {ties.ubiqThreshold} FILES OR MORE</span>
+              </span>
+              <span className="key-group">
+                {CATEGORIES.map((c) => (
+                  <span className="key-item" key={c}><CategoryLabel category={c} /></span>
+                ))}
+              </span>
             </div>
-            <p className="plate-note">
-              Two files are tied when their entries share at least two named actors — the same test
-              cross-civilization corroboration applies. Tie strength discounts ubiquitous actors: a
-              sponsor named in eighty files binds weakly; one named in three binds tightly. Mark size
-              follows entry count; a filled mark holds confirmed entries, a hollow one only candidates;
-              a dashed ring is a dormant file. Hover a tie to read the shared actors; a mark opens the file.
+
+            <div className="plate-figure">
+              <TiesPlate
+                ties={ties}
+                kept={kept}
+                hideFiltered={hideFiltered}
+                drawHairlines={drawHairlines}
+                highlight={highlight}
+                onReading={setReading}
+              />
+            </div>
+
+            <p className="plate-note" id="plate-2-note">
+              Two files are tied when their entries share at least two named actors — the test
+              cross-civilization corroboration applies. A tie&apos;s strength is the number of files in which
+              its shared actors appear together: together in two files binds tightly; together in{" "}
+              {ties.maxDf} binds weakly. {ties.ubiquitousActors.map((u) => u.actor).join(", ")}{" "}
+              {ties.ubiquitousActors.length === 1 ? "is" : "are"} each named in {ties.ubiqThreshold} or more
+              files and count as ubiquitous; {ties.counts.ubiquitousOnly} of {ties.counts.ties} ties rest on
+              ubiquitous names alone. A tie is drawn in full when its actors appear together in fewer than{" "}
+              {ties.ubiqThreshold} files, or when it is among the {ties.topK} strongest ties of either file;
+              the other {ties.counts.hairline} are hairlines. Distance on the plate is not a measure. Mark a
+              file — point at it, or press Tab and then the arrow keys — to read its record and its ties
+              beneath the plate; the tables carry every file and every tie.
             </p>
-            <div className="tablewrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>File</th>
-                    <th>Ties</th>
-                    <th>Entries</th>
-                    <th>Strongest tie</th>
-                    <th>Shared actors</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...ties.nodes]
-                    .sort((a, b) => b.degree - a.degree || b.eventCount - a.eventCount)
-                    .slice(0, 40)
-                    .map((n) => {
-                      const st = strongestTie.get(n.id);
+
+            <div id="plate-2-tables">
+              <h3>Gazetteer of tied files</h3>
+              <div className="tablewrap">
+                <table>
+                  <caption className="sr-only">
+                    Every file with at least one tie, ordered by ties drawn in full
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th>File</th>
+                      <th>Category</th>
+                      <th>Entries</th>
+                      <th>Ties</th>
+                      <th>Strongest tie</th>
+                      <th>Shared actors</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ties.order.map((id) => {
+                      const n = nodeById.get(id)!;
+                      const st = n.strongest;
+                      const stEdge = st ? ties.edges.find((e) => e.key === st.edgeKey) : null;
+                      const isReading = readNode === id;
+                      const isNear = nearIds.has(id);
                       return (
-                        <tr key={n.id}>
+                        <tr
+                          key={id}
+                          data-id={id}
+                          className={isReading ? "is-reading" : isNear ? "is-near" : undefined}
+                          aria-current={isReading ? "true" : undefined}
+                          onMouseEnter={() => setHighlight(id)}
+                          onMouseLeave={() => setHighlight(null)}
+                          onFocusCapture={() => setHighlight(id)}
+                          onBlurCapture={() => setHighlight(null)}
+                        >
                           <td>
                             <span className="civrow-name">
-                              <CivSeal id={n.id} category={n.category} size={22} />
-                              <a className="rowlink" href={`/civilization?id=${encodeURIComponent(n.id)}`}>
-                                {n.name}
-                              </a>
+                              <CivSeal id={id} category={n.category} size={22} />
+                              <span>
+                                <a className="rowlink" href={fileHref(id)}>{n.name}</a>
+                                <span className="mono dim" style={{ display: "block", fontSize: 12 }}>
+                                  {callNumber(id)}
+                                </span>
+                              </span>
                             </span>
                           </td>
-                          <td className="mono">{n.degree}</td>
-                          <td className="mono">{n.eventCount}</td>
+                          <td><CategoryLabel category={n.category} /></td>
+                          <td className="mono">{n.entries}</td>
+                          <td className="mono">{n.degree} / {n.degreeAll}</td>
+                          <td>{st ? <a href={fileHref(st.other)}>{st.otherName}</a> : "—"}</td>
                           <td>
-                            {st ? <a href={`/civilization?id=${encodeURIComponent(st.other)}`}>{st.other}</a> : "—"}
+                            {stEdge ? (
+                              <>
+                                {stEdge.specificActors.map((a, i) => (
+                                  <span key={`s${i}`}>{i > 0 && ", "}<span className="tie-actor">{a}</span></span>
+                                ))}
+                                {stEdge.ubiquitousActors.map((a, i) => (
+                                  <span key={`u${i}`}>{(i > 0 || stEdge.specificActors.length > 0) && ", "}<span className="tie-actor-ubiq">{a}</span></span>
+                                ))}
+                              </>
+                            ) : "—"}
                           </td>
-                          <td className="dim">{st ? st.actors.join(", ") : "—"}</td>
                         </tr>
                       );
                     })}
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
+              </div>
+
+              <h3>Ties of record</h3>
+              <div className="tablewrap">
+                <table>
+                  <caption className="sr-only">Every tie, strongest first</caption>
+                  <thead>
+                    <tr>
+                      <th>File</th>
+                      <th>File</th>
+                      <th>Together in</th>
+                      <th>Drawn</th>
+                      <th>Shared actors</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tiesSorted.slice(0, TIES_TABLE_FIRST).map((e) => (
+                      <TieRow key={e.key} e={e} nodeById={nodeById} civById={civById} setHighlight={setHighlight} />
+                    ))}
+                  </tbody>
+                </table>
+                {tiesSorted.length > TIES_TABLE_FIRST && (
+                  <details>
+                    <summary className="mono dim">
+                      THE REMAINING {tiesSorted.length - TIES_TABLE_FIRST} TIES
+                    </summary>
+                    <table>
+                      <tbody>
+                        {tiesSorted.slice(TIES_TABLE_FIRST).map((e) => (
+                          <TieRow key={e.key} e={e} nodeById={nodeById} civById={civById} setHighlight={setHighlight} />
+                        ))}
+                      </tbody>
+                    </table>
+                  </details>
+                )}
+              </div>
             </div>
           </section>
 
@@ -335,11 +483,47 @@ export default function SurveyPage() {
 
           <div className="rule-double" />
           <p className="mono dim" style={{ fontSize: 12 }}>
-            SURVEY DRAWN IN THIS BROWSER FROM {filtered.events.length} ENTRIES ACROSS {filtered.civs.length} FILES ·{" "}
-            SPONSOR REGISTRY {registryById.size} ENTRIES · ORIGINS REVISED NIGHTLY 01:00 UTC
+            SURVEY DRAWN IN THIS BROWSER FROM {events!.length} ENTRIES ACROSS {civs!.length} FILES ·{" "}
+            SPONSOR REGISTRY {registry.length} ENTRIES · ORIGINS REVISED NIGHTLY 01:00 UTC
           </p>
         </>
       )}
     </>
+  );
+}
+
+function TieRow({
+  e,
+  nodeById,
+  civById,
+  setHighlight,
+}: {
+  e: ReturnType<typeof buildTies>["edges"][number];
+  nodeById: Map<string, ReturnType<typeof buildTies>["nodes"][number]>;
+  civById: Map<string, Civilization>;
+  setHighlight: (v: string | null) => void;
+}) {
+  const nameOf = (id: string) => nodeById.get(id)?.name ?? civById.get(id)?.name ?? id;
+  return (
+    <tr
+      data-tie={e.key}
+      onMouseEnter={() => setHighlight(e.key)}
+      onMouseLeave={() => setHighlight(null)}
+      onFocusCapture={() => setHighlight(e.key)}
+      onBlurCapture={() => setHighlight(null)}
+    >
+      <td><a href={fileHref(e.source)}>{nameOf(e.source)}</a></td>
+      <td><a href={fileHref(e.target)}>{nameOf(e.target)}</a></td>
+      <td className="mono">{e.df} files</td>
+      <td className="mono">{e.cls.toUpperCase()}</td>
+      <td>
+        {e.specificActors.map((a, i) => (
+          <span key={`s${i}`}>{i > 0 && ", "}<span className="tie-actor">{a}</span></span>
+        ))}
+        {e.ubiquitousActors.map((a, i) => (
+          <span key={`u${i}`}>{(i > 0 || e.specificActors.length > 0) && ", "}<span className="tie-actor-ubiq">{a}</span></span>
+        ))}
+      </td>
+    </tr>
   );
 }

@@ -7,18 +7,29 @@ export function Glyph({
   category,
   filled,
   size = 11,
+  ink,
+  x,
+  y,
 }: {
   category: Category;
   filled: boolean;
   size?: number;
+  // Override the category ink — the ties plate stamps the glyph in ground
+  // colour on a filled disc. Position props let the glyph sit inside
+  // another SVG.
+  ink?: string;
+  x?: number;
+  y?: number;
 }) {
-  const stroke = `var(--cat-${category})`;
+  const stroke = ink ?? `var(--cat-${category})`;
   const common = {
     width: size,
     height: size,
     viewBox: "0 0 12 12",
     "aria-hidden": true as const,
     style: { flexShrink: 0 },
+    ...(x !== undefined && { x }),
+    ...(y !== undefined && { y }),
   };
   switch (category) {
     case "coordination":

@@ -1,7 +1,7 @@
 "use client";
 // Data shaping for the Survey — the register's atlas leaf. Three plates,
 // all derived client-side from the public ledger:
-//   ties     — civilizations linked by shared named actors (the same
+//   ties     — civilizations bound by shared named actors (the same
 //              predicate cross-civilization corroboration uses)
 //   cadence  — weekly entry counts per civilization
 //   origins  — civilizations grouped by their sponsors' headquarters
@@ -15,38 +15,93 @@ import type {
 } from "@agent-civilizations/schema";
 import { normalizeActor } from "@agent-civilizations/schema";
 
+// ------------------------------------------------------------------ ties
+//
+// The tie model of record. Every constant that decides a mark is a
+// function of the register's size and is printed on the leaf:
+//
+//   UBIQ      an actor named in UBIQ or more files is ubiquitous
+//             (max(8, 6% of the files with actors) — 15 today, 30 at 500)
+//   weight    1 / df, where df is the number of files in which the tie's
+//             shared actors appear TOGETHER — two files that alone share a
+//             pair of actors bind tightly (1.0); a pair found together in
+//             twenty files binds weakly (0.05)
+//   strong    df ≤ STRONG_DF
+//   drawn     in full when df < UBIQ, or when the tie is among the K
+//             strongest of either file; otherwise a hairline
+//
+// Order is by id everywhere — ingestion order never moves a mark.
+
+export type TieClass = "strong" | "full" | "hairline";
+
 export interface TieNode {
   id: string;
   name: string;
   category: Category;
   status: CivilizationStatus;
-  eventCount: number;
-  confirmed: boolean;
-  degree: number;
-}
-export interface TieEdge {
-  source: string;
-  target: string;
-  weight: number; // Σ 1/(files the actor touches) over shared actors
-  actors: string[]; // display spellings
-}
-export interface Ties {
-  nodes: TieNode[];
-  edges: TieEdge[];
-  isolated: number; // civilizations with events but no tie
+  entries: number; // entries loaded for this plate (not the civ doc's count)
+  confirmed: boolean; // holds at least one confirmed entry
+  degree: number; // ties drawn in full
+  degreeAll: number; // all ties
+  strongest: { other: string; otherName: string; weight: number; edgeKey: string } | null;
 }
 
-const MIN_SHARED = 2;
+export interface TieEdge {
+  key: string; // `${a}|${b}` with a < b
+  source: string;
+  target: string;
+  df: number;
+  weight: number;
+  actors: string[]; // display spellings, specific first
+  specificActors: string[];
+  ubiquitousActors: string[];
+  cls: TieClass;
+  drawn: boolean; // strong or full
+}
+
+export interface Ties {
+  nodes: TieNode[]; // id order
+  edges: TieEdge[]; // key order
+  order: string[]; // node ids, the table's order (specific degree desc, then id)
+  isolatedIds: string[]; // files with entries but no tie
+  components: string[][]; // over all ties; size desc, then first id
+  ubiqThreshold: number;
+  ubiquitousActors: Array<{ actor: string; files: number }>;
+  strongDf: number;
+  topK: number;
+  maxDf: number;
+  counts: {
+    files: number;
+    ties: number;
+    drawn: number;
+    strong: number;
+    hairline: number;
+    ubiquitousOnly: number;
+    withoutTies: number;
+  };
+}
+
+export const MIN_SHARED = 2;
+export const STRONG_DF = 3;
+
+export function ubiqThresholdFor(filesWithActors: number): number {
+  return Math.max(8, Math.ceil(0.06 * filesWithActors));
+}
+export function topKFor(filesWithActors: number): number {
+  return filesWithActors > 400 ? 2 : 3;
+}
 
 export function buildTies(civs: Civilization[], events: Event[]): Ties {
   const civById = new Map(civs.map((c) => [c.id, c]));
   const actorsByCiv = new Map<string, Set<string>>();
   const civsByActor = new Map<string, Set<string>>();
   const spelling = new Map<string, string>();
+  const entries = new Map<string, number>();
   const confirmedCivs = new Set<string>();
 
   for (const e of events) {
     if (!civById.has(e.civilizationId)) continue;
+    entries.set(e.civilizationId, (entries.get(e.civilizationId) ?? 0) + 1);
     if (e.confidence === "confirmed") confirmedCivs.add(e.civilizationId);
     const set = actorsByCiv.get(e.civilizationId) ?? new Set<string>();
     actorsByCiv.set(e.civilizationId, set);
@@ -61,9 +116,16 @@ export function buildTies(civs: Civilization[], events: Event[]): Ties {
     }
   }
 
-  const ids = [...actorsByCiv.keys()];
+  const ids = [...actorsByCiv.keys()].sort();
+  const N = ids.length;
+  const UBIQ = ubiqThresholdFor(N);
+  const K = topKFor(N);
+  const isUbiq = (a: string) => (civsByActor.get(a)?.size ?? 0) >= UBIQ;
+
+  // Pairs. O(n²) is fine to ~500 files (125k pairs).
   const edges: TieEdge[] = [];
-  const degree = new Map<string, number>();
+  const incident = new Map<string, TieEdge[]>();
+  let maxDf = 2;
   for (let i = 0; i < ids.length; i++) {
     const A = actorsByCiv.get(ids[i])!;
     for (let j = i + 1; j < ids.length; j++) {
@@ -71,42 +133,141 @@ export function buildTies(civs: Civilization[], events: Event[]): Ties {
       const shared: string[] = [];
       for (const a of A) if (B.has(a)) shared.push(a);
       if (shared.length < MIN_SHARED) continue;
-      let weight = 0;
-      for (const a of shared) weight += 1 / (civsByActor.get(a)?.size ?? 1);
-      edges.push({
+      // df: files whose actor set contains every shared actor — iterate the
+      // rarest actor's files.
+      let rarest = shared[0];
+      for (const a of shared)
+        if (civsByActor.get(a)!.size < civsByActor.get(rarest)!.size) rarest = a;
+      let df = 0;
+      for (const id of civsByActor.get(rarest)!) {
+        const set = actorsByCiv.get(id)!;
+        if (shared.every((a) => set.has(a))) df++;
+      }
+      df = Math.max(2, df);
+      maxDf = Math.max(maxDf, df);
+      const specific = shared.filter((a) => !isUbiq(a)).sort();
+      const ubiq = shared.filter(isUbiq).sort();
+      const edge: TieEdge = {
+        key: `${ids[i]}|${ids[j]}`,
         source: ids[i],
         target: ids[j],
-        weight,
-        actors: shared.map((a) => spelling.get(a) ?? a),
-      });
-      degree.set(ids[i], (degree.get(ids[i]) ?? 0) + 1);
-      degree.set(ids[j], (degree.get(ids[j]) ?? 0) + 1);
+        df,
+        weight: 1 / df,
+        actors: [...specific, ...ubiq].map((a) => spelling.get(a) ?? a),
+        specificActors: specific.map((a) => spelling.get(a) ?? a),
+        ubiquitousActors: ubiq.map((a) => spelling.get(a) ?? a),
+        cls: "hairline",
+        drawn: false,
+      };
+      edges.push(edge);
+      for (const id of [ids[i], ids[j]]) {
+        const list = incident.get(id) ?? [];
+        list.push(edge);
+        incident.set(id, list);
+      }
     }
   }
 
+  // Drawn-in-full rule: df < UBIQ, or among the K strongest ties of either
+  // file. Strong: df ≤ STRONG_DF.
+  const drawnKeys = new Set<string>();
+  for (const [, list] of incident) {
+    const top = [...list].sort((a, b) => b.weight - a.weight || a.key.localeCompare(b.key)).slice(0, K);
+    for (const e of top) drawnKeys.add(e.key);
+  }
+  for (const e of edges) {
+    if (e.df <= STRONG_DF) e.cls = "strong";
+    else if (e.df < UBIQ || drawnKeys.has(e.key)) e.cls = "full";
+    else e.cls = "hairline";
+    e.drawn = e.cls !== "hairline";
+  }
+
+  // Nodes.
   const nodes: TieNode[] = [];
-  let isolated = 0;
+  const isolatedIds: string[] = [];
   for (const id of ids) {
     const c = civById.get(id)!;
-    const d = degree.get(id) ?? 0;
-    if (d === 0) {
-      isolated++;
+    const list = incident.get(id) ?? [];
+    if (list.length === 0) {
+      isolatedIds.push(id);
       continue;
     }
+    let best: TieEdge | null = null;
+    for (const e of list) if (!best || e.weight > best.weight || (e.weight === best.weight && e.key < best.key)) best = e;
+    const other = best ? (best.source === id ? best.target : best.source) : null;
     nodes.push({
       id,
       name: c.name,
       category: c.category,
       status: c.status,
-      eventCount: c.eventCount,
+      entries: entries.get(id) ?? 0,
       confirmed: confirmedCivs.has(id),
-      degree: d,
+      degree: list.filter((e) => e.drawn).length,
+      degreeAll: list.length,
+      strongest:
+        best && other
+          ? { other, otherName: civById.get(other)?.name ?? other, weight: best.weight, edgeKey: best.key }
+          : null,
     });
   }
-  return { nodes, edges, isolated };
+
+  // Components over all ties.
+  const adj = new Map<string, Set<string>>();
+  for (const e of edges) {
+    (adj.get(e.source) ?? adj.set(e.source, new Set()).get(e.source)!).add(e.target);
+    (adj.get(e.target) ?? adj.set(e.target, new Set()).get(e.target)!).add(e.source);
+  }
+  const seen = new Set<string>();
+  const components: string[][] = [];
+  for (const n of nodes) {
+    if (seen.has(n.id)) continue;
+    const comp: string[] = [];
+    const stack = [n.id];
+    while (stack.length) {
+      const x = stack.pop()!;
+      if (seen.has(x)) continue;
+      seen.add(x);
+      comp.push(x);
+      for (const y of adj.get(x) ?? []) if (!seen.has(y)) stack.push(y);
+    }
+    comp.sort();
+    components.push(comp);
+  }
+  components.sort((a, b) => b.length - a.length || a[0].localeCompare(b[0]));
+
+  const order = [...nodes]
+    .sort((a, b) => b.degree - a.degree || b.degreeAll - a.degreeAll || a.id.localeCompare(b.id))
+    .map((n) => n.id);
+
+  const ubiquitousActors = [...civsByActor.entries()]
+    .filter(([, s]) => s.size >= UBIQ)
+    .map(([a, s]) => ({ actor: spelling.get(a) ?? a, files: s.size }))
+    .sort((a, b) => b.files - a.files || a.actor.localeCompare(b.actor));
+
+  return {
+    nodes,
+    edges: edges.sort((a, b) => a.key.localeCompare(b.key)),
+    order,
+    isolatedIds,
+    components,
+    ubiqThreshold: UBIQ,
+    ubiquitousActors,
+    strongDf: STRONG_DF,
+    topK: K,
+    maxDf,
+    counts: {
+      files: nodes.length,
+      ties: edges.length,
+      drawn: edges.filter((e) => e.drawn).length,
+      strong: edges.filter((e) => e.cls === "strong").length,
+      hairline: edges.filter((e) => !e.drawn).length,
+      ubiquitousOnly: edges.filter((e) => e.specificActors.length === 0).length,
+      withoutTies: isolatedIds.length,
+    },
+  };
 }
 
-// ---------------------------------------------------------------- cadence
+// --------------------------------------------------------------- cadence
 
 export interface CadenceRow {
   id: string;
@@ -124,7 +285,7 @@ export interface Cadence {
 
 function utcMonday(d: Date): Date {
   const x = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-  const day = x.getUTCDay(); // 0 Sun … 6 Sat
+  const day = x.getUTCDay();
   x.setUTCDate(x.getUTCDate() - ((day + 6) % 7));
   return x;
 }
@@ -163,12 +324,12 @@ export function buildCadence(
   rows.sort((a, b) => {
     const la = civById.get(a.id)!.lastEventAt;
     const lb = civById.get(b.id)!.lastEventAt;
-    return lb.localeCompare(la);
+    return lb.localeCompare(la) || a.id.localeCompare(b.id);
   });
   return { rows: rows.slice(0, maxRows), weekStarts, max };
 }
 
-// ---------------------------------------------------------------- origins
+// --------------------------------------------------------------- origins
 
 export interface OriginPoint {
   key: string;
@@ -187,9 +348,9 @@ export interface OriginTie {
 }
 export interface Origins {
   points: OriginPoint[];
-  ties: OriginTie[]; // multi-origin files: dominant sponsor ↔ second placed sponsor
+  ties: OriginTie[];
   unplaced: Civilization[];
-  pending: Civilization[]; // never visited by the origins job
+  pending: Civilization[];
   byCountry: Array<{ country: string; files: number }>;
 }
 
@@ -231,7 +392,7 @@ export function buildOrigins(civs: Civilization[]): Origins {
     return p;
   };
 
-  for (const c of civs) {
+  for (const c of [...civs].sort((a, b) => a.id.localeCompare(b.id))) {
     const co = c.origin;
     if (!co) {
       pending.push(c);
@@ -250,9 +411,7 @@ export function buildOrigins(civs: Civilization[]): Origins {
     }
     const p = upsert(o, c);
     p.civs.push(c);
-    // prefer the stronger provenance for the point's label
     if (o.provenance === "curated") p.provenance = "curated";
-    // a second placed sponsor in a different city makes a multi-origin file
     const second = co.sponsors.find(
       (s) =>
         s.origin &&
@@ -281,10 +440,10 @@ export function buildOrigins(civs: Civilization[]): Origins {
     byCountryMap.set(p.country, (byCountryMap.get(p.country) ?? 0) + p.civs.length);
   const byCountry = [...byCountryMap.entries()]
     .map(([country, files]) => ({ country, files }))
-    .sort((a, b) => b.files - a.files);
+    .sort((a, b) => b.files - a.files || a.country.localeCompare(b.country));
 
   return {
-    points: [...points.values()].sort((a, b) => b.civs.length - a.civs.length),
+    points: [...points.values()].sort((a, b) => b.civs.length - a.civs.length || a.key.localeCompare(b.key)),
     ties,
     unplaced,
     pending,
@@ -292,7 +451,9 @@ export function buildOrigins(civs: Civilization[]): Origins {
   };
 }
 
-// Deterministic PRNG so the ties plate lays out the same way every visit.
+// --------------------------------------------------------------- utilities
+
+// Deterministic PRNG so plates lay out the same way every visit.
 export function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
@@ -302,4 +463,10 @@ export function mulberry32(seed: number): () => number {
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+}
+
+export function djb2(s: string): number {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+  return h;
 }

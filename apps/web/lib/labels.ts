@@ -1,0 +1,89 @@
+// Greedy label placement shared by the Survey plates.
+//
+// Marks are tried in priority order; each label tries eight anchors —
+// east, west, south, north, then the four diagonals — and takes the
+// first whose box lies inside the bounds and overlaps neither an
+// obstacle (every mark's disc) nor a label already placed. A label with
+// no clear anchor is skipped: a skipped name plus the table is more
+// honest than a leader line across three ties. All arithmetic is in the
+// caller's units — CSS pixels for the ties plate, viewBox units for the
+// origins plate.
+
+export interface Box {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface LabelMark {
+  id: string;
+  x: number;
+  y: number;
+  r: number;
+  text: string;
+  priority: number; // higher first
+}
+
+export interface PlacedLabel {
+  id: string;
+  x: number;
+  y: number;
+  text: string;
+  anchor: "start" | "middle" | "end";
+}
+
+export interface PlaceOptions {
+  ch: number; // estimated px per character
+  lh: number; // line height / box height
+  gap?: number; // clearance from the disc edge
+  bounds: Box;
+}
+
+export function overlaps(a: Box, b: Box): boolean {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+export function placeLabels(
+  marks: LabelMark[],
+  obstacles: Box[],
+  opts: PlaceOptions,
+): PlacedLabel[] {
+  const gap = opts.gap ?? 4;
+  const inset = 3;
+  const bounds = opts.bounds;
+  const taken: Box[] = [...obstacles];
+  const placed: PlacedLabel[] = [];
+  const ordered = [...marks].sort((a, b) => b.priority - a.priority || a.id.localeCompare(b.id));
+
+  for (const m of ordered) {
+    const w = m.text.length * opts.ch + 4;
+    const h = opts.lh;
+    const d = m.r + gap;
+    const diag = d * 0.7071;
+    // (text x, text y baseline, anchor, box)
+    const candidates: Array<{ x: number; y: number; anchor: PlacedLabel["anchor"]; box: Box }> = [
+      { x: m.x + d, y: m.y + 4, anchor: "start", box: { x: m.x + d, y: m.y - h / 2, w, h } },
+      { x: m.x - d, y: m.y + 4, anchor: "end", box: { x: m.x - d - w, y: m.y - h / 2, w, h } },
+      { x: m.x, y: m.y + d + h - 3, anchor: "middle", box: { x: m.x - w / 2, y: m.y + d, w, h } },
+      { x: m.x, y: m.y - d - 3, anchor: "middle", box: { x: m.x - w / 2, y: m.y - d - h, w, h } },
+      { x: m.x + diag, y: m.y - diag, anchor: "start", box: { x: m.x + diag, y: m.y - diag - h + 3, w, h } },
+      { x: m.x - diag, y: m.y - diag, anchor: "end", box: { x: m.x - diag - w, y: m.y - diag - h + 3, w, h } },
+      { x: m.x + diag, y: m.y + diag + h - 3, anchor: "start", box: { x: m.x + diag, y: m.y + diag, w, h } },
+      { x: m.x - diag, y: m.y + diag + h - 3, anchor: "end", box: { x: m.x - diag - w, y: m.y + diag, w, h } },
+    ];
+    const pick = candidates.find(
+      (c) =>
+        c.box.x >= bounds.x + inset &&
+        c.box.x + c.box.w <= bounds.x + bounds.w - inset &&
+        c.box.y >= bounds.y + inset &&
+        c.box.y + c.box.h <= bounds.y + bounds.h - inset &&
+        !taken.some((t) => overlaps(t, c.box)),
+    );
+    if (pick) {
+      taken.push(pick.box);
+      placed.push({ id: m.id, x: pick.x, y: pick.y, text: m.text, anchor: pick.anchor });
+    }
+  }
+  return placed;
+}
