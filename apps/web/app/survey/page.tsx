@@ -465,9 +465,10 @@ export default function SurveyPage() {
               <h3>Situations</h3>
               <p className="plate-note">
                 A situation is a group of files bound by specific ties — shared actors that appear together
-                in {ties.bindDf} files or fewer — named by the two actors most particular to the group.
-                Groups are a deterministic function of the ledger and carry no colour and no outline; those
-                of three or more files are captioned on the plate where a caption can be placed.
+                in {ties.bindDf} files or fewer — named by the two actors most particular to the group. A group
+                whose two names cover fewer than half its files is not a situation the record can name, and is
+                not listed. Groups are a deterministic function of the ledger and carry no colour and no outline;
+                those of three or more files are captioned on the plate where a caption can be placed.
               </p>
               <div className="tablewrap">
                 <table>

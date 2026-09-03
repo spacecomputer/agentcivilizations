@@ -31,7 +31,8 @@ import { normalizeActor } from "@agent-civilizations/schema";
 //             or when it is among the K strongest of either file;
 //             otherwise a hairline
 //   situation a group bound by ties with df ≤ BIND_DF, named by the two
-//             actors most particular to it
+//             actors most particular to it; those two must cover at least
+//             half the members or the group is not a situation
 //
 // Order is by id everywhere — ingestion order never moves a mark.
 
@@ -109,7 +110,8 @@ export interface Ties {
 
 export const MIN_SHARED = 2;
 export const STRONG_DF = 3;
-export const BIND_DF = 8; // a tie binds a situation when its actors appear together in 8 files or fewer
+export const BIND_DF = 5; // a tie binds a situation when its actors appear together in 5 files or fewer
+export const SITUATION_COVERAGE = 0.5; // the two naming actors must cover at least half the members
 
 export function ubiqThresholdFor(filesWithActors: number): number {
   return Math.max(8, Math.ceil(0.06 * filesWithActors));
@@ -306,7 +308,17 @@ export function buildTies(civs: Civilization[], events: Event[]): Ties {
       .map(([a, c]) => ({ a, c, lift: c / (civsByActor.get(a)?.size ?? 1) }))
       .sort((p, q) => q.lift - p.lift || q.c - p.c || p.a.localeCompare(q.a))
       .slice(0, 2);
-    if (naming.length === 0) continue; // the record cannot name it; the threshold is wrong, not the plate
+    if (naming.length === 0) continue; // the record cannot name it
+    // Self-check: a union-find chain can stitch clusters together; if the
+    // two most particular actors cover fewer than half the members, two
+    // names cannot stand for the group and it is not a situation.
+    const namingSet = new Set(naming.map((x) => x.a));
+    let covered = 0;
+    for (const id of members) {
+      const set = actorsByCiv.get(id) ?? new Set<string>();
+      for (const a of namingSet) if (set.has(a)) { covered++; break; }
+    }
+    if (covered / members.length < SITUATION_COVERAGE) continue;
     let strongestDf = Infinity;
     for (const e of bindingEdges)
       if (memberSet.has(e.source) && memberSet.has(e.target)) strongestDf = Math.min(strongestDf, e.df);

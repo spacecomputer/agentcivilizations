@@ -232,11 +232,16 @@ export function TiesPlate({
       else return;
       ev.preventDefault();
       if (next && next !== cur) {
+        // A programmatic focus() on an SVG anchor moves activeElement but
+        // does not reliably dispatch focusin, so React's onFocus may not
+        // run — set the state that the focus handler would have set.
         setActive(next);
+        setFocused(next);
+        setReading({ kind: "node", id: next });
         refs.current.get(next)?.focus();
       }
     },
-    [order],
+    [order, setReading],
   );
 
   // Find a file: exact name, then exact id, then the first name or id that
@@ -260,6 +265,8 @@ export function TiesPlate({
       }
       if (hit.tied && nodeById.has(hit.id)) {
         setActive(hit.id);
+        setFocused(hit.id);
+        setReading({ kind: "node", id: hit.id }); // see onKeyDown: focusin is not guaranteed
         const el = refs.current.get(hit.id);
         if (el) {
           el.focus();
