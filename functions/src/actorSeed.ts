@@ -9,18 +9,27 @@ export interface SeedActor {
   name: string;
   aliases?: string[];
   kind: ActorKind;
-  city: string;
-  country: string; // ISO 3166-1 alpha-2
-  lat: number;
-  lng: number;
+  city?: string;
+  country?: string; // ISO 3166-1 alpha-2
+  lat?: number;
+  lng?: number;
   homepage?: string;
+  // placed:false records a name the register must never place (a
+  // protocol, a product) — the entry documents it and resolves to its maker.
+  placed?: false;
+  productOf?: string; // seed name of the organisation that makes it
+  note?: string; // e.g. a Wikidata QID the coordinates were taken from
 }
+
+// Bump when seed semantics change; written into every curated entry's
+// provenanceRef so a placement can be traced to the seed that made it.
+export const SEED_VERSION = "2026-09-03";
 
 export const ACTOR_SEED: SeedActor[] = [
   // -- frontier labs --
   // Product and model names resolve to the lab that ships them — the
   // sponsor of record is the organisation, never the artefact.
-  { name: "OpenAI", aliases: ["ChatGPT", "GPT", "Codex", "OpenAI Operator", "Astra", "GPT-Red", "OpenAI Astra", "Sora", "o3", "o4"], kind: "lab", city: "San Francisco", country: "US", lat: 37.762, lng: -122.397, homepage: "https://openai.com" },
+  { name: "OpenAI", aliases: ["ChatGPT", "GPT", "Codex", "OpenAI Codex", "OpenAI Operator", "Astra", "GPT-Red", "OpenAI Astra", "Sora", "o3", "o4", "GPT-4", "GPT-4o", "GPT-5", "GPT-5-mini", "GPT-5 mini", "GPT-5.5"], kind: "lab", city: "San Francisco", country: "US", lat: 37.762, lng: -122.397, homepage: "https://openai.com" },
   { name: "Anthropic", aliases: ["Claude", "Claude Code", "Anthropic PBC", "Claude Opus", "Claude Opus 5", "Claude Code Opus 5", "Claude Fable", "Claude Sonnet", "Claude Haiku"], kind: "lab", city: "San Francisco", country: "US", lat: 37.79, lng: -122.401, homepage: "https://www.anthropic.com" },
   { name: "Google DeepMind", aliases: ["DeepMind", "Gemini"], kind: "lab", city: "London", country: "GB", lat: 51.532, lng: -0.126, homepage: "https://deepmind.google" },
   { name: "Google", aliases: ["Google AI", "Google Research", "Alphabet"], kind: "company", city: "Mountain View", country: "US", lat: 37.422, lng: -122.084, homepage: "https://google.com" },
@@ -85,11 +94,17 @@ export const ACTOR_SEED: SeedActor[] = [
   { name: "MITRE", aliases: ["CVE Program"], kind: "government", city: "McLean", country: "US", lat: 38.934, lng: -77.177 },
   { name: "CISA", kind: "government", city: "Washington", country: "US", lat: 38.907, lng: -77.037 },
   { name: "European Commission", aliases: ["EU AI Office", "European Union"], kind: "government", city: "Brussels", country: "BE", lat: 50.85, lng: 4.352 },
+  { name: "AEPD", aliases: ["Agencia Española de Protección de Datos", "Spanish Data Protection Agency"], kind: "government", city: "Madrid", country: "ES", lat: 40.42, lng: -3.7, note: "wikidata:Q5680879" },
+  { name: "FBI", aliases: ["Federal Bureau of Investigation"], kind: "government", city: "Washington", country: "US", lat: 38.895, lng: -77.025, note: "wikidata:Q8333" },
   { name: "UK AI Security Institute", aliases: ["AISI", "AI Safety Institute"], kind: "government", city: "London", country: "GB", lat: 51.503, lng: -0.128 },
   { name: "Europol", kind: "government", city: "The Hague", country: "NL", lat: 52.071, lng: 4.301 },
 
   // -- publications (sources of record; never place a file) --
   { name: "arXiv", aliases: ["arXiv researchers", "arXiv authors"], kind: "publication", city: "Ithaca", country: "US", lat: 42.444, lng: -76.502, homepage: "https://arxiv.org" },
+  { name: "VentureBeat", kind: "publication", city: "San Francisco", country: "US", lat: 37.782, lng: -122.396 },
+
+  // -- protocols and products: recorded, resolved to their maker, never placed --
+  { name: "Model Context Protocol", aliases: ["MCP"], kind: "protocol", productOf: "Anthropic", placed: false },
   { name: "Reuters", aliases: ["Thomson Reuters"], kind: "publication", city: "London", country: "GB", lat: 51.512, lng: -0.09 },
   { name: "The Register", kind: "publication", city: "London", country: "GB", lat: 51.507, lng: -0.128 },
   { name: "Ars Technica", kind: "publication", city: "New York", country: "US", lat: 40.744, lng: -73.99 },
