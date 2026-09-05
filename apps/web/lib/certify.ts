@@ -7,6 +7,7 @@
 import {
   computeContentHash,
   computeMerkleRoot,
+  rootAlgoOf,
 } from "@agent-civilizations/verify";
 import type { Event, Root } from "@agent-civilizations/schema";
 import { utcDay } from "./format";
@@ -157,10 +158,15 @@ export async function certify(
   const days = [...byDay.keys()].sort();
   for (const day of days) {
     const dayEvents = byDay.get(day)!;
+    const sealed = roots.get(day) ?? null;
+    // Reseal each day under the algorithm THAT day was sealed with. A root
+    // is never recomputed under a newer one: days sealed before the Merkle
+    // tree shipped carry no rootAlgo and must be reproduced as flat-v1.
+    // An unsealed day is shown under what the next sealing will use.
     const computedRoot = await computeMerkleRoot(
       dayEvents.map((e) => e.contentHash),
+      sealed ? rootAlgoOf(sealed) : undefined,
     );
-    const sealed = roots.get(day) ?? null;
     const ok = sealed === null || sealed.merkleRoot === computedRoot;
     dayResults.push({
       day,

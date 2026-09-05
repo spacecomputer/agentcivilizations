@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Archivo, Literata, IBM_Plex_Mono } from "next/font/google";
+import { Analytics } from "@/components/Analytics";
 import { Ticker } from "@/components/Ticker";
 import "./globals.css";
 
@@ -89,6 +90,7 @@ export default function RootLayout({
           </div>
         </nav>
         <main>{children}</main>
+        <Analytics />
         <footer className="colophon">
           <div className="colophon-inner">
             <span>AGENTCIVILIZATIONS.ORG</span>

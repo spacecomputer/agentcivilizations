@@ -200,14 +200,14 @@ Inclusion proofs are generated and checked client-side (`inclusionProof` / `veri
 
 - OpenRouter key is a **Cloud Function secret**, never in the frontend bundle.
 - Firestore rules: **read-open, write-closed** for the public. Admin SDK bypasses.
-- No user data collected. No cookies beyond a preference for theme. No analytics in MVP.
+- Google Analytics (GA4) is loaded via the Firebase Analytics SDK, which sets its own cookies and reports page views to Google. It is the only third party the site talks to. It is skipped for readers who send Do Not Track or Global Privacy Control, on localhost, and wherever the SDK reports itself unsupported. No other user data is collected, and nothing about a reader is written to the ledger.
 - CSP: default-src 'self'; connects to `firestore.googleapis.com` and source article domains for previews.
 
 ---
 
 ## What's deliberately absent
 
-- **No analytics.** No page tracking, no product analytics, no third-party beacons, no cookies beyond a theme preference. A public record is not a funnel; readers should not be measured. Operational visibility comes from Firebase Hosting request logs and Cloud Function logs, and from the `/stats` page — which is public and derives every number from the same Firestore any reader can query.
+- **~~No analytics.~~** This was the original position: a public record is not a funnel, and readers should not be measured. It no longer holds. Google Analytics was added deliberately in September 2026, and this entry is amended rather than deleted because a document that quietly drops its own commitments is worth less than one that records changing them. What remains true: the register itself never records anything about a reader, no reader data reaches Firestore or the ledger, the analytics path is skipped for anyone sending Do Not Track or Global Privacy Control, and nothing about the site's function depends on it — the whole register, including in-browser verification, works with analytics blocked. The `/stats` page remains the public, self-derived view of the register's own activity, computed from the same Firestore any reader can query.
 - **No client-side error tracking.** A silent failure of the browser verification is the only class of bug the register should never hide from a reader — so instead of routing it to Sentry, it renders as a visible `verify` state on the page itself. If the JS bundle throws before the crest paints, the reader sees a static, untouched page and can still walk the chain from the CLI (`npx @agent-civilizations/verify`) or from `/verify` on any working device.
 - **No account system.** There is nothing to log into. Everything an operator can do (retract an event, add a source, edit the taxonomy) happens through PRs against the open repository.
 
