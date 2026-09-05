@@ -357,7 +357,9 @@ export function OriginsPlate({
           };
         }),
       discs,
-      { ch: LABEL_CH, lh: NAME_LH, gap: 4, bounds: inner, rings: [0, 11, 24] },
+      // The inset is small and its names are short; a fourth ring and a
+      // tighter gap fit the members the world plate cannot separate.
+      { ch: LABEL_CH, lh: NAME_LH, gap: 3, bounds: inner, rings: [0, 9, 18, 30] },
     );
     // Leader from the aggregate mark's disc edge to the nearest frame corner.
     const corners = [

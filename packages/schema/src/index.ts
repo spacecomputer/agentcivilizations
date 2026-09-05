@@ -230,9 +230,16 @@ export const Civilization = z.object({
 export { normalizeActor, actorSlug } from "./actors.js";
 export type Civilization = z.infer<typeof Civilization>;
 
+export const RootAlgo = z.enum(["flat-v1", "merkle-v2"]);
+export type RootAlgo = z.infer<typeof RootAlgo>;
+
 export const Root = z.object({
   id: z.string(),
   merkleRoot: z.string(),
+  // How this day was sealed. Absent means "flat-v1" — every root sealed
+  // before the Merkle tree shipped. A root is never recomputed under a
+  // new algorithm; the field records which one to verify it under.
+  rootAlgo: RootAlgo.optional(),
   eventCount: z.number().int().nonnegative(),
   civilizationCount: z.number().int().nonnegative(),
   computedAt: z.string().datetime(),

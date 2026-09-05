@@ -872,3 +872,8 @@ tr.filtered .rowlink { color: var(--ink-dim); font-weight: 400; }
 /* Find controls keep the leaf's focus outline; near-emboldening survives a filter */
 .plate-find input[type="search"]:focus { outline: 2px solid var(--cat-coordination); outline-offset: 2px; border-bottom-color: var(--ink); }
 tr.filtered.is-near .rowlink { font-weight: 700; }
+
+/* A superseded entry says so before it says anything else */
+.panel.superseded { border-left: 2px solid var(--fail); }
+.panel.superseded p { margin: 6px 0 0; }
+.prov-rule { border-top: 1px solid var(--rule); margin: 16px 0 14px; }

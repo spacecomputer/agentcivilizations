@@ -1,20 +1,52 @@
 {
   "name": "@agent-civilizations/verify",
   "version": "0.1.0",
-  "description": "Standalone hash-chain verifier for the Agent Civilizations ledger.",
+  "description": "Standalone hash-chain verifier for the Agent Civilizations ledger. Recomputes every hash locally against public Firestore endpoints; needs no account, key, or trust in the operator.",
   "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "bin": {
     "agent-civilizations-verify": "dist/cli.js"
   },
-  "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "lint": "tsc --noEmit"
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
   },
-  "dependencies": {
-    "@agent-civilizations/schema": "*"
+  "keywords": [
+    "hash-chain",
+    "merkle",
+    "rfc6962",
+    "inclusion-proof",
+    "transparency-log",
+    "verification",
+    "agent-civilizations"
+  ],
+  "homepage": "https://agentcivilizations.org/verify",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spacecomputer/agentcivilizations.git",
+    "directory": "packages/verify"
+  },
+  "bugs": {
+    "url": "https://github.com/spacecomputer/agentcivilizations/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node -e \"require('fs').chmodSync('dist/cli.js', 0o755)\"",
+    "lint": "tsc --noEmit",
+    "test": "node src/golden.test.mjs && node src/merkle.test.mjs"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

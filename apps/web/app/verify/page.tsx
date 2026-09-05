@@ -254,11 +254,48 @@ export default function VerifyPage() {
       )}
 
       <h3>From the command line</h3>
+      <p>
+        The same arithmetic, off our servers. It reads Firestore&apos;s public
+        endpoints directly and recomputes every hash on your machine; it needs
+        no account and no key. If it disagrees with this page, believe it.
+      </p>
       <div className="panel">
         <div className="prov-line">
           npx @agent-civilizations/verify --civilization=&lt;file&gt;
         </div>
+        <div className="prov-line">
+          npx @agent-civilizations/verify --root=YYYY-MM-DD
+        </div>
+        <div className="prov-line">
+          npx @agent-civilizations/verify --event=&lt;entry&gt;
+        </div>
+        <p className="dim" style={{ marginTop: "10px" }}>
+          The first walks a file&apos;s chain, the second reseals a day and
+          compares it with the sealed root, the third proves one entry sits
+          inside a sealed day. Add <span className="mono">--json</span> for
+          machine-readable output. The source is{" "}
+          <a
+            href="https://github.com/spacecomputer/agentcivilizations/tree/main/packages/verify"
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            packages/verify
+          </a>
+          , and it can be run from a clone without npm.
+        </p>
       </div>
+
+      <h3>Proving one entry, not a whole day</h3>
+      <p>
+        A day is sealed as a Merkle tree over its entries. To check a single
+        entry you do not need the rest of the day: you need that entry and
+        about a dozen sibling hashes, which fold back into the day&apos;s root.
+        A wrong path cannot reach an anchored root, so the proof stands on its
+        own. Every entry page carries the button that does it. Days sealed
+        before the tree shipped keep their original root and their Bitcoin
+        anchor, and are checked by reproducing the whole day instead — a root
+        is never recomputed under a new algorithm.
+      </p>
 
       <h3>Bitcoin-anchored root proofs</h3>
       <p>

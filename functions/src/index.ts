@@ -4,6 +4,7 @@ import { onRequest } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { setGlobalOptions } from "firebase-functions/v2";
 import { runScan } from "./scan.js";
+import { retractEvent } from "./retract.js";
 import { computeDailyRoot, backfillCorroboration } from "./hashchain.js";
 import { FALLBACK_MODELS } from "./classify.js";
 import { buildAtomFeed, buildSitemap } from "./feeds.js";
@@ -24,6 +25,19 @@ function models(): string[] {
 }
 
 // Scheduled: every 30 minutes.
+// HTTP FUNCTION INVOCATION POLICY
+//
+// onRequest in Firebase Functions v2 is PUBLIC by default: the CLI grants
+// run.invoker to allUsers unless the function says otherwise. Anything
+// that writes to the ledger, seals a root, or spends the free-inference
+// budget therefore declares invoker: "private" explicitly and is called
+// with a Cloud Run identity token:
+//
+//   curl -H "Authorization: Bearer $(gcloud auth print-identity-token)" <url>
+//
+// Exactly three functions are deliberately public, and all three are
+// read-only: otsProof, feed, sitemap.
+
 export const scheduledScan = onSchedule(
   { schedule: "every 30 minutes", secrets: [OPENROUTER_API_KEY], timeoutSeconds: 540, memory: "512MiB" },
   async () => {
@@ -38,13 +52,46 @@ export const scheduledScan = onSchedule(
 // Manual trigger (unauthenticated GET) — useful for testing. Reject in prod
 // by checking a shared secret if abuse becomes an issue.
 export const scanNow = onRequest(
-  { secrets: [OPENROUTER_API_KEY], timeoutSeconds: 540, memory: "512MiB" },
+  { secrets: [OPENROUTER_API_KEY], timeoutSeconds: 540, memory: "512MiB", invoker: "private" },
   async (_req, res) => {
     const summary = await runScan({
       apiKey: OPENROUTER_API_KEY.value(),
       models: models(),
     });
     res.json(summary);
+  },
+);
+
+// Retraction — a governance act, never a public endpoint.
+//
+// The register does not edit or delete; a correction is a new entry that
+// supersedes the old one and says why. This writes that entry, chained
+// onto the file's head like any other, and it is permanent: the next
+// nightly root seals it and OpenTimestamps anchors it. Invoke it the way
+// the other admin callables are invoked, with a Cloud Run identity token:
+//
+//   curl -X POST https://<retractnow-url> \
+//     -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
+//     -H "content-type: application/json" \
+//     -d '{"eventId":"01M...","reason":"misclassified","notes":"why"}'
+export const retractNow = onRequest(
+  { timeoutSeconds: 120, memory: "256MiB", invoker: "private" },
+  async (req, res) => {
+    if (req.method !== "POST") {
+      res.status(405).json({ ok: false, error: "POST a JSON body" });
+      return;
+    }
+    const body = (typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body) ?? {};
+    const result = await retractEvent({
+      eventId: String(body.eventId ?? ""),
+      reason: body.reason,
+      notes: String(body.notes ?? ""),
+      ...(body.title && { title: String(body.title) }),
+      ...(body.summary && { summary: String(body.summary) }),
+    });
+    // Every retraction is logged, successful or refused.
+    console.log("retraction", JSON.stringify({ request: { eventId: body.eventId, reason: body.reason }, result }));
+    res.status(result.ok ? 200 : 400).json(result);
   },
 );
 
@@ -87,7 +134,7 @@ export const upgradeOtsProofs = onSchedule(
 
 // Manual triggers for both — authenticated by Cloud Run default.
 export const anchorRoot = onRequest(
-  { timeoutSeconds: 60 },
+  { timeoutSeconds: 60, invoker: "private" },
   async (req, res) => {
     const day = String(req.query.day ?? new Date().toISOString().slice(0, 10));
     await anchorDailyRoot(day);
@@ -95,7 +142,7 @@ export const anchorRoot = onRequest(
   },
 );
 export const upgradeRoots = onRequest(
-  { timeoutSeconds: 540, memory: "512MiB" },
+  { timeoutSeconds: 540, memory: "512MiB", invoker: "private" },
   async (_req, res) => {
     const result = await upgradeAllPendingProofs();
     res.json(result);
@@ -144,7 +191,7 @@ export const otsProof = onRequest(
 // predicates to every event in the last 60 days. Authenticated (Cloud
 // Run default) because it's operator-scoped.
 export const backfillConfirmations = onRequest(
-  { timeoutSeconds: 540, memory: "512MiB" },
+  { timeoutSeconds: 540, memory: "512MiB", invoker: "private" },
   async (_req, res) => {
     const result = await backfillCorroboration();
     res.json(result);
@@ -152,7 +199,7 @@ export const backfillConfirmations = onRequest(
 );
 
 // Manual root trigger.
-export const computeRoot = onRequest(async (req, res) => {
+export const computeRoot = onRequest({ invoker: "private" }, async (req, res) => {
   const day = String(req.query.day ?? new Date().toISOString().slice(0, 10));
   await computeDailyRoot(day);
   res.json({ ok: true, day });
@@ -217,17 +264,17 @@ export const nightlyOrigins = onSchedule(
 
 // Manual origins trigger — authenticated by Cloud Run default.
 export const originsNow = onRequest(
-  { secrets: [OPENROUTER_API_KEY], timeoutSeconds: 540, memory: "512MiB" },
+  { secrets: [OPENROUTER_API_KEY], timeoutSeconds: 540, memory: "512MiB", invoker: "private" },
   async (_req, res) => {
     const result = await runOrigins({ apiKey: OPENROUTER_API_KEY.value(), models: models() });
     res.json(result);
   },
 );
 
-// Manual summary trigger — authenticated by Cloud Run default (invoker
+// Manual summary trigger — private (see the note above onRequest defaults) (invoker
 // role required), so it cannot be used to drain the free-inference quota.
 export const summarizeNow = onRequest(
-  { secrets: [OPENROUTER_API_KEY], timeoutSeconds: 300, memory: "256MiB" },
+  { secrets: [OPENROUTER_API_KEY], timeoutSeconds: 300, memory: "256MiB", invoker: "private" },
   async (_req, res) => {
     const result = await regenerateStaleSummaries(OPENROUTER_API_KEY.value());
     res.json(result);

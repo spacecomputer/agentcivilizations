@@ -167,7 +167,16 @@ async function verifyCivilization(id: string): Promise<VerifyResult> {
 }
 ```
 
-**Daily root.** `merkleRoot = sha256(concat(sortedContentHashes))` — a flat hash for MVP simplicity. Upgrade to a real Merkle tree later if we need efficient inclusion proofs.
+**Daily root.** Two sealing algorithms coexist, recorded per root in `rootAlgo`:
+
+| `rootAlgo` | Sealing | Per-entry proof |
+|---|---|---|
+| `flat-v1` (absent) | `sha256(concat(sortedContentHashes))` | No — the day is resealed in full |
+| `merkle-v2` | RFC 6962 binary Merkle tree over the same sorted leaves | Yes — about log₂(n) sibling hashes |
+
+A root is **never recomputed**. Days sealed under `flat-v1` keep that root and the Bitcoin anchor already attached to it; `merkle-v2` applies to days sealed after the tree shipped, and `DEFAULT_ROOT_ALGO` in `packages/verify` is what new days use. Leaves are hashed under `0x00` and interior nodes under `0x01`, so no interior node can be presented as a leaf, and an odd node is promoted rather than duplicated — the collision RFC 6962 avoids and Bitcoin's tree does not.
+
+Inclusion proofs are generated and checked client-side (`inclusionProof` / `verifyInclusion`), on the entry page and in the CLI. The proof is self-verifying: a forged sibling path cannot reconstruct an anchored root.
 
 **What this proves and does not.** It proves that no historical event was edited or reordered after the daily root was computed. It does not prove the classifier's judgment is correct, nor that we did not choose to omit an event at ingestion time. That's what open sources and open code are for.
 
@@ -204,11 +213,16 @@ async function verifyCivilization(id: string): Promise<VerifyResult> {
 
 ## What's deliberately deferred
 
-- Real Merkle tree with inclusion proofs (flat root is fine for MVP)
-- Signed root anchoring to a public blockchain / OpenTimestamps
-- Community submissions / wiki edits
-- Multilingual sources
-- Semantic search over the ledger
-- Fine-tuned classifier (relying on free general-purpose LLMs for now)
+- Community submissions / wiki edits — a moderation surface, not a missing feature
+- Multilingual sources — needs a classifier that reasons across languages, not just more feeds
+- Semantic search over the ledger — a real product decision, and the tables are the record
+- Fine-tuned classifier — unnecessary while free general-purpose models hold
 
-Each of these is one PR away, none block launch.
+Shipped since this list was written: OpenTimestamps root anchoring, and the RFC 6962 tree with per-entry inclusion proofs.
+
+## Governance surfaces
+
+Two operations change the public record and neither is a public endpoint. Both are authenticated callables invoked with a Cloud Run identity token, and both leave their trace in the ledger itself.
+
+- **`retractNow`** writes a retraction: a new entry in the same file, chained onto the head, carrying `retracts`, a reason from a closed list, and a note. See `docs/RETRACTIONS.md`.
+- **Seed edits** (`functions/src/actorSeed.ts`) move where files sit on the Survey's origins plate; they ship as their own commits.

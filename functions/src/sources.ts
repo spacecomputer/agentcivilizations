@@ -21,6 +21,27 @@ export const SOURCES: SourceSpec[] = [
     // in a future governance-events iteration.
   },
 
+  // -- primary via GitHub release feeds --
+  // A framework's own release notes are the first party on its own
+  // behaviour: a new protocol, a new autonomy default, a security fix in
+  // an agent loop. github.com is tiered primary, so one of these plus an
+  // independent report confirms an entry on its own.
+  ...[
+    ["langchain-ai/langgraph", "LangGraph"],
+    ["microsoft/autogen", "AutoGen"],
+    ["crewAIInc/crewAI", "CrewAI"],
+    ["Significant-Gravitas/AutoGPT", "AutoGPT"],
+    ["openai/openai-agents-python", "OpenAI Agents SDK"],
+    ["modelcontextprotocol/servers", "Model Context Protocol servers"],
+    ["All-Hands-AI/OpenHands", "OpenHands"],
+    ["browser-use/browser-use", "Browser Use"],
+  ].map(([repo, name]) => ({
+    kind: "rss" as const,
+    id: `github-releases-${repo.split("/")[1].toLowerCase()}`,
+    name: `${name} releases`,
+    url: `https://github.com/${repo}/releases.atom`,
+  })),
+
   // -- aggregators (kept but peerhood dropped in corroboration by
   // default; individual items get their canonical publisher tier via
   // the RSS <source url> unwrap in ingest.ts) --

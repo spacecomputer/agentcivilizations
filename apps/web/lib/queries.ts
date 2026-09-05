@@ -155,6 +155,22 @@ export async function event(id: string): Promise<Event | null> {
   return snap.exists() ? (snap.data() as Event) : null;
 }
 
+// Which entry, if any, supersedes this one. The register never edits or
+// deletes; a correction is a new entry carrying `retracts: [oldId]`, so
+// the retracted entry can only learn of its own retraction by looking
+// forward. array-contains on one field needs no composite index.
+export async function retractedBy(eventId: string): Promise<Event | null> {
+  const db = getDb();
+  const q = query(
+    collection(db, "events"),
+    where("retracts", "array-contains", eventId),
+    orderBy("recordedAt", "asc"),
+    limit(1),
+  );
+  const snap = await getDocs(q);
+  return snap.empty ? null : (snap.docs[0].data() as Event);
+}
+
 export async function eventsRecordedBetween(
   startIso: string,
   endIso: string,

@@ -1,6 +1,6 @@
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { ulid } from "ulid";
-import { computeContentHash, computeMerkleRoot } from "@agent-civilizations/verify";
+import { computeContentHash, computeMerkleRoot, DEFAULT_ROOT_ALGO } from "@agent-civilizations/verify";
 import type {
   Event,
   Civilization,
@@ -470,7 +470,10 @@ export async function computeDailyRoot(day: string): Promise<void> {
   // sha256("") as the ledger's public face and prove nothing.
   if (hashes.length === 0) return;
   const civs = new Set(q.docs.map((d) => (d.data() as Event).civilizationId));
-  const merkleRoot = await computeMerkleRoot(hashes);
+  // New days seal under the RFC 6962 tree so a reader can prove one entry
+  // belongs to the day. Days sealed before it keep their flat-v1 root and
+  // their Bitcoin anchor; roots are never recomputed.
+  const merkleRoot = await computeMerkleRoot(hashes, DEFAULT_ROOT_ALGO);
 
   // Link to the most recent existing root, not literally day-1 — quiet
   // days are skipped, and the chain of roots must stay unbroken across them.
@@ -487,6 +490,7 @@ export async function computeDailyRoot(day: string): Promise<void> {
   await db.collection("roots").doc(day).set({
     id: day,
     merkleRoot,
+    rootAlgo: DEFAULT_ROOT_ALGO,
     eventCount: hashes.length,
     civilizationCount: civs.size,
     computedAt: new Date().toISOString(),
