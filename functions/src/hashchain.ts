@@ -104,7 +104,11 @@ async function upsertCivilization(
       category,
       firstSeenAt: occurredAt,
       lastEventAt: occurredAt,
+      openedAt: new Date().toISOString(),
+      lastRecordedAt: new Date().toISOString(),
       eventCount: 0,
+      confirmedCount: 0,
+      candidateCount: 0,
       status: "active",
       headHash: null,
       // mergeKey is stored outside the Civilization schema — it's an
@@ -167,11 +171,18 @@ export async function promoteEvent(input: PromoteInput): Promise<Event> {
   const batch = db.batch();
   const eventRef = db.collection("events").doc(event.id);
   batch.set(eventRef, event);
-  batch.update(db.collection("civilizations").doc(civ.id), {
-    lastEventAt: input.occurredAt,
+  // lastEventAt is the file's LATEST OCCURRENCE, so it only ever moves
+  // forward. An entry recorded today about something that happened in
+  // 2024 extends the file backwards through firstSeenAt, never forwards.
+  const civUpdate: Record<string, unknown> = {
     eventCount: FieldValue.increment(1),
+    candidateCount: FieldValue.increment(1), // every entry enters as a candidate
+    lastRecordedAt: base.recordedAt,
     headHash: contentHash,
-  });
+  };
+  if (input.occurredAt > civ.lastEventAt) civUpdate.lastEventAt = input.occurredAt;
+  if (input.occurredAt < civ.firstSeenAt) civUpdate.firstSeenAt = input.occurredAt;
+  batch.update(db.collection("civilizations").doc(civ.id), civUpdate);
   await batch.commit();
 
   // Confidence promotion pass — best-effort. A corroboration failure

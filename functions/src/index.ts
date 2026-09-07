@@ -5,6 +5,7 @@ import { defineSecret } from "firebase-functions/params";
 import { setGlobalOptions } from "firebase-functions/v2";
 import { runScan } from "./scan.js";
 import { retractEvent } from "./retract.js";
+import { runCatalog } from "./catalog.js";
 import { computeDailyRoot, backfillCorroboration } from "./hashchain.js";
 import { FALLBACK_MODELS } from "./classify.js";
 import { buildAtomFeed, buildSitemap } from "./feeds.js";
@@ -92,6 +93,24 @@ export const retractNow = onRequest(
     // Every retraction is logged, successful or refused.
     console.log("retraction", JSON.stringify({ request: { eventId: body.eventId, reason: body.reason }, result }));
     res.status(result.ok ? 200 : 400).json(result);
+  },
+);
+
+// The catalog pass — recompute every file's derived fields from the
+// ledger. Runs nightly at 00:45 UTC, after the root is sealed, and is
+// exposed as a private callable for a manual run.
+export const nightlyCatalog = onSchedule(
+  { schedule: "45 0 * * *", timeZone: "UTC", timeoutSeconds: 540, memory: "512MiB" },
+  async () => {
+    const result = await runCatalog();
+    console.log("catalog", JSON.stringify(result));
+  },
+);
+
+export const catalogNow = onRequest(
+  { timeoutSeconds: 540, memory: "512MiB", invoker: "private" },
+  async (_req, res) => {
+    res.json(await runCatalog());
   },
 );
 

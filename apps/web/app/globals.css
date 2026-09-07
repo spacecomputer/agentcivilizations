@@ -877,3 +877,50 @@ tr.filtered.is-near .rowlink { font-weight: 700; }
 .panel.superseded { border-left: 2px solid var(--fail); }
 .panel.superseded p { margin: 6px 0 0; }
 .prov-rule { border-top: 1px solid var(--rule); margin: 16px 0 14px; }
+
+/* ---- the catalog of files ------------------------------------------- */
+.catalog-head { padding: 10px 0 14px; line-height: 1.7; }
+.catalog-h2 { margin: 28px 0 10px; }
+.catalog-foot { padding: 8px 0 10px; line-height: 1.7; }
+
+/* two clocks, side by side, never merged */
+.clock-plates { display: flex; flex-wrap: wrap; gap: 24px; margin: 8px 0 20px; }
+.clock-figure { margin: 0; flex: 1 1 320px; min-width: 300px; }
+.clock-figure figcaption { padding-bottom: 6px; }
+.clock-plate { display: block; overflow: visible; }
+.clock-note { font-size: 14px; color: var(--ink-dim); margin: 8px 0 0; max-width: 60ch; }
+.clock-note .mono { color: var(--ink); }
+
+/* the span column */
+.lifeline, .lifeline-axis { display: block; overflow: visible; }
+.th-axis { display: block; margin-top: 4px; }
+.span-cell { white-space: nowrap; }
+.span-dates { display: block; font-size: 12px; margin-top: 2px; }
+
+/* entries as a shape as well as a number */
+.entries-cell { white-space: nowrap; }
+.entries-bar {
+  display: inline-block; height: 7px; background: var(--ink);
+  vertical-align: middle; margin-right: 6px;
+}
+.entries-n { font-variant-numeric: tabular-nums; }
+.entries-split { display: block; font-size: 12px; }
+
+/* filter and sort controls: ruled, never chips */
+.catalog-controls { padding: 4px 0 10px; }
+.ctl-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 5px 0; }
+.ctl-label { color: var(--ink-dim); letter-spacing: 0.08em; font-size: 12px; margin-right: 2px; }
+.ctl-row label { display: flex; align-items: center; gap: 8px; }
+.ctl-row input[type="search"] {
+  font: inherit; font-size: 13px; color: var(--ink); background: transparent;
+  border: 0; border-bottom: 1px solid var(--rule); padding: 3px 4px; min-width: 190px;
+}
+.ctl-row input[type="search"]:focus {
+  outline: 2px solid var(--cat-coordination); outline-offset: 2px; border-bottom-color: var(--ink);
+}
+button.ctl {
+  font: inherit; font-size: 12px; letter-spacing: 0.06em; color: var(--ink-dim);
+  background: transparent; border: 1px solid var(--rule); padding: 3px 8px; cursor: pointer;
+}
+button.ctl.on { color: var(--ink); border-color: var(--ink); }
+button.ctl:focus-visible { outline: 2px solid var(--cat-coordination); outline-offset: 2px; }

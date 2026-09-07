@@ -14,6 +14,24 @@ export type Confidence = z.infer<typeof Confidence>;
 export const CivilizationStatus = z.enum(["active", "dormant", "extinct"]);
 export type CivilizationStatus = z.infer<typeof CivilizationStatus>;
 
+// Status is derived from silence in OCCURRENCE time, never written by
+// hand: a file is dormant when nothing has happened in it for
+// DORMANT_AFTER_DAYS, and ruled off as extinct after EXTINCT_AFTER_DAYS.
+// Both thresholds are printed on the catalog beside the column they
+// govern, so the rule is always legible next to its effect.
+export const DORMANT_AFTER_DAYS = 90;
+export const EXTINCT_AFTER_DAYS = 365;
+
+export function statusFromSilence(
+  latestOccurrenceIso: string,
+  nowIso: string,
+): CivilizationStatus {
+  const days = (Date.parse(nowIso) - Date.parse(latestOccurrenceIso)) / 86_400_000;
+  if (days >= EXTINCT_AFTER_DAYS) return "extinct";
+  if (days >= DORMANT_AFTER_DAYS) return "dormant";
+  return "active";
+}
+
 export const SourceTier = z.enum([
   "primary", // authoritative first-party (arxiv, nvd, github repo, official blog)
   "primary-trade", // named investigative journalist beat (krebs)
@@ -216,9 +234,22 @@ export const Civilization = z.object({
   aliases: z.array(z.string()).default([]),
   summary: z.string(),
   category: Category,
+  // The register keeps two clocks and never mixes them.
+  //   firstSeenAt / lastEventAt  OCCURRENCE time: when the earliest and
+  //     latest entries in this file actually happened. lastEventAt is the
+  //     MAXIMUM occurrence, so a late-recorded old story can never drag a
+  //     file's span backwards.
+  //   openedAt / lastRecordedAt  RECORD time: when the register first and
+  //     last wrote into this file. Optional; absent on documents written
+  //     before the two clocks were separated.
   firstSeenAt: z.string().datetime(),
   lastEventAt: z.string().datetime(),
+  openedAt: z.string().datetime().optional(),
+  lastRecordedAt: z.string().datetime().optional(),
   eventCount: z.number().int().nonnegative(),
+  // Confidence split, so the catalog can show what a file rests on.
+  confirmedCount: z.number().int().nonnegative().optional(),
+  candidateCount: z.number().int().nonnegative().optional(),
   status: CivilizationStatus,
   headHash: z.string().nullable(),
   // Derived nightly by the origins job; optional so existing documents
