@@ -1,0 +1,23 @@
+# The register's data
+
+The register's own contributions — event summaries, titles, category and
+confidence classifications, file names and groupings, actor lists, origin
+placements, and all derived metadata including hashes and daily roots —
+are dedicated to the public domain under Creative Commons CC0 1.0
+Universal.
+
+    https://creativecommons.org/publicdomain/zero/1.0/
+
+You may copy, modify, distribute and use them, including commercially,
+without asking and without attribution. We would rather you credited the
+register, so that your readers can check it, but that is a courtesy and
+not a condition.
+
+Two things this does not cover.
+
+The underlying sources. Every entry quotes a short excerpt of, and links
+to, reporting we did not write. Those excerpts are kept for auditability
+under fair use and equivalent provisions; their authors retain all rights,
+and CC0 here does not and cannot relicense them.
+
+The code, which is MIT. See LICENSE.

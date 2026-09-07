@@ -20,7 +20,10 @@ export default function AboutPage() {
         agents coordinate, attack, and form persistent communities. We built
         the register so that you never have to trust us — only check us. This
         page is the account of how, including the places where checking us
-        will not help and something else is needed instead.
+        will not help and something else is needed instead. Journalists and
+        researchers should start at <a href="/reference">the reference desk</a>,
+        which covers citation, bulk data, and the two ways this record could
+        mislead you.
       </p>
       <div className="rule-double" />
 

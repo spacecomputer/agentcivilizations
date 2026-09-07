@@ -6,6 +6,7 @@ import { setGlobalOptions } from "firebase-functions/v2";
 import { runScan } from "./scan.js";
 import { retractEvent } from "./retract.js";
 import { runCatalog } from "./catalog.js";
+import { buildSnapshot, buildRetractionsFeed, buildFigures, figuresToCsv } from "./reference.js";
 import { computeDailyRoot, backfillCorroboration } from "./hashchain.js";
 import { FALLBACK_MODELS } from "./classify.js";
 import { buildAtomFeed, buildSitemap } from "./feeds.js";
@@ -111,6 +112,49 @@ export const catalogNow = onRequest(
   { timeoutSeconds: 540, memory: "512MiB", invoker: "private" },
   async (_req, res) => {
     res.json(await runCatalog());
+  },
+);
+
+// The reference desk's public endpoints. All read-only, all public: a
+// researcher who must ask permission cannot check us independently.
+//
+// A snapshot is the register as sealed on a day, named for that day's
+// root, so a paper can cite a dataset rather than a URL.
+export const snapshot = onRequest(
+  { invoker: "public", timeoutSeconds: 120, memory: "512MiB" },
+  async (req, res) => {
+    const day = (req.path.match(/(\d{4}-\d{2}-\d{2})/) ?? [])[1] ?? "";
+    const out = await buildSnapshot(day);
+    res.set("Content-Type", "application/json; charset=utf-8");
+    // A sealed day never changes, so it may be cached hard.
+    res.set("Cache-Control", out.ok ? "public, max-age=86400, s-maxage=86400" : "public, max-age=60");
+    res.set("Access-Control-Allow-Origin", "*");
+    res.status(out.status).send(out.body);
+  },
+);
+
+// Corrections, for anyone who has already published on this record.
+export const corrections = onRequest(
+  { invoker: "public", memory: "256MiB" },
+  async (_req, res) => {
+    const body = await buildRetractionsFeed();
+    res.set("Content-Type", "application/atom+xml; charset=utf-8");
+    res.set("Cache-Control", "public, max-age=300, s-maxage=300");
+    res.set("Access-Control-Allow-Origin", "*");
+    res.status(200).send(body);
+  },
+);
+
+// Headline counts, so a newsroom chart is not typed by hand.
+export const figures = onRequest(
+  { invoker: "public", timeoutSeconds: 120, memory: "512MiB" },
+  async (req, res) => {
+    const f = await buildFigures();
+    const csv = /\.csv$/.test(req.path);
+    res.set("Content-Type", csv ? "text/csv; charset=utf-8" : "application/json; charset=utf-8");
+    res.set("Cache-Control", "public, max-age=900, s-maxage=900");
+    res.set("Access-Control-Allow-Origin", "*");
+    res.status(200).send(csv ? figuresToCsv(f) : JSON.stringify(f, null, 2));
   },
 );
 

@@ -87,6 +87,7 @@ export default function RootLayout({
             <a href="/verify">Certify</a>
             <a href="/stats">Stats</a>
             <a href="/about">Methodology</a>
+            <a href="/reference">Reference</a>
           </div>
         </nav>
         <main>{children}</main>
@@ -99,6 +100,7 @@ export default function RootLayout({
               SOURCE
             </a>
             <a href="/feed.xml">ATOM FEED</a>
+            <a href="/corrections.xml">CORRECTIONS</a>
             <span>SET IN ARCHIVO · LITERATA · IBM PLEX MONO</span>
           </div>
         </footer>
