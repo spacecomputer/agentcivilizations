@@ -261,18 +261,25 @@ export default function VerifyPage() {
       </p>
       <div className="panel">
         <div className="prov-line">
-          npx @agent-civilizations/verify --civilization=&lt;file&gt;
+          git clone https://github.com/spacecomputer/agentcivilizations
         </div>
         <div className="prov-line">
-          npx @agent-civilizations/verify --root=YYYY-MM-DD
+          cd agentcivilizations &amp;&amp; npm install
+        </div>
+        <div className="prov-line">npm run build -w packages/verify</div>
+        <div className="prov-line">
+          node packages/verify/dist/cli.js --civilization=&lt;file&gt;
         </div>
         <div className="prov-line">
-          npx @agent-civilizations/verify --event=&lt;entry&gt;
+          node packages/verify/dist/cli.js --root=YYYY-MM-DD
+        </div>
+        <div className="prov-line">
+          node packages/verify/dist/cli.js --event=&lt;entry&gt;
         </div>
         <p className="dim" style={{ marginTop: "10px" }}>
-          The first walks a file&apos;s chain, the second reseals a day and
-          compares it with the sealed root, the third proves one entry sits
-          inside a sealed day. Add <span className="mono">--json</span> for
+          The first of those three walks a file&apos;s chain, the second reseals a
+          day and compares it with the sealed root, the third proves one entry
+          sits inside a sealed day. Add <span className="mono">--json</span> for
           machine-readable output. The source is{" "}
           <a
             href="https://github.com/spacecomputer/agentcivilizations/tree/main/packages/verify"
@@ -281,7 +288,13 @@ export default function VerifyPage() {
           >
             packages/verify
           </a>
-          , and it can be run from a clone without npm.
+          . It declares no dependencies of its own and talks only to public
+          endpoints, so the clone is the whole of it.
+        </p>
+        <p className="dim">
+          The verifier is not yet published to npm, and this page will not print
+          a command it cannot keep. When it is published, these five lines become
+          one <span className="mono">npx</span> invocation.
         </p>
       </div>
 
