@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { allCivilizationsPaged } from "@/lib/queries";
 import { CivSeal } from "@/components/CivSeal";
 import { Stamp } from "@/components/Stamp";
@@ -44,8 +44,6 @@ export default function CivilizationsPage() {
   const [states, setStates] = useState<Set<CivilizationStatus>>(new Set(STATUSES));
   const [eras, setEras] = useState<Set<string>>(new Set(ERAS.map((e) => e.key)));
   const [query, setQuery] = useState("");
-  const [width, setWidth] = useState(960);
-  const wrap = useRef<HTMLDivElement>(null);
   const [now] = useState(() => new Date().toISOString());
 
   useEffect(() => {
@@ -61,16 +59,6 @@ export default function CivilizationsPage() {
       cancelled = true;
     };
   }, []);
-
-  useLayoutEffect(() => {
-    const el = wrap.current;
-    if (!el) return;
-    const measure = () => setWidth(Math.floor(el.clientWidth) || 960);
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [civs]);
 
   // The whole catalog, for the plates and the counts: they describe the
   // record, not the reader's current filter.
@@ -121,7 +109,7 @@ export default function CivilizationsPage() {
       {civs !== null && civs.length === 0 && <p className="mono dim">No files opened yet.</p>}
 
       {all && view && (
-        <div ref={wrap}>
+        <div>
           <div className="catalog-head mono dim">
             {all.counts.files} FILES · {all.counts.entries} ENTRIES ·{" "}
             {all.counts.confirmed} CONFIRMED · {all.counts.candidate} CANDIDATE ·{" "}
@@ -130,7 +118,7 @@ export default function CivilizationsPage() {
             {utcDay(all.axis.from)} · {all.counts.singletons} FILES HOLD ONE ENTRY
           </div>
 
-          <ClockPlates catalog={all} width={width} />
+          <ClockPlates catalog={all} />
 
           <h2 className="catalog-h2">The eras</h2>
           <div className="tablewrap">

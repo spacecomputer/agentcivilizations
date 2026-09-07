@@ -885,7 +885,12 @@ tr.filtered.is-near .rowlink { font-weight: 700; }
 
 /* two clocks, side by side, never merged */
 .clock-plates { display: flex; flex-wrap: wrap; gap: 24px; margin: 8px 0 20px; }
-.clock-figure { margin: 0; flex: 1 1 320px; min-width: 300px; }
+/* The wide plate carries 101 buckets, the narrow one 7; grow them in that
+   proportion and let each measure the box flex actually gave it. */
+.clock-figure { margin: 0; min-width: 280px; }
+.clock-figure--wide { flex: 3 1 360px; }
+.clock-figure--narrow { flex: 2 1 280px; }
+.clock-canvas { width: 100%; }
 .clock-figure figcaption { padding-bottom: 6px; }
 .clock-plate { display: block; overflow: visible; }
 .clock-note { font-size: 14px; color: var(--ink-dim); margin: 8px 0 0; max-width: 60ch; }
