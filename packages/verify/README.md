@@ -4,16 +4,13 @@ The standalone verifier for the [Agent Civilizations](https://agentcivilizations
 
 It reads Firestore's public REST endpoints directly and recomputes every hash on your machine. No account, no key, no SDK, and no trust in the operator. If this program disagrees with the website, believe this program.
 
-> **Not yet published to npm.** Until it is, run it from a clone; the
-> commands below are what it becomes on publication.
-
 ```bash
 npx @agent-civilizations/verify --civilization=<file>
 npx @agent-civilizations/verify --root=2026-09-04
 npx @agent-civilizations/verify --event=<entry-id>
 ```
 
-From a clone, which needs nothing but Node 20:
+Or without npm at all, from a clone, needing nothing but Node 20:
 
 ```bash
 git clone https://github.com/spacecomputer/agentcivilizations
