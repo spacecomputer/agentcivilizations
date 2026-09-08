@@ -7,6 +7,7 @@ import { runScan } from "./scan.js";
 import { retractEvent } from "./retract.js";
 import { runCatalog } from "./catalog.js";
 import { buildSnapshot, buildRetractionsFeed, buildFigures, figuresToCsv } from "./reference.js";
+import { buildHealth } from "./health.js";
 import { computeDailyRoot, backfillCorroboration } from "./hashchain.js";
 import { FALLBACK_MODELS } from "./classify.js";
 import { buildAtomFeed, buildSitemap } from "./feeds.js";
@@ -155,6 +156,38 @@ export const figures = onRequest(
     res.set("Cache-Control", "public, max-age=900, s-maxage=900");
     res.set("Access-Control-Allow-Origin", "*");
     res.status(200).send(csv ? figuresToCsv(f) : JSON.stringify(f, null, 2));
+  },
+);
+
+// Whether the register is still working. Public, because a reader has as
+// much right to know the record has stopped as to verify the part of it
+// that exists.
+export const health = onRequest(
+  { invoker: "public", timeoutSeconds: 60, memory: "256MiB" },
+  async (_req, res) => {
+    const h = await buildHealth();
+    res.set("Content-Type", "application/json; charset=utf-8");
+    res.set("Cache-Control", "public, max-age=60, s-maxage=60");
+    res.set("Access-Control-Allow-Origin", "*");
+    // A monitor that only reads status codes still learns the answer.
+    res.status(h.status === "running" || h.status === "opening" ? 200 : 503);
+    res.send(JSON.stringify(h, null, 2));
+  },
+);
+
+// The watchdog. Runs on its own schedule rather than inside the scan,
+// because a scan that dies is exactly the case the scan cannot report.
+// It logs at ERROR with a fixed marker so a log-based alert can match it:
+//   severity=ERROR AND textPayload:"REGISTER UNHEALTHY"
+export const watchdog = onSchedule(
+  { schedule: "*/20 * * * *", timeZone: "UTC", timeoutSeconds: 120 },
+  async () => {
+    const h = await buildHealth();
+    if (h.status === "running" || h.status === "opening") {
+      console.log("register healthy", JSON.stringify(h));
+      return;
+    }
+    console.error(`REGISTER UNHEALTHY ${h.status}: ${h.note}`, JSON.stringify(h));
   },
 );
 

@@ -17,8 +17,14 @@ export const BATCH_SIZE = 25;
 // so a missing timeout never showed. The moment a working but slow model
 // entered the chain, one call hung until the function was killed, and the
 // run wrote no record at all — the register looked idle rather than stuck.
-const CALL_TIMEOUT_MS = 90_000;
-const CLASSIFY_DEADLINE_MS = 380_000;
+// Budget arithmetic, because getting it wrong is how a scan dies. The
+// function has 540s. Fetching thirty-four sources costs up to ~90s. What
+// remains must cover classification AND leave room to write the record,
+// so classification is capped at 300s and the cap is checked before every
+// model attempt, not merely between batches: five models at 90s each is
+// 450s inside a single batch, which on its own overruns the function.
+const CALL_TIMEOUT_MS = 45_000;
+const CLASSIFY_DEADLINE_MS = 300_000;
 export const MAX_CANDIDATES_PER_SCAN = 100;
 
 const SYSTEM_PROMPT = `You are the ingestion classifier for AgentCivilizations.org, an open ledger of AI-agent-civilization events.
@@ -69,6 +75,15 @@ export interface ClassifyResult {
   llmCalls: number;
   tokensUsed: number;
   errors: string[];
+  /**
+   * Which model actually answered, or null when every model in the chain
+   * refused. This is the difference between "a quiet news day" and "the
+   * classifier is down", and without it the two look identical from
+   * outside: both are a scan that promoted nothing.
+   */
+  classifierModel: string | null;
+  /** Batches abandoned at the deadline; they are seen again next scan. */
+  batchesDeferred: number;
 }
 
 interface OpenRouterResponse {
@@ -234,15 +249,23 @@ export async function classifyBatch(
   let tokensUsed = 0;
   const outputs: ClassificationOutput[] = [];
   const startedAt = Date.now();
+  let classifierModel: string | null = null;
+  let batchesDeferred = 0;
   const errors: string[] = [];
 
   for (const batch of batches) {
     // Stop starting batches with time left to write the result. A batch
     // skipped now is seen again next scan; a scan killed mid-flight
     // records nothing, which is how eight hours of silence went unnoticed.
-    if (Date.now() - startedAt > CLASSIFY_DEADLINE_MS) break;
+    if (Date.now() - startedAt > CLASSIFY_DEADLINE_MS) {
+      batchesDeferred++;
+      continue;
+    }
     let done = false;
     for (const model of opts.models) {
+      // Also here: the chain is only a fallback if trying all of it still
+      // fits inside the budget.
+      if (Date.now() - startedAt > CLASSIFY_DEADLINE_MS) break;
       try {
         const { raw, tokens } = await callOpenRouter(
           batch,
@@ -253,6 +276,7 @@ export async function classifyBatch(
         llmCalls++;
         tokensUsed += tokens;
         outputs.push(...parseOutputs(raw, batch.length));
+        classifierModel = model;
         done = true;
         break;
       } catch (err) {
@@ -279,5 +303,5 @@ export async function classifyBatch(
     }
   }
 
-  return { outputs, llmCalls, tokensUsed, errors };
+  return { outputs, llmCalls, tokensUsed, errors, classifierModel, batchesDeferred };
 }

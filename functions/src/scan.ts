@@ -147,6 +147,17 @@ async function sha1Hex(s: string): Promise<string> {
 export async function runScan(opts: { apiKey: string; models: string[] }): Promise<ScanSummary> {
   const runId = ulid();
   const startedAt = new Date().toISOString();
+  // A scan that dies mid-flight used to write nothing at all, so a killed
+  // pipeline was indistinguishable from a quiet one. The record is opened
+  // here and closed at the end; a run left "running" with an old start is
+  // a run that was killed, and the health endpoint reads it as such.
+  const db0 = getFirestore();
+  await db0.collection("scanRuns").doc(runId).set({
+    id: runId,
+    startedAt,
+    status: "running",
+    sourcesQueried: SOURCES.length,
+  });
   const errors: string[] = [];
 
   const { candidates: fetched, errors: fetchErrors, perSource } =
@@ -171,7 +182,7 @@ export async function runScan(opts: { apiKey: string; models: string[] }): Promi
   // blocker). Bounded to 60 to keep the prompt lean.
   const establishedCivs = await topActiveCivilizations(60);
 
-  const { outputs, llmCalls, tokensUsed, errors: classifyErrors } =
+  const { outputs, llmCalls, tokensUsed, errors: classifyErrors, classifierModel, batchesDeferred } =
     await classifyBatch(considered, { ...opts, establishedCivs });
   errors.push(...classifyErrors);
   // Only what was actually put to the classifier is marked seen; the rest
@@ -266,6 +277,15 @@ export async function runScan(opts: { apiKey: string; models: string[] }): Promi
     id: runId,
     startedAt,
     finishedAt: new Date().toISOString(),
+    // "ok" only when a model actually answered. A scan that fetched and
+    // considered items but had every model refuse is not a quiet day.
+    status: classifierModel
+      ? "ok"
+      : considered.length > 0
+        ? "no-classifier"
+        : "nothing-to-classify",
+    classifierModel: classifierModel ?? null,
+    batchesDeferred,
     sourcesQueried: SOURCES.length,
     itemsFetched: summary.itemsFetched,
     itemsConsidered: considered.length,

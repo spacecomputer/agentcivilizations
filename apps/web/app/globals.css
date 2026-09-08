@@ -929,3 +929,7 @@ button.ctl {
 }
 button.ctl.on { color: var(--ink); border-color: var(--ink); }
 button.ctl:focus-visible { outline: 2px solid var(--cat-coordination); outline-offset: 2px; }
+
+/* The masthead says so when the register has stopped recording */
+.ticker-alarm { color: var(--fail); text-decoration: none; border-bottom: 1px solid var(--fail); }
+.ticker-alarm:hover, .ticker-alarm:focus-visible { text-decoration: none; }

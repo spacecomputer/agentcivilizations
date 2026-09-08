@@ -168,6 +168,24 @@ const LANG_NAMES: Record<string, string> = { en: "English", zh: "Chinese", ru: "
 
 export default function StatsPage() {
   const [langs, setLangs] = useState<{ bySourceLanguage: Record<string, number>; singleLanguageNonEnglish: number } | null>(null);
+  const [health, setHealth] = useState<{
+    status: string;
+    note: string;
+    minutesSinceScanFinished: number | null;
+    minutesSinceEntry: number | null;
+    lastClassifierModel: string | null;
+    thresholds: { scanEveryMinutes: number; scansStalledAfterMinutes: number; classifierDownAfterMinutes: number };
+  } | null>(null);
+  useEffect(() => {
+    let off = false;
+    fetch("/api/health.json")
+      .then((r) => r.json())
+      .then((h) => !off && setHealth(h))
+      .catch(() => {});
+    return () => {
+      off = true;
+    };
+  }, []);
   useEffect(() => {
     let off = false;
     fetch("/api/figures.json")
@@ -217,6 +235,47 @@ export default function StatsPage() {
         <BigNumber label="sealed roots" value={s.roots.toLocaleString("en-US")} />
         <BigNumber label="confirmed" value={s.confirmed.toLocaleString("en-US")} />
       </div>
+
+      <h3>Is the register still recording?</h3>
+      {health === null ? (
+        <p className="mono dim">retrieving…</p>
+      ) : (
+        <div className={`panel${health.status === "running" || health.status === "opening" ? "" : " superseded"}`}>
+          <span className="caps panel-label">
+            {health.status === "running" ? "Recording" : health.status.replace("-", " ")}
+          </span>
+          <p>{health.note}</p>
+          <div className="prov-line">
+            <span className="k">last scan finished</span>
+            <span className="mono">
+              {health.minutesSinceScanFinished === null
+                ? "never"
+                : `${health.minutesSinceScanFinished} minutes ago`}
+            </span>
+          </div>
+          <div className="prov-line">
+            <span className="k">last model to answer</span>
+            <span className="mono">{health.lastClassifierModel ?? "none on record"}</span>
+          </div>
+          <div className="prov-line">
+            <span className="k">last entry recorded</span>
+            <span className="mono">
+              {health.minutesSinceEntry === null ? "never" : `${health.minutesSinceEntry} minutes ago`}
+            </span>
+          </div>
+          <p className="dim">
+            Scans run every {health.thresholds.scanEveryMinutes} minutes. The register
+            calls itself stalled after {health.thresholds.scansStalledAfterMinutes} minutes
+            without a finished scan, and calls the classifier down after{" "}
+            {health.thresholds.classifierDownAfterMinutes} minutes in which scans put items
+            to the models and no model answered. A window with no new entries is not a
+            fault: a quiet hour and a broken pipeline look identical from outside, and only
+            the answering model tells them apart. Machine-readable at{" "}
+            <a href="/api/health.json">/api/health.json</a>, which returns 503 when the
+            register is not recording.
+          </p>
+        </div>
+      )}
 
       <h3>Coverage by source language</h3>
       <p className="dim">

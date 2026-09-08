@@ -94,6 +94,13 @@
           "functionId": "figures",
           "region": "us-central1"
         }
+      },
+      {
+        "source": "/api/health.json",
+        "function": {
+          "functionId": "health",
+          "region": "us-central1"
+        }
       }
     ]
   },
