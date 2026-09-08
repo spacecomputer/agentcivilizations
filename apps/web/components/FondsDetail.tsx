@@ -7,7 +7,7 @@ import { Stamp } from "@/components/Stamp";
 import { RegisterRow } from "@/components/RegisterRow";
 import { CategoryLabel, Glyph } from "@/components/Glyph";
 import { Tick } from "@/components/marks";
-import { utcDay, daysBetween } from "@/lib/format";
+import { utcDay, daysBetween, fileName } from "@/lib/format";
 import type { Civilization, Event, Category } from "@agent-civilizations/schema";
 
 const GAP_DAYS = 14;
@@ -121,7 +121,7 @@ export function FondsDetail({
         <CivSeal id={civ.id} category={civ.category} size={64} />
         <div className="titleblock">
           <div className="fonds-callno">FILE {civ.id.toUpperCase()}</div>
-          <h1>{civ.name}</h1>
+          <h1>{fileName(civ.id, civ.name)}</h1>
           <div className="dmeta">
             <CategoryLabel category={civ.category} />
           </div>

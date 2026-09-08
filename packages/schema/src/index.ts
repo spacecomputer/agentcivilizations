@@ -362,6 +362,10 @@ export const ClassificationOutput = z.object({
   keep: z.boolean().default(false),
   category: Category.nullable().default(null),
   civilizationHint: z.string().nullable().default(null),
+  // The same grouping written for a person. Optional so an older model that
+  // does not return it still validates; the site falls back to deriving a
+  // name from the slug.
+  civilizationName: z.string().nullable().default(null),
   actors: z.array(z.string()).default([]),
   tags: z.array(z.string()).default([]),
   title: z.string().nullable().default(null),

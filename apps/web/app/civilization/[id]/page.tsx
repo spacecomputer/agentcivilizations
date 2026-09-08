@@ -6,6 +6,7 @@ import {
   civilizationAtBuild,
 } from "@/lib/build-data";
 import { jsonLd } from "@/lib/jsonld";
+import { fileName } from "@/lib/format";
 
 const SITE = "https://agentcivilizations.org";
 
@@ -23,15 +24,16 @@ export async function generateMetadata({
   const c = await civilizationAtBuild(id);
   if (!c) return { title: "File not found" };
   const url = `${SITE}/civilization/${encodeURIComponent(c.id)}`;
-  const description = `${c.summary || `A ${c.category} file in the Agent Civilizations register.`} ${c.eventCount} ${
+  const name = fileName(c.id, c.name);
+  const description = `${c.summary || `${name}: a ${c.category} file in the Agent Civilizations register.`} ${c.eventCount} ${
     c.eventCount === 1 ? "entry" : "entries"
   }, ${c.status}, first entry ${c.firstSeenAt.slice(0, 10)}.`.slice(0, 300);
   return {
-    title: c.name,
+    title: name,
     description,
     alternates: { canonical: url },
     openGraph: {
-      title: c.name,
+      title: name,
       description,
       url,
       type: "article",
@@ -41,7 +43,7 @@ export async function generateMetadata({
     // twitter:title, so 293 different files all previewed as one card.
     twitter: {
       card: "summary_large_image",
-      title: c.name,
+      title: name,
       description,
       images: ["/og.png"],
     },
@@ -66,7 +68,8 @@ export default async function CivilizationStaticPage({
   const ld = {
     "@context": "https://schema.org",
     "@type": "Collection",
-    name: c.name,
+    name: fileName(c.id, c.name),
+    alternateName: c.id,
     description: c.summary || undefined,
     url: `${SITE}/civilization/${encodeURIComponent(c.id)}`,
     identifier: c.id,

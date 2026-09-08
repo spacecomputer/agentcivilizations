@@ -53,7 +53,7 @@ REJECT items that are:
 - hypothetical scenarios without a source event,
 - ordinary vendor product news.
 
-For each item you KEEP, propose a civilizationHint: a short slug (kebab-case) for the persistent grouping this event belongs to.
+For each item you KEEP, propose a civilizationHint: a short slug (kebab-case) for the persistent grouping this event belongs to, and a civilizationName: the same thing written for a person to read, properly capitalised, 2-6 words, no trailing punctuation. "openai-rebel-agent-swarm" and "OpenAI Rebel Agent Swarm".
 
 STRONG PREFERENCE: reuse a civilization slug from the ESTABLISHED list I provide in the user message (they are the register's currently-tracked persistent groupings). Only invent a new slug when the item is CLEARLY about a distinct new grouping that no established slug covers. Reusing an existing slug for a related event is much better than opening a redundant new file. If none of the established slugs applies, keep the new slug short (2-4 tokens) and prefer the underlying framework/org name over the specific product feature.
 
@@ -63,6 +63,7 @@ Output STRICT JSON array — one object per input item, in the same order:
     "keep": true|false,
     "category": "coordination"|"security"|"community"|"speculative"|null,
     "civilizationHint": "<slug>"|null,
+    "civilizationName": "<the same grouping, written for a reader>"|null,
     "actors": ["Every named entity in the story — orgs, products, projects, named individuals. Include ALL of them, not just the primary. Corroboration across coverage of the same incident depends on this list being complete: an OpenAI-plus-Hugging-Face story must list BOTH orgs, not just one. Include named researchers when the piece identifies them. Aim for 2-6 actors on any story about an event; a single-actor list is usually a signal you missed an entity."],
     "tags": ["short", "descriptive"],
     "title": "Rewritten neutral title, <=100 chars"|null,
@@ -197,6 +198,7 @@ function parseOutputs(raw: string, expectedLen: number): ClassificationOutput[] 
       keep: false,
       category: null,
       civilizationHint: null,
+      civilizationName: null,
       actors: [],
       tags: [],
       title: null,
@@ -229,6 +231,7 @@ function parseOutputs(raw: string, expectedLen: number): ClassificationOutput[] 
         keep: false,
         category: null,
         civilizationHint: null,
+      civilizationName: null,
         actors: [],
         tags: [],
         title: null,
@@ -303,6 +306,7 @@ export async function classifyBatch(
           keep: false,
           category: null,
           civilizationHint: null,
+          civilizationName: null,
           actors: [],
           tags: [],
           title: null,

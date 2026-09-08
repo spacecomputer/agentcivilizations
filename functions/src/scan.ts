@@ -246,7 +246,7 @@ export async function runScan(opts: { apiKey: string; models: string[] }): Promi
 
       await promoteEvent({
         civilizationHint: o.civilizationHint,
-        civilizationName: o.civilizationHint,
+        civilizationName: o.civilizationName || o.civilizationHint,
         category: o.category,
         title: o.title,
         summary: o.summary,
