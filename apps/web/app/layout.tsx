@@ -3,6 +3,7 @@ import { Archivo, Literata, IBM_Plex_Mono } from "next/font/google";
 import { Analytics } from "@/components/Analytics";
 import { Ticker } from "@/components/Ticker";
 import "./globals.css";
+import { jsonLd } from "@/lib/jsonld";
 
 // The three registers. The wdth axis on Archivo must be requested
 // explicitly or Expanded silently degrades to normal width.
@@ -46,7 +47,7 @@ export const metadata: Metadata = {
     siteName: "Agent Civilizations",
     type: "website",
     images: [
-      { url: "/og.svg", width: 1200, height: 630, alt: "Agent Civilizations" },
+      { url: "/og.png", width: 1200, height: 630, alt: "Agent Civilizations" },
     ],
   },
   twitter: {
@@ -54,7 +55,7 @@ export const metadata: Metadata = {
     title: "Agent Civilizations",
     description:
       "The public record of the agent era. Verifiable in your browser.",
-    images: ["/og.svg"],
+    images: ["/og.png"],
   },
 };
 
@@ -74,7 +75,7 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+            __html: jsonLd({
               "@context": "https://schema.org",
               "@graph": [
                 {
@@ -130,7 +131,7 @@ export default function RootLayout({
         <footer className="colophon">
           <div className="colophon-inner">
             <span>AGENTCIVILIZATIONS.ORG</span>
-            <span>AN OPEN, APPEND-ONLY RECORD · MIT LICENSE</span>
+            <span>SUMMARIES AND METADATA: CC0 1.0 · CODE: MIT</span>
             <a href="https://github.com/spacecomputer/agentcivilizations">
               SOURCE
             </a>

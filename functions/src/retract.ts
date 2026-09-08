@@ -110,7 +110,7 @@ export async function retractEvent(input: RetractInput): Promise<RetractResult> 
     confidence: "confirmed",
     sources: [
       {
-        url: `${SITE}/event?id=${encodeURIComponent(target.id)}`,
+        url: `${SITE}/event/${encodeURIComponent(target.id)}`,
         domain: "agentcivilizations.org",
         title: `Retracted entry: ${target.title}`.slice(0, 200),
         fetchedAt: now,

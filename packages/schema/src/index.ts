@@ -369,3 +369,35 @@ export const ClassificationOutput = z.object({
   reason: z.string().default(""),
 });
 export type ClassificationOutput = z.infer<typeof ClassificationOutput>;
+
+// ---- the classifier chain ------------------------------------------------
+// This lives here, in the package both the functions and the website import,
+// for one reason: the Methodology page names these models to the reader, and
+// on 2026-09-07 the array in functions/src/classify.ts was replaced while the
+// sentence describing it was not. The page then named three models that
+// existed nowhere in the codebase, on the same line that claimed they were
+// "named in the code" — the first falsifiable claim on the credibility page,
+// false. A shared constant makes that particular lie impossible to tell.
+//
+// Order is the fallback order: each is tried when the one before it is
+// unavailable. Chosen for speed and plain-API availability, not size.
+export const CLASSIFIER_MODELS = [
+  "google/gemma-4-26b-a4b-it:free",
+  "google/gemma-4-31b-it:free",
+  "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+  "dots-studio/dots-3-note-preview:free",
+  "nvidia/nemotron-3-super-120b-a12b:free",
+] as const;
+
+/**
+ * The one sentence the register uses to state its terms.
+ *
+ * It lives here because it was previously copy-pasted into three files and
+ * two of the copies drifted: the footer and /feed.xml said MIT while the
+ * JSON-LD on the same page, /corrections.xml, llms.txt and LICENSE-DATA all
+ * said CC0. The reuse question is the first thing a newsroom lawyer checks,
+ * and the site gave two answers.
+ */
+export const RIGHTS_STATEMENT =
+  "Register summaries and metadata are dedicated to the public domain under CC0 1.0. " +
+  "Underlying sources retain their own rights. The code is MIT.";

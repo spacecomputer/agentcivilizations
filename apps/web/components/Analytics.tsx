@@ -5,7 +5,7 @@ import { logPageView, startAnalytics } from "@/lib/analytics";
 
 // Page views for a static export with client-side routing.
 //
-// The register addresses records by query string (/event?id=…), so a view
+// The register addresses records by path (/event/<id>), so a view
 // is the pathname plus its search, not the pathname alone. The Firebase
 // SDK reports the first view when it initialises; this reports only the
 // navigations after it, so nothing is counted twice.

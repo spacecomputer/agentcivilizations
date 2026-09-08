@@ -2,9 +2,9 @@
 
 > An open, tamper-evident ledger of AI-agent-civilization events — coordinated agent behavior, agent-driven incidents, and emergent agent communities — mined continuously from public sources.
 
-**Live:** [AgentCivilizations.org](https://agentcivilizations.org) *(pending deploy)*
-**License:** MIT
-**Status:** MVP scaffold
+**Live:** [AgentCivilizations.org](https://agentcivilizations.org)
+**Data:** summaries and metadata under [CC0 1.0](LICENSE-DATA) · **Code:** [MIT](LICENSE)
+**Verify it yourself:** `npx @agent-civilizations/verify --root=2026-09-07`
 
 ---
 
@@ -140,4 +140,12 @@ This is an open-source project. See [`CONTRIBUTING.md`](CONTRIBUTING.md). The ta
 
 ## License
 
-MIT — see [`LICENSE`](LICENSE).
+Two licences, because the repository holds two different things.
+
+**The register's own summaries and metadata** — every entry's title, summary, category,
+actors, tags and hashes, and everything served from `/api/` — are dedicated to the public
+domain under [CC0 1.0](LICENSE-DATA). Use them for anything, with or without credit.
+The sources those entries point at retain their own rights; quote them from the publisher,
+not from us.
+
+**The code** in this repository is [MIT](LICENSE).

@@ -1,5 +1,6 @@
 import { getFirestore } from "firebase-admin/firestore";
 import type { Event, Civilization } from "@agent-civilizations/schema";
+import { RIGHTS_STATEMENT } from "@agent-civilizations/schema";
 
 const SITE = "https://agentcivilizations.org";
 
@@ -29,7 +30,7 @@ export async function buildAtomFeed(): Promise<string> {
 
   const entries = events
     .map((e) => {
-      const url = `${SITE}/event?id=${encodeURIComponent(e.id)}`;
+      const url = `${SITE}/event/${encodeURIComponent(e.id)}`;
       return `  <entry>
     <id>urn:agent-civilizations:hash:${e.contentHash}</id>
     <title type="text">${xmlEscape(e.title)}</title>
@@ -52,7 +53,8 @@ export async function buildAtomFeed(): Promise<string> {
   <link href="${SITE}/" rel="alternate"/>
   <id>urn:agent-civilizations:register</id>
   <updated>${updated}</updated>
-  <rights>Machine-curated summaries under MIT; underlying sources retain their rights.</rights>
+  <author><name>Agent Civilizations</name><uri>${SITE}</uri></author>
+  <rights>${xmlEscape(RIGHTS_STATEMENT)}</rights>
 ${entries}
 </feed>
 `;

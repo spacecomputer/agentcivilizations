@@ -139,7 +139,7 @@ export const corrections = onRequest(
   { invoker: "public", memory: "256MiB" },
   async (_req, res) => {
     const body = await buildRetractionsFeed();
-    res.set("Content-Type", "application/atom+xml; charset=utf-8");
+    res.set("Content-Type", "application/xml; charset=utf-8");
     res.set("Cache-Control", "public, max-age=300, s-maxage=300");
     res.set("Access-Control-Allow-Origin", "*");
     res.status(200).send(body);
@@ -308,7 +308,7 @@ export const feed = onRequest(
   { invoker: "public", memory: "256MiB" },
   async (_req, res) => {
     const body = await buildAtomFeed();
-    res.set("Content-Type", "application/atom+xml; charset=utf-8");
+    res.set("Content-Type", "application/xml; charset=utf-8");
     res.set("Cache-Control", "public, max-age=300, s-maxage=300");
     res.status(200).send(body);
   },

@@ -39,7 +39,7 @@ export function CadencePlate({ cadence }: { cadence: Cadence }) {
       </div>
       {cadence.rows.map((row) => (
         <div key={row.id} className={`cadence-row status-${row.status}`}>
-          <a className="name rowlink" href={`/civilization?id=${encodeURIComponent(row.id)}`}>
+          <a className="name rowlink" href={`/civilization/${encodeURIComponent(row.id)}`}>
             {row.name}
           </a>
           <svg

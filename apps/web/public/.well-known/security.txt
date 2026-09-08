@@ -1,0 +1,9 @@
+# https://agentcivilizations.org/.well-known/security.txt
+# The register publishes no MX record, so this file names a route that works
+# rather than an address that would discard the report.
+
+Contact: https://github.com/spacecomputer/agentcivilizations/security/advisories/new
+Policy: https://github.com/spacecomputer/agentcivilizations/blob/main/SECURITY.md
+Preferred-Languages: en
+Canonical: https://agentcivilizations.org/.well-known/security.txt
+Expires: 2027-09-08T00:00:00.000Z

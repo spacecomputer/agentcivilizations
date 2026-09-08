@@ -940,7 +940,7 @@ function ProvenanceWord({ p, pref }: { p: string; pref?: string }) {
   return <span className={`prov ${p}`}>{p.toUpperCase()}</span>;
 }
 
-const fileHref = (id: string) => `/civilization?id=${encodeURIComponent(id)}`;
+const fileHref = (id: string) => `/civilization/${encodeURIComponent(id)}`;
 
 function renderReading(
   reading: OriginReading,

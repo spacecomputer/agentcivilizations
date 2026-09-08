@@ -5,6 +5,7 @@ import {
   allEventsAtBuild,
   civilizationAtBuild,
 } from "@/lib/build-data";
+import { jsonLd } from "@/lib/jsonld";
 
 const SITE = "https://agentcivilizations.org";
 
@@ -29,7 +30,21 @@ export async function generateMetadata({
     title: c.name,
     description,
     alternates: { canonical: url },
-    openGraph: { title: c.name, description, url, type: "article" },
+    openGraph: {
+      title: c.name,
+      description,
+      url,
+      type: "article",
+      images: [{ url: "/og.png", width: 1200, height: 630, alt: "Agent Civilizations" }],
+    },
+    // Declared explicitly: without it every file page inherited the site-wide
+    // twitter:title, so 293 different files all previewed as one card.
+    twitter: {
+      card: "summary_large_image",
+      title: c.name,
+      description,
+      images: ["/og.png"],
+    },
   };
 }
 
@@ -73,7 +88,7 @@ export default async function CivilizationStaticPage({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(ld) }}
       />
       <FondsDetail initialCiv={c} initialEvents={events} />
     </>

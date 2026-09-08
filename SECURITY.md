@@ -2,12 +2,27 @@
 
 ## Reporting a vulnerability
 
-Email security@agentcivilizations.org (or the maintainer address in `package.json`) with:
-- a description of the issue,
-- reproduction steps,
-- suggested remediation if you have one.
+**Use GitHub's private vulnerability reporting:**
+<https://github.com/spacecomputer/agentcivilizations/security/advisories/new>
 
-Please do NOT file a public GitHub issue for security bugs. We aim to respond within 72 hours.
+That channel is private to the maintainers, needs no mail server, and keeps the report and
+the fix in one place. Include a description, reproduction steps, and suggested remediation
+if you have one. We aim to respond within 72 hours.
+
+If that form is unavailable to you, open a public issue saying only that you have a security
+report and would like a private channel — no details, no proof of concept — and we will open
+an advisory and invite you to it.
+
+There is deliberately no email address here. `agentcivilizations.org` publishes no MX record,
+so an address on this domain would silently swallow reports rather than receive them, and a
+security policy that quietly discards reports is worse than one that names an awkward route.
+
+## Reporting a factual error, not a vulnerability
+
+That is a different route and a faster one: see the corrections section of
+[the reference desk](https://agentcivilizations.org/reference). If an entry names you or your
+organisation and you want it corrected before it is discussed in public, say so in the report
+and it will be handled as a correction, not a disclosure.
 
 ## In scope
 

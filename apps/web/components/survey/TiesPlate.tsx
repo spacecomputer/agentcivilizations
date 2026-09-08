@@ -447,7 +447,7 @@ export function TiesPlate({
                   if (el) refs.current.set(n.id, el);
                   else refs.current.delete(n.id);
                 }}
-                href={`/civilization?id=${encodeURIComponent(n.id)}`}
+                href={`/civilization/${encodeURIComponent(n.id)}`}
                 className={`plate-node${filtered ? " filtered" : ""}`}
                 data-file={n.id}
                 tabIndex={isActive ? 0 : -1}
@@ -540,7 +540,7 @@ function renderReading(
     return (
       <>
         <div className="reading-head">
-          <a href={`/civilization?id=${encodeURIComponent(n.id)}`}>{n.name}</a> · {callNumber(n.id)} ·{" "}
+          <a href={`/civilization/${encodeURIComponent(n.id)}`}>{n.name}</a> · {callNumber(n.id)} ·{" "}
           {n.category.toUpperCase()} · {n.confirmed ? CONFIDENCE_LINE.confirmed : CONFIDENCE_LINE.candidate} ·{" "}
           {n.entries} {n.entries === 1 ? "entry" : "entries"} · {n.degreeAll} {n.degreeAll === 1 ? "tie" : "ties"},{" "}
           {n.degree} drawn in full
@@ -575,7 +575,7 @@ function renderReading(
     if (!f) return "Mark a file to read its ties.";
     return (
       <div className="reading-head">
-        <a href={`/civilization?id=${encodeURIComponent(f.id)}`}>{f.name}</a> · {callNumber(f.id)} has no tie: its{" "}
+        <a href={`/civilization/${encodeURIComponent(f.id)}`}>{f.name}</a> · {callNumber(f.id)} has no tie: its{" "}
         {f.entries} {f.entries === 1 ? "entry shares" : "entries share"} no two actors with another file.
       </div>
     );

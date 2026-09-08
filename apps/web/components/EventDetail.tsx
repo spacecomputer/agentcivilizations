@@ -41,9 +41,12 @@ function isSafeHttpUrl(url: string): boolean {
 
 export function EventDetail({
   initialEvent,
+  initialSupersededBy,
   id: idProp,
 }: {
   initialEvent?: Event | null;
+  /** The retraction pointing at this entry, resolved at build time. */
+  initialSupersededBy?: Event | null;
   id?: string | null;
 } = {}) {
   // Two ways in. A statically generated page hands the record straight
@@ -60,7 +63,12 @@ export function EventDetail({
   const [prevId, setPrevId] = useState<string | null>(null);
   const [rec, setRec] = useState<RecomputeState>({ phase: "idle" });
 
-  const [supersededBy, setSupersededBy] = useState<Event | null>(null);
+  // Seeded from the build so the correction notice is in the served HTML.
+  // A retraction is the one thing on an entry page a reader must not miss,
+  // and it must not depend on JavaScript running or on a query succeeding.
+  const [supersededBy, setSupersededBy] = useState<Event | null>(
+    initialSupersededBy ?? null,
+  );
   const [inc, setInc] = useState<
     | { phase: "idle" | "running" | "error" }
     | { phase: "unsealed"; day: string }
@@ -96,7 +104,9 @@ export function EventDetail({
     if (!id) return;
     let cancelled = false;
     retractedBy(id)
-      .then((r) => !cancelled && setSupersededBy(r))
+      .then((r) => {
+        if (!cancelled && r) setSupersededBy(r);
+      })
       .catch(() => {});
     return () => {
       cancelled = true;
@@ -183,7 +193,7 @@ export function EventDetail({
       <div className="dmeta" style={{ marginBottom: "10px" }}>
         <CategoryLabel category={e.category} filled={!candidate} />
         <span>{candidate ? "CANDIDATE □" : "CONFIRMED ■"}</span>
-        <a href={`/civilization?id=${encodeURIComponent(e.civilizationId)}`}>
+        <a href={`/civilization/${encodeURIComponent(e.civilizationId)}`}>
           → FILE {e.civilizationId.toUpperCase()}
         </a>
         <span>ENTRY No. {e.seq}</span>
@@ -316,7 +326,7 @@ export function EventDetail({
             )}
             . It stays on the record, unedited, because deleting it would break
             the chain that makes the rest of the record worth reading.{" "}
-            <a href={`/event?id=${encodeURIComponent(supersededBy.id)}`}>
+            <a href={`/event/${encodeURIComponent(supersededBy.id)}`}>
               Read the entry that supersedes it
             </a>
             .
@@ -341,7 +351,7 @@ export function EventDetail({
               {prevId && (
                 <>
                   {" "}
-                  <a href={`/event?id=${encodeURIComponent(prevId)}`}>
+                  <a href={`/event/${encodeURIComponent(prevId)}`}>
                     open the prior record
                   </a>
                 </>
@@ -470,7 +480,7 @@ export function EventDetail({
             {e.retracts.map((rid, i) => (
               <span key={rid}>
                 {i > 0 && ", "}
-                <a href={`/event?id=${encodeURIComponent(rid)}`}>{rid}</a>
+                <a href={`/event/${encodeURIComponent(rid)}`}>{rid}</a>
               </span>
             ))}
             {e.retractionReason && <> — {e.retractionReason}</>}

@@ -794,7 +794,11 @@ details > summary { cursor: pointer; margin: var(--s2) 0; }
 }
 .plate-key .key-group { display: inline-flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; }
 .plate-key .key-group + .key-group { padding-left: 16px; border-left: 1px solid var(--rule); }
-.plate-key .key-item { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+/* Not nowrap: two legend entries are full sentences, 1076px and 1093px wide, and
+   they sit outside any scroll container — so nowrap panned the entire document
+   sideways to 1109px on a 375px phone. Wrapping the item is the whole fix;
+   overflow-x:hidden here would clip the sentence with no way to reach it. */
+.plate-key .key-item { display: inline-flex; align-items: center; gap: 6px; white-space: normal; }
 .plate-reading {
   border-top: 1px solid var(--ink);
   padding: 8px 12px;

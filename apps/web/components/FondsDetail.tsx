@@ -201,7 +201,7 @@ export function FondsDetail({
           {cert.phase === "failed" && (
             <span className="mono verify-fail">
               CERTIFICATION FAILED — first discrepancy at{" "}
-              <a href={`/event?id=${encodeURIComponent(cert.brokenAt)}`}>
+              <a href={`/event/${encodeURIComponent(cert.brokenAt)}`}>
                 {cert.brokenAt}
               </a>{" "}
               ({cert.reason})

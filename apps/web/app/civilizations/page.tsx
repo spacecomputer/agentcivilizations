@@ -35,6 +35,7 @@ const STATUSES: CivilizationStatus[] = ["active", "dormant", "extinct"];
 export default function CivilizationsPage() {
   const [civs, setCivs] = useState<Civilization[] | null>(null);
   const [limited, setLimited] = useState(false);
+  const [failed, setFailed] = useState(false);
   // Oldest first by default: read top to bottom and the catalog is a
   // chronicle. The first screen is the handful of files from 2018 to 2024,
   // which is the scale story the plates above summarise.
@@ -48,13 +49,18 @@ export default function CivilizationsPage() {
 
   useEffect(() => {
     let cancelled = false;
+    setFailed(false);
     allCivilizationsPaged(5000)
       .then((r) => {
         if (cancelled) return;
         setCivs(r.civs);
         setLimited(r.limited);
       })
-      .catch(() => !cancelled && setCivs([]));
+      .catch(() => {
+        if (cancelled) return;
+        setFailed(true);
+        setCivs([]);
+      });
     return () => {
       cancelled = true;
     };
@@ -106,7 +112,14 @@ export default function CivilizationsPage() {
       <div className="rule-double" />
 
       {civs === null && <p className="mono dim">retrieving the catalog…</p>}
-      {civs !== null && civs.length === 0 && <p className="mono dim">No files opened yet.</p>}
+      {failed && (
+        <p className="dim">
+          The catalog could not be read just now. The register is unaffected.
+        </p>
+      )}
+      {!failed && civs !== null && civs.length === 0 && (
+        <p className="mono dim">No files opened yet.</p>
+      )}
 
       {all && view && (
         <div>
@@ -281,7 +294,7 @@ function Row({ row, axis, maxEntries }: { row: CatalogRow; axis: Axis; maxEntrie
         <span className="civrow-name">
           <CivSeal id={c.id} category={c.category} size={34} />
           <span>
-            <a className="rowlink" href={`/civilization?id=${encodeURIComponent(c.id)}`}>
+            <a className="rowlink" href={`/civilization/${encodeURIComponent(c.id)}`}>
               {c.name}
             </a>
             <br />

@@ -1,7 +1,8 @@
+import * as logger from "firebase-functions/logger";
 import { getFirestore } from "firebase-admin/firestore";
 import { SOURCES } from "./sources.js";
 import { fetchAll, type Candidate } from "./ingest.js";
-import { classifyBatch, MAX_CANDIDATES_PER_SCAN } from "./classify.js";
+import { classifyBatch, MAX_CANDIDATES_PER_SCAN, UNANSWERED } from "./classify.js";
 import { promoteEvent } from "./hashchain.js";
 import { extractFingerprints, isEmpty, mergeFingerprints } from "./fingerprint.js";
 import { resolveCanonical, tierOf, canonicalHostname } from "./tiers.js";
@@ -185,9 +186,28 @@ export async function runScan(opts: { apiKey: string; models: string[] }): Promi
   const { outputs, llmCalls, tokensUsed, errors: classifyErrors, classifierModel, batchesDeferred } =
     await classifyBatch(considered, { ...opts, establishedCivs });
   errors.push(...classifyErrors);
-  // Only what was actually put to the classifier is marked seen; the rest
-  // of the backlog stays fresh for the next scan window.
-  await markSeen(considered.slice(0, outputs.length));
+  // classifyBatch returns one output per input, always. If it ever does not,
+  // every pairing below is off by the difference and entries get hashed into
+  // an append-only ledger against the wrong source — so refuse rather than
+  // guess.
+  if (outputs.length !== considered.length) {
+    throw new Error(
+      `classifier returned ${outputs.length} outputs for ${considered.length} inputs; refusing to pair them`,
+    );
+  }
+
+  // Mark seen only what a model actually answered. A batch that every model
+  // refused was never judged, and burning those URLs meant they could never
+  // be reconsidered: measured over 24 hours, 887 of 1,850 candidates (48%)
+  // were discarded this way while /api/health.json still read "running",
+  // because a model had answered *some* batch that window.
+  const unanswered = outputs.filter((o) => o.reason?.startsWith(UNANSWERED)).length;
+  await markSeen(considered.filter((_, i) => !outputs[i].reason?.startsWith(UNANSWERED)));
+  if (unanswered) {
+    logger.warn(
+      `[scan] ${unanswered}/${considered.length} candidates went unclassified and were left unseen for the next window`,
+    );
+  }
 
   let promoted = 0;
   for (let i = 0; i < outputs.length; i++) {

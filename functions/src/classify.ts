@@ -1,3 +1,4 @@
+import { CLASSIFIER_MODELS } from "@agent-civilizations/schema";
 import type { Candidate } from "./ingest.js";
 import {
   ClassificationOutput as ClassificationOutputSchema,
@@ -109,13 +110,14 @@ interface OpenRouterResponse {
 // limited or overloaded. Sparse models with few active parameters
 // (gemma-4-26b-a4b, nemotron-nano-a3b) answer a classification prompt far
 // faster than a 550B one, and speed is what a thirty-minute cadence needs.
-export const FALLBACK_MODELS = [
-  "google/gemma-4-26b-a4b-it:free",
-  "google/gemma-4-31b-it:free",
-  "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-  "dots-studio/dots-3-note-preview:free",
-  "nvidia/nemotron-3-super-120b-a12b:free",
-];
+// Declared in @agent-civilizations/schema so the Methodology page names the
+// same list the scanner actually calls. Edit it there.
+export const FALLBACK_MODELS: string[] = [...CLASSIFIER_MODELS];
+
+// The reason attached to a batch no model ever answered. It is a sentinel,
+// not a verdict: nothing was judged, so nothing was decided. scan.ts must be
+// able to tell it apart from a real "keep: false" or it burns the candidate.
+export const UNANSWERED = "all models failed";
 
 async function callOpenRouter(
   candidates: Candidate[],
@@ -212,7 +214,15 @@ function parseOutputs(raw: string, expectedLen: number): ClassificationOutput[] 
   // Validate every item against the schema — model output is untrusted.
   // An out-of-vocabulary category or malformed shape must never be hashed
   // into the immutable ledger; such items are dropped with a reason.
-  return array.slice(0, expectedLen).map((item: unknown) => {
+  // Pad as well as truncate. scan.ts pairs considered[i] with outputs[i] by
+  // position, so a model that answers 24 items for a batch of 25 does not
+  // merely lose one — it shifts every remaining item onto the wrong source,
+  // and the entry is then hashed into an append-only ledger carrying evidence
+  // that belongs to a different story. Both failure paths above already pad;
+  // only the success path did not, which is why the shift was silent.
+  const padded: unknown[] = array.slice(0, expectedLen);
+  while (padded.length < expectedLen) padded.push(undefined);
+  return padded.map((item: unknown) => {
     const parsed = ClassificationOutputSchema.safeParse(item);
     if (!parsed.success) {
       return {
@@ -297,7 +307,7 @@ export async function classifyBatch(
           tags: [],
           title: null,
           summary: null,
-          reason: `all models failed: ${reason}`.slice(0, 500),
+          reason: `${UNANSWERED}: ${reason}`.slice(0, 500),
         });
       }
     }

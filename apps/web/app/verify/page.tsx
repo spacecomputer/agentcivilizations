@@ -238,7 +238,7 @@ export default function VerifyPage() {
                       {state.result.discrepancy.reason !== "root" && (
                         <div>
                           <a
-                            href={`/event?id=${encodeURIComponent(state.result.discrepancy.eventId)}`}
+                            href={`/event/${encodeURIComponent(state.result.discrepancy.eventId)}`}
                           >
                             open the record
                           </a>
@@ -315,13 +315,30 @@ export default function VerifyPage() {
         trusted.
       </p>
       <div className="panel">
+        <span className="caps panel-label">Checking a day against Bitcoin</span>
         <div className="prov-line">
-          curl -o day.ots https://agentcivilizations.org/api/roots/YYYY-MM-DD/ots
+          curl -o day.ots https://agentcivilizations.org/api/roots/2026-09-01/ots
         </div>
+        <div className="prov-line">ROOT=&lt;the day&apos;s merkleRoot, printed above&gt;</div>
         <div className="prov-line">
-          ots verify --raw &lt;merkleRoot-hex&gt; day.ots
+          D=$(printf %s &quot;$ROOT&quot; | xxd -r -p | shasum -a 256 -b | xxd -r -p |
+          shasum -a 256 | cut -d&apos; &apos; -f1)
         </div>
+        <div className="prov-line">ots verify -d $D day.ots</div>
       </div>
+      <p>
+        The digest is hashed twice on purpose, and the second line is why. What
+        was submitted to the calendars is{" "}
+        <span className="mono">sha256(sha256(merkleRoot))</span>: the register
+        hands OpenTimestamps a already-hashed message and the library hashes
+        what it is handed. Passing the root itself returns{" "}
+        <span className="mono">Digest provided does not match</span>, which
+        looks like a failed proof and is not one. The flag is{" "}
+        <span className="mono">-d</span>; there is no{" "}
+        <span className="mono">--raw</span>. Every root sealed so far commits to
+        the double hash and will keep doing so — a proof is not re-issued to
+        make an instruction tidier.
+      </p>
     </>
   );
 }

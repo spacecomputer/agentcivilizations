@@ -110,16 +110,18 @@ export default function ReferencePage() {
 
       <h3>Citing one entry</h3>
       <p>
-        Every entry has a permalink, a record number, and a content hash that
-        is the entry itself, not a database key. Cite the hash if you want a
-        reference that cannot drift:
+        Every entry has a permalink, a position in its file, and a content hash
+        that is the entry itself rather than a database key. All three are
+        printed at the top of the entry page. Cite the hash if you want a
+        reference that cannot drift — the permalink survives a rename, but the
+        hash survives everything:
       </p>
       <div className="panel">
         <div className="prov-line">
-          Agent Civilizations, record No. 746, file OPENAI-REBEL-AGENT-SWARM,
+          Agent Civilizations, file OPENAI-REBEL-AGENT-SWARM, entry No. 6,
         </div>
         <div className="prov-line">
-          contentHash aedd7200…, {SITE}/event?id=&lt;id&gt;
+          contentHash aedd7200…, {SITE}/event/&lt;id&gt;
         </div>
       </div>
 

@@ -42,7 +42,7 @@ export function RegisterRow({
       </div>
       <div className="dbody">
         <h3 className="dtitle">
-          <a href={`/event?id=${encodeURIComponent(event.id)}`}>
+          <a href={`/event/${encodeURIComponent(event.id)}`}>
             {event.title}
           </a>
         </h3>
@@ -55,7 +55,7 @@ export function RegisterRow({
               : "CONFIRMED"}
           </span>
           <a
-            href={`/civilization?id=${encodeURIComponent(event.civilizationId)}`}
+            href={`/civilization/${encodeURIComponent(event.civilizationId)}`}
           >
             → FILE {event.civilizationId.toUpperCase()}
           </a>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { EventDetail } from "@/components/EventDetail";
 import { allEventsAtBuild, eventAtBuild } from "@/lib/build-data";
+import { jsonLd } from "@/lib/jsonld";
 
 // One statically generated page per entry, with its own title, its own
 // description, and the record itself in the markup. Before this, 1,041
@@ -39,8 +40,14 @@ export async function generateMetadata({
       type: "article",
       publishedTime: e.occurredAt,
       modifiedTime: e.recordedAt,
+      images: [{ url: "/og.png", width: 1200, height: 630, alt: "Agent Civilizations" }],
     },
-    twitter: { card: "summary_large_image", title: e.title, description },
+    twitter: {
+      card: "summary_large_image",
+      title: e.title,
+      description,
+      images: ["/og.png"],
+    },
   };
 }
 
@@ -52,6 +59,12 @@ export default async function EventStaticPage({
   const { id } = await params;
   const e = await eventAtBuild(id);
   if (!e) return <p className="mono dim">No such entry.</p>;
+
+  // A retracted entry cannot know it was retracted — the correction is a
+  // later entry pointing back at it. Resolved here rather than only in the
+  // browser so the notice survives with JavaScript off and reaches crawlers.
+  const retraction =
+    (await allEventsAtBuild()).find((x) => x.retracts?.includes(e.id)) ?? null;
 
   // Article rather than NewsArticle: the register did not report this, it
   // recorded that someone else did, and the sources say who.
@@ -81,9 +94,9 @@ export default async function EventStaticPage({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(ld) }}
       />
-      <EventDetail initialEvent={e} />
+      <EventDetail initialEvent={e} initialSupersededBy={retraction} />
     </>
   );
 }

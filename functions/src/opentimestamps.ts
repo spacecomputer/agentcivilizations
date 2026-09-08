@@ -10,8 +10,14 @@
 // standalone, no-server-required cryptographic proof that our merkleRoot
 // existed at least as early as that block's timestamp.
 //
-// Any reader can independently verify with `ots verify` (or the JS lib)
-// against the raw merkleRoot bytes. No trust in us, no trust in the
+// Any reader can independently verify with `ots verify -d <digest>` (or the
+// JS lib). NOTE the digest: stampRoot hands the library sha256(merkleRoot)
+// and DetachedTimestampFile.fromBytes hashes what it is handed, so the
+// committed message is sha256(sha256(merkleRoot bytes)) — confirmed against
+// the served proof for 2026-09-01, which contains ccea5ee5… and not
+// 332cae52…. Do not "fix" this by passing messageBytes: seven roots are
+// already anchored under the double hash and a proof is never re-issued.
+// /verify prints the shell that computes it. No trust in us, no trust in the
 // calendars, no trust in Firestore — only trust in Bitcoin.
 //
 // Root fields are documented as append-only-attestations, not immutable:

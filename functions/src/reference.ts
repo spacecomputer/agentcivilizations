@@ -14,6 +14,7 @@
 
 import { getFirestore } from "firebase-admin/firestore";
 import type { Civilization, Event, Root } from "@agent-civilizations/schema";
+import { RIGHTS_STATEMENT } from "@agent-civilizations/schema";
 
 const SITE = "https://agentcivilizations.org";
 
@@ -88,8 +89,7 @@ export async function buildSnapshot(day: string): Promise<SnapshotResult> {
         prevRootHash: root.prevRootHash,
         bitcoinBlockHeight: root.otsBitcoinBlockHeight ?? null,
         counts: { events: events.length, civilizations: civilizations.length, roots: roots.length },
-        license:
-          "The register's own summaries and metadata are dedicated to the public domain under CC0 1.0. Underlying sources retain their own rights.",
+        license: RIGHTS_STATEMENT,
         howToVerify: `npx @agent-civilizations/verify --root=${day}`,
         note:
           "Every entry here is covered by the roots here. Recompute any day's root from the entries whose recordedAt falls in it and compare with roots[].merkleRoot; the verifier does this for you.",
@@ -127,7 +127,7 @@ export async function buildRetractionsFeed(): Promise<string> {
       return `  <entry>
     <id>urn:agent-civilizations:retraction:${esc(e.id)}</id>
     <title type="text">${esc(e.title)}</title>
-    <link href="${SITE}/event?id=${encodeURIComponent(e.id)}" rel="alternate"/>
+    <link href="${SITE}/event/${encodeURIComponent(e.id)}" rel="alternate"/>
     <updated>${esc(e.recordedAt)}</updated>
     <published>${esc(e.recordedAt)}</published>
     <category term="retraction"/>
@@ -147,7 +147,8 @@ export async function buildRetractionsFeed(): Promise<string> {
   <link href="${SITE}/reference" rel="alternate"/>
   <id>urn:agent-civilizations:retractions</id>
   <updated>${esc(updated)}</updated>
-  <rights>Register summaries and metadata under CC0 1.0; underlying sources retain their rights.</rights>
+  <author><name>Agent Civilizations</name><uri>${SITE}</uri></author>
+  <rights>${esc(RIGHTS_STATEMENT)}</rights>
 ${entries}
 </feed>
 `;

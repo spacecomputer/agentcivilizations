@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { earliestOccurrenceAtBuild, latestSealedDayAtBuild } from "@/lib/build-data";
+import { jsonLd } from "@/lib/jsonld";
 
 const SITE = "https://agentcivilizations.org";
 
@@ -67,7 +68,7 @@ export default async function ReferenceLayout({ children }: { children: React.Re
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(dataset) }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(dataset) }}
       />
       {children}
     </>

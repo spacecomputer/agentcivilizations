@@ -52,7 +52,7 @@ function ProvenanceMark({ p, pref }: { p: string; pref?: string }) {
 }
 
 function fileHref(id: string) {
-  return `/civilization?id=${encodeURIComponent(id)}`;
+  return `/civilization/${encodeURIComponent(id)}`;
 }
 
 export default function SurveyPage() {

@@ -22,6 +22,20 @@ scanning, or across any dated change in its source list. Coverage before
 those dates is reconstructed from later reporting, so a curve drawn across
 them measures the register's own sensitivity rather than the world.
 
+## Citing a record
+
+Every entry and every file has one canonical, permanently server-rendered URL.
+Use these forms; anything else is a redirect or a client-rendered shell.
+
+    https://agentcivilizations.org/event/<entry-id>          e.g. /event/01M1DTCRTR94N543PXHNQSW22A
+    https://agentcivilizations.org/civilization/<file-slug>  e.g. /civilization/doltlite
+
+Entry ids are ULIDs and never change. File slugs are created once and kept —
+a later name variant is recorded as an alias rather than renaming the file —
+so a cited /civilization/ URL does not rot. The strongest citation is the
+entry's contentHash, printed on its page: it is the entry itself rather than
+a database key, so it cannot drift even if the register is rebuilt.
+
 ## Canonical documents
 
 - [Methodology](https://agentcivilizations.org/about): what is entered, how an entry is made, what corroboration means, how days are sealed, what the record cannot tell you.

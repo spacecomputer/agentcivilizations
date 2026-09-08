@@ -161,10 +161,17 @@ export async function event(id: string): Promise<Event | null> {
 // forward. array-contains on one field needs no composite index.
 export async function retractedBy(eventId: string): Promise<Event | null> {
   const db = getDb();
+  // No orderBy, deliberately. array-contains combined with an orderBy on a
+  // DIFFERENT field needs a composite index, that index was never written,
+  // and Firestore answered this query with FAILED_PRECONDITION every time it
+  // ran — silently, because the caller catches. The correction panel on every
+  // entry page has therefore never rendered. There is at most one retraction
+  // per entry (retractEvent refuses a second one and returns "was already
+  // retracted by …"), so ordering a one-element result bought nothing and
+  // cost the whole feature.
   const q = query(
     collection(db, "events"),
     where("retracts", "array-contains", eventId),
-    orderBy("recordedAt", "asc"),
     limit(1),
   );
   const snap = await getDocs(q);

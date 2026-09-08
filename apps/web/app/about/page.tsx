@@ -1,3 +1,5 @@
+import { CLASSIFIER_MODELS } from "@agent-civilizations/schema";
+
 // The methodology page — the one place warmth is permitted: the institution
 // explaining its own rules, the way a good archive's reading-room guide does.
 //
@@ -5,9 +7,17 @@
 // rule changes, this page changes in the same commit, and AMENDED below
 // moves with it. A register that dates its amendments cannot keep a
 // methodology that quietly drifts.
-export const metadata = { title: "Methodology" };
+export const metadata = {
+  title: "Methodology",
+  description:
+    "How Agent Civilizations decides what counts as an event, which sources it reads, " +
+    "which models classify them, and what the register cannot tell you.",
+  // Without this the page inherits the root canonical and tells Google it is
+  // the homepage — on one of the two pages that carries substantive text.
+  alternates: { canonical: "https://agentcivilizations.org/about" },
+};
 
-const AMENDED = "2026-09-07";
+const AMENDED = "2026-09-08";
 const REPO = "https://github.com/spacecomputer/agentcivilizations";
 
 export default function AboutPage() {
@@ -49,11 +59,17 @@ export default function AboutPage() {
         reporting, and news queries, in English, Chinese and Russian —
         discard what we have seen before, and
         put the remainder to a language model with the taxonomy as its
-        instructions. The models are free-tier and named in the code:{" "}
-        <span className="mono">minimax-m3</span>,{" "}
-        <span className="mono">glm-5.2</span>, and{" "}
-        <span className="mono">nemotron-3-super</span>, tried in that order
-        when one is unavailable. What survives is entered into the register:
+        instructions. The models are free-tier and tried in this order when
+        one is unavailable — the list below is rendered from the same constant
+        the scanner reads, so it cannot drift from what actually ran:{" "}
+        {CLASSIFIER_MODELS.map((m, i) => (
+          <span key={m}>
+            {i > 0 ? ", " : ""}
+            <span className="mono">{m.replace(/:free$/, "")}</span>
+          </span>
+        ))}
+        . Which one answered the most recent scan is printed on{" "}
+        <a href="/stats">the statistics page</a>. What survives is entered into the register:
         hashed, bound to the entry before it, and never edited again.
       </p>
       <p>
