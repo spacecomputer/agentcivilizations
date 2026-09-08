@@ -9,9 +9,9 @@ import {
   latestRoot,
   eventsRecordedBetween,
   rootsForDays,
-  activeCivilizations,
 } from "@/lib/queries";
 import { certify, idle, type CertifyResult } from "@/lib/certify";
+import { REGISTER_OPENED } from "@/lib/catalog";
 import { recordNo, utcDay, utcStamp } from "@/lib/format";
 import { HashBlock } from "./HashBlock";
 import { Tick } from "./marks";
@@ -45,29 +45,43 @@ export function Crest() {
 
     async function load() {
       try {
-        const [root, n, civs] = await Promise.all([
+        // Counts come from /api/figures.json, which counts the whole
+        // collection server-side. The crest used to call
+        // activeCivilizations(200) and count the actives inside that window —
+        // so once the register passed 200 files the masthead printed "200
+        // FILES ACTIVE" forever, a saturated fetch limit displayed as a
+        // census. The real figure was 221. It also saves every visitor a
+        // 200-document Firestore read for two integers.
+        const [root, figures] = await Promise.all([
           latestRoot(),
-          eventCount(),
-          activeCivilizations(200),
+          fetch("/api/figures.json")
+            .then((r) => (r.ok ? r.json() : null))
+            .catch(() => null),
         ]);
         if (cancelled) return;
-        setCount(n);
-        setActiveCivs(civs.filter((c) => c.status === "active").length);
+        if (figures) {
+          setCount(figures.events ?? null);
+          setActiveCivs(figures.byStatus?.active ?? null);
+        } else {
+          setCount(await eventCount());
+        }
+        // Days the register has been open, counted from the day it opened. It
+        // used to count from the earliest event OCCURRENCE, which is in 2018,
+        // so an eight-day-old register introduced itself as "DAY 3051". The
+        // separation of the two clocks is the thing this project is most
+        // careful about everywhere else.
+        setDayNo(
+          Math.max(
+            1,
+            Math.floor(
+              (Date.now() - Date.parse(`${REGISTER_OPENED}T00:00:00.000Z`)) /
+                86400_000,
+            ) + 1,
+          ),
+        );
         if (root) {
           setHash(root.merkleRoot);
           setHashLabel(`ROOT ${root.id}`);
-          const first = civs.length
-            ? civs.reduce(
-                (min, c) => (c.firstSeenAt < min ? c.firstSeenAt : min),
-                civs[0].firstSeenAt,
-              )
-            : root.computedAt;
-          setDayNo(
-            Math.max(
-              1,
-              Math.floor((Date.now() - Date.parse(first)) / 86400_000) + 1,
-            ),
-          );
         }
 
         // Earned verification, idle-deferred, bounded window.
