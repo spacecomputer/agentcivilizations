@@ -218,6 +218,28 @@ export default function ReferencePage() {
         <a href={`${REPO}/blob/main/packages/verify/src/cli.ts`}>verifier source</a>{" "}
         shows the exact REST calls if you want to query them directly.
       </p>
+      <div className="panel">
+        <span className="caps panel-label">Worked one-liners</span>
+        <div className="prov-line">curl -s {SITE}/api/figures.json</div>
+        <div className="prov-line">
+          UA = {`{"User-Agent": "your-project/1.0 (you@example.org)"}`}
+        </div>
+        <div className="prov-line">
+          pd.read_csv(&quot;{SITE}/api/figures.csv&quot;, storage_options=UA)
+        </div>
+        <div className="prov-line">
+          urllib.request.Request(&quot;{SITE}/api/figures.json&quot;, headers=UA)
+        </div>
+      </div>
+      <p>
+        Send a User-Agent that names your project. If a request comes back
+        403 on a Cloudflare error page, that is the edge declining an
+        anonymous default agent rather than the register declining you:
+        Python&apos;s bare <span className="mono">urllib</span> signature is
+        the one that trips it, which catches{" "}
+        <span className="mono">pandas.read_csv</span> too. Naming yourself
+        gets you through and costs nothing.
+      </p>
 
       <h3>Checking it without us</h3>
       <p>
