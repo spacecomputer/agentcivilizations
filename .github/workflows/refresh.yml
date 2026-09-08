@@ -1,0 +1,84 @@
+# Nightly rebuild.
+#
+# Entry and file pages are generated at build time from the register's
+# public endpoints, which is what put the record into the HTML instead of
+# the word "retrieving". The cost of that is staleness: an entry recorded
+# today has no page of its own until the site is rebuilt. The query-string
+# routes still serve it, so nothing is unreachable, but the crawlable,
+# canonical, structured-data version arrives only with a build.
+#
+# So the site rebuilds itself once a day, after the register has finished
+# its own night's work:
+#   00:15 UTC  the previous day is sealed into a root
+#   00:45 UTC  the catalog pass recomputes every file's derived fields
+#   01:00 UTC  the origins job places parties on the map
+#   02:00 UTC  this, so the build sees a settled record
+name: Nightly refresh
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch: {}
+
+# A build takes minutes and a deploy is not idempotent-friendly under
+# races; never run two at once.
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # Deploying needs a credential this repository may not have yet. A
+      # scheduled job that fails every night trains its owner to ignore it,
+      # which is the same failure mode as the outage that went unnoticed
+      # for eight hours, so the absence is reported once and the run is
+      # ended cleanly instead.
+      - name: Check for deploy credentials
+        id: creds
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$SA" ]; then
+            echo "have=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::FIREBASE_SERVICE_ACCOUNT is not set, so there is nothing to deploy to. Run 'npx firebase init hosting:github --project agent-civilizations' once to create it."
+          else
+            echo "have=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.creds.outputs.have == 'true'
+        run: npm ci
+
+      # The build reads the register over the public REST endpoints, so it
+      # needs no credentials of its own and sees exactly what a reader sees.
+      - if: steps.creds.outputs.have == 'true'
+        run: npm run build
+
+      - name: Report what was generated
+        if: steps.creds.outputs.have == 'true'
+        run: |
+          pages=$(find apps/web/out -name '*.html' | wc -l | tr -d ' ')
+          entries=$(find apps/web/out/event -name '*.html' 2>/dev/null | wc -l | tr -d ' ')
+          files=$(find apps/web/out/civilization -name '*.html' 2>/dev/null | wc -l | tr -d ' ')
+          echo "::notice::Generated $pages pages: $entries entries, $files files."
+          # A build that silently produced almost nothing should not be
+          # deployed over a working site.
+          if [ "$entries" -lt 1 ]; then
+            echo "::error::No entry pages were generated; refusing to deploy."
+            exit 1
+          fi
+
+      - if: steps.creds.outputs.have == 'true'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId: live
+          projectId: agent-civilizations
