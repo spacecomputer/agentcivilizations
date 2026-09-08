@@ -12,7 +12,7 @@
 // verifier uses, which keeps the build honest — if this can read it, so
 // can any reader.
 
-import type { Civilization, Event } from "@agent-civilizations/schema";
+import type { Civilization, Event, Root } from "@agent-civilizations/schema";
 
 const BASE =
   process.env.FIRESTORE_BASE ??
@@ -69,4 +69,22 @@ export async function eventAtBuild(id: string): Promise<Event | null> {
 }
 export async function civilizationAtBuild(id: string): Promise<Civilization | null> {
   return (await allCivilizationsAtBuild()).find((c) => c.id === id) ?? null;
+}
+
+let rootsCache: Root[] | null = null;
+export async function allRootsAtBuild(): Promise<Root[]> {
+  if (!rootsCache) rootsCache = await collection<Root>("roots");
+  return rootsCache;
+}
+
+/** The most recently sealed day, for a citation that resolves. */
+export async function latestSealedDayAtBuild(): Promise<string | null> {
+  const roots = await allRootsAtBuild();
+  return roots.map((r) => r.id).sort().pop() ?? null;
+}
+
+/** Earliest occurrence in the record, for the dataset's temporal coverage. */
+export async function earliestOccurrenceAtBuild(): Promise<string | null> {
+  const events = await allEventsAtBuild();
+  return events.map((e) => e.occurredAt).filter(Boolean).sort()[0] ?? null;
 }
