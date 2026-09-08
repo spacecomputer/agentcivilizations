@@ -370,9 +370,15 @@ export const originsNow = onRequest(
 // Manual summary trigger — private (see the note above onRequest defaults) (invoker
 // role required), so it cannot be used to drain the free-inference quota.
 export const summarizeNow = onRequest(
-  { secrets: [OPENROUTER_API_KEY], timeoutSeconds: 300, memory: "256MiB", invoker: "private" },
-  async (_req, res) => {
-    const result = await regenerateStaleSummaries(OPENROUTER_API_KEY.value());
+  { secrets: [OPENROUTER_API_KEY], timeoutSeconds: 540, memory: "256MiB", invoker: "private" },
+  async (req, res) => {
+    // ?limit= lets a backfill do a few large runs instead of sixty cold
+    // starts. Bounded in regenerateStaleSummaries, not trusted from here.
+    const limit = Number(req.query.limit);
+    const result = await regenerateStaleSummaries(
+      OPENROUTER_API_KEY.value(),
+      Number.isFinite(limit) ? { limit } : {},
+    );
     res.json(result);
   },
 );
