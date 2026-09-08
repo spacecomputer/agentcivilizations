@@ -164,7 +164,20 @@ function BigNumber({ label, value }: { label: string; value: string | number }) 
   );
 }
 
+const LANG_NAMES: Record<string, string> = { en: "English", zh: "Chinese", ru: "Russian" };
+
 export default function StatsPage() {
+  const [langs, setLangs] = useState<{ bySourceLanguage: Record<string, number>; singleLanguageNonEnglish: number } | null>(null);
+  useEffect(() => {
+    let off = false;
+    fetch("/api/figures.json")
+      .then((r) => r.json())
+      .then((f) => !off && setLangs(f))
+      .catch(() => {});
+    return () => {
+      off = true;
+    };
+  }, []);
   const [s, setS] = useState<Stats | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -204,6 +217,42 @@ export default function StatsPage() {
         <BigNumber label="sealed roots" value={s.roots.toLocaleString("en-US")} />
         <BigNumber label="confirmed" value={s.confirmed.toLocaleString("en-US")} />
       </div>
+
+      <h3>Coverage by source language</h3>
+      <p className="dim">
+        Entries by the declared language of the sources they cite, counted
+        once per language, so an event carried in two languages appears in
+        both. That pairing is the strongest corroboration available here,
+        because the English, Chinese and Russian press rarely share a wire.
+        Non-English sources were added on 2026-09-08; everything before that
+        was found through English coverage alone.
+      </p>
+      {langs === null ? (
+        <p className="mono dim">retrieving…</p>
+      ) : (
+        <div className="tablewrap">
+          <table>
+            <caption className="sr-only">Entries by source language</caption>
+            <thead>
+              <tr><th>Language</th><th className="num">Entries citing it</th></tr>
+            </thead>
+            <tbody>
+              {Object.entries(langs.bySourceLanguage)
+                .sort((a, b) => b[1] - a[1])
+                .map(([code, n]) => (
+                  <tr key={code}>
+                    <td className="mono">{LANG_NAMES[code] ?? code}</td>
+                    <td className="num mono">{n}</td>
+                  </tr>
+                ))}
+              <tr>
+                <td className="mono dim">entries with no English source at all</td>
+                <td className="num mono">{langs.singleLanguageNonEnglish}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <h3>Distribution by category</h3>
       <div className="tablewrap">

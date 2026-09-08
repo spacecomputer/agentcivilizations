@@ -44,9 +44,10 @@ export default function AboutPage() {
 
       <h3>How an entry is made</h3>
       <p>
-        Every thirty minutes we pull twenty-five public feeds — research
+        Every thirty minutes we pull thirty-four public feeds — research
         indexes, vulnerability databases, framework release notes, security
-        reporting, and news queries — discard what we have seen before, and
+        reporting, and news queries, in English, Chinese and Russian —
+        discard what we have seen before, and
         put the remainder to a language model with the taxonomy as its
         instructions. The models are free-tier and named in the code:{" "}
         <span className="mono">minimax-m3</span>,{" "}
@@ -80,6 +81,14 @@ export default function AboutPage() {
         excluded from corroboration entirely. Fifty-nine domains carry an
         editorial tier, and that table is in the repository, not in anyone&apos;s
         head.
+      </p>
+      <p>
+        Two state-affiliated outlets cannot corroborate each other: one
+        state&apos;s outlets carrying one state&apos;s account is a single source in
+        two mastheads. A state outlet paired with an independent one still
+        counts, because that pairing carries information. An English and a
+        Chinese source reporting the same event is the strongest pairing the
+        register can get, since the two press ecosystems rarely share a wire.
       </p>
       <p>
         Confirmation can also arrive from a different file, when two entries
@@ -199,9 +208,12 @@ export default function AboutPage() {
 
       <h3>What this record cannot tell you</h3>
       <p>
-        The feeds are English-language and skew toward what news covers, so
-        the record is thinner where reporting is thinner, which is not the
-        same as where events are rarer. Most files rest on a single entry and
+        The feeds skew toward what news covers, so the record is thinner where
+        reporting is thinner, which is not the same as where events are
+        rarer. They read English, Chinese and Russian and nothing else, and
+        the non-English sources were added on 2026-09-08, so everything
+        recorded before that date was found through English coverage alone.
+        Entries carry the language of each source they cite. Most files rest on a single entry and
         remain candidates; a grouping with one uncorroborated report is a
         lead, not a finding. The map is shaped by our own hands more than by
         any inference: almost every placement traces to a list of

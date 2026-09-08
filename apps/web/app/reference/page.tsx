@@ -103,6 +103,9 @@ export default function ReferencePage() {
         changing. We cannot tell you the proportion, so neither can you. If
         you need a trend, use the occurrence dates and say plainly that
         coverage before our opening is reconstructed from later reporting.
+        The same warning applies to every dated change in our source list,
+        each of which is drawn on the coverage plate: a trend read across one
+        of those rules is measuring us, not the world.
       </p>
 
       <h3>Citing one entry</h3>
@@ -300,9 +303,12 @@ export default function ReferencePage() {
 
       <h3>What this record cannot tell you</h3>
       <p>
-        The feeds are English-language and follow what news covers, so the
-        record is thinner where reporting is thinner, which is not the same as
-        where events are rarer. Most files rest on a single entry. Placements
+        The feeds read English, Chinese and Russian and nothing else, and
+        follow what news covers, so the record is thinner where reporting is
+        thinner, which is not the same as where events are rarer. The
+        non-English sources were added on 2026-09-08: anything recorded before
+        that was found through English coverage alone, which is a step change
+        in sensitivity and is drawn as such on the coverage plate. Most files rest on a single entry. Placements
         on <a href="/survey">the Survey</a> come mostly from a list of
         organisations we curated by hand, so the map reflects our choices as
         much as the world&apos;s. And the register is young: it can show its

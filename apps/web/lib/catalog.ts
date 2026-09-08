@@ -18,7 +18,7 @@
 // boundary rather than a hidden one.
 
 import type { Category, Civilization, CivilizationStatus } from "@agent-civilizations/schema";
-import { DORMANT_AFTER_DAYS, EXTINCT_AFTER_DAYS } from "@agent-civilizations/schema";
+import { DORMANT_AFTER_DAYS, EXTINCT_AFTER_DAYS, SOURCE_CHANGELOG } from "@agent-civilizations/schema";
 
 export { DORMANT_AFTER_DAYS, EXTINCT_AFTER_DAYS };
 
@@ -93,6 +93,12 @@ export interface Catalog {
   intake: Bucket[];
   /** Where the register's own opening falls inside the coverage series. */
   registerOpenedIndex: number;
+  /**
+   * Every dated change to the source list, positioned in the coverage
+   * series. Each one is a step change in what the register could see, so
+   * each is drawn: a trend read across an unmarked one is not a trend.
+   */
+  sourceChanges: Array<{ date: string; note: string; index: number }>;
   counts: {
     files: number;
     entries: number;
@@ -181,6 +187,11 @@ export function buildCatalog(civs: Civilization[], nowIso: string): Catalog {
     n: covCount.get(k) ?? 0,
   }));
   const registerOpenedIndex = coverage.findIndex((b) => b.key === REGISTER_OPENED.slice(0, 7));
+  const sourceChanges = SOURCE_CHANGELOG.map((c) => ({
+    date: c.date,
+    note: c.note,
+    index: coverage.findIndex((b) => b.key === c.date.slice(0, 7)),
+  })).filter((c) => c.index >= 0);
 
   // Intake — the record clock, one bucket per day the register has run.
   const intCount = new Map<string, number>();
@@ -210,6 +221,7 @@ export function buildCatalog(civs: Civilization[], nowIso: string): Catalog {
     coverage,
     intake,
     registerOpenedIndex,
+    sourceChanges,
     counts: {
       files: rows.length,
       entries: rows.reduce((n, r) => n + r.civ.eventCount, 0),

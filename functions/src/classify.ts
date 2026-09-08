@@ -11,6 +11,14 @@ const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 // classify more per call — the models handle 25 items in ~800 char
 // excerpts comfortably.
 export const BATCH_SIZE = 25;
+// One call may not eat the whole scan, and the scan must leave itself room
+// to record what it did. Both learned the same day: with every model
+// returning 404 the failures were instant and a scan took ninety seconds,
+// so a missing timeout never showed. The moment a working but slow model
+// entered the chain, one call hung until the function was killed, and the
+// run wrote no record at all — the register looked idle rather than stuck.
+const CALL_TIMEOUT_MS = 90_000;
+const CLASSIFY_DEADLINE_MS = 380_000;
 export const MAX_CANDIDATES_PER_SCAN = 100;
 
 const SYSTEM_PROMPT = `You are the ingestion classifier for AgentCivilizations.org, an open ledger of AI-agent-civilization events.
@@ -21,6 +29,15 @@ For each news item, decide whether it is a real, notable event in one of these f
 2. security — AI-driven security incidents: prompt-injection campaigns, autonomous exploits, model exfiltration, agent-driven fraud with attribution.
 3. community — persistent groupings of agents acting as a community: marketplaces, botnets with agent-level autonomy, autonomous DAOs, agent social networks.
 4. speculative — signals that shift near-future likelihood: frontier lab capability announcements, peer-reviewed agent-benchmark jumps, researcher warnings tied to a concrete capability, regulatory action on agentic systems.
+
+Items may arrive in any language, most often English, Chinese or Russian.
+Read them in the language they are written in and apply these criteria
+unchanged — the criteria are the policy and they are not translated. Write
+every title and summary you output in English, so the register reads as one
+record. Name an organisation by the name it is known by internationally
+where one exists (Alibaba, not 阿里巴巴; Kaspersky, not Лаборатория
+Касперского), and otherwise transliterate. Never invent an English name for
+a body that has none.
 
 REJECT items that are:
 - generic AI news (model releases without agent-specific implications),
@@ -62,9 +79,26 @@ interface OpenRouterResponse {
 
 // The free-model lineup rotates; when the preferred model errors (renamed,
 // rate-limited, JSON mode unsupported), fall through this list in order.
+// The free tier is not a contract. On 2026-09-07 two of these slugs were
+// withdrawn from it on the same day — "unavailable for free, the paid
+// version is available now" — and the third was overloaded, so the
+// register stopped ingesting for eight hours with nothing saying so.
+// The chain is spread across vendors on purpose: one company changing its
+// mind should cost one entry here, not all of them. Check a replacement is
+// actually free before adding it:
+//   curl -s https://openrouter.ai/api/v1/models | jq '.data[].id|select(endswith(":free"))'
+// Chosen for speed and plain-API availability, not size. Observed on
+// 2026-09-08: inkling returns 403 because it is restricted to "agentic
+// harnesses"; nemotron-3.5-lightning exceeded a sixty-second call budget;
+// gemma-4-31b and nemotron-super both answer but are frequently rate
+// limited or overloaded. Sparse models with few active parameters
+// (gemma-4-26b-a4b, nemotron-nano-a3b) answer a classification prompt far
+// faster than a 550B one, and speed is what a thirty-minute cadence needs.
 export const FALLBACK_MODELS = [
-  "minimax/minimax-m3:free",
-  "z-ai/glm-5.2:free",
+  "google/gemma-4-26b-a4b-it:free",
+  "google/gemma-4-31b-it:free",
+  "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+  "dots-studio/dots-3-note-preview:free",
   "nvidia/nemotron-3-super-120b-a12b:free",
 ];
 
@@ -83,32 +117,39 @@ async function callOpenRouter(
     JSON.stringify(
       candidates.map((c) => ({ title: c.title, url: c.url, excerpt: c.excerpt.slice(0, 800) })),
     );
-  const res = await fetch(OPENROUTER_URL, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${apiKey}`,
-      "http-referer": "https://agentcivilizations.org",
-      "x-title": "Agent Civilizations",
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userMessage },
-      ],
-      temperature: 0.1,
-      response_format: { type: "json_object" },
-    }),
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), CALL_TIMEOUT_MS);
+  try {
+    const res = await fetch(OPENROUTER_URL, {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${apiKey}`,
+        "http-referer": "https://agentcivilizations.org",
+        "x-title": "Agent Civilizations",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: userMessage },
+        ],
+        temperature: 0.1,
+        response_format: { type: "json_object" },
+      }),
+    });
 
-  if (!res.ok) {
-    throw new Error(`OpenRouter ${res.status}: ${await res.text()}`);
+    if (!res.ok) {
+      throw new Error(`OpenRouter ${res.status}: ${await res.text()}`);
+    }
+    const json = (await res.json()) as OpenRouterResponse;
+    if (json.error) throw new Error(`OpenRouter error: ${json.error.message}`);
+    const content = json.choices?.[0]?.message?.content ?? "[]";
+    return { raw: content, tokens: json.usage?.total_tokens ?? 0 };
+  } finally {
+    clearTimeout(timer);
   }
-  const json = (await res.json()) as OpenRouterResponse;
-  if (json.error) throw new Error(`OpenRouter error: ${json.error.message}`);
-  const content = json.choices?.[0]?.message?.content ?? "[]";
-  return { raw: content, tokens: json.usage?.total_tokens ?? 0 };
 }
 
 // Free models routinely ignore response_format and wrap JSON in markdown
@@ -192,9 +233,14 @@ export async function classifyBatch(
   let llmCalls = 0;
   let tokensUsed = 0;
   const outputs: ClassificationOutput[] = [];
+  const startedAt = Date.now();
   const errors: string[] = [];
 
   for (const batch of batches) {
+    // Stop starting batches with time left to write the result. A batch
+    // skipped now is seen again next scan; a scan killed mid-flight
+    // records nothing, which is how eight hours of silence went unnoticed.
+    if (Date.now() - startedAt > CLASSIFY_DEADLINE_MS) break;
     let done = false;
     for (const model of opts.models) {
       try {

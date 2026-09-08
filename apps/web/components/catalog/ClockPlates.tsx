@@ -42,12 +42,13 @@ function useMeasuredWidth() {
 function Bars({
   buckets,
   width,
-  markIndex,
+  marks,
   labelEvery,
 }: {
   buckets: Bucket[];
   width: number;
-  markIndex?: number;
+  /** Dated step changes in what the register could see. */
+  marks?: Array<{ index: number; date: string }>;
   labelEvery?: number;
 }) {
   if (!buckets.length || width <= 0) return null;
@@ -74,17 +75,20 @@ function Bars({
           <rect key={b.key} x={x} y={BASE - bh} width={bar} height={bh} fill="var(--ink)" />
         );
       })}
-      {typeof markIndex === "number" && markIndex >= 0 && (
-        <line
-          x1={markIndex * slot}
-          y1={2}
-          x2={markIndex * slot}
-          y2={BASE}
-          stroke="var(--ink)"
-          strokeWidth={1}
-          strokeDasharray="3 2"
-        />
-      )}
+      {(marks ?? [])
+        .filter((m) => m.index >= 0)
+        .map((m) => (
+          <line
+            key={m.date}
+            x1={m.index * slot}
+            y1={2}
+            x2={m.index * slot}
+            y2={BASE}
+            stroke="var(--ink)"
+            strokeWidth={1}
+            strokeDasharray="3 2"
+          />
+        ))}
       {buckets.map((b, i) =>
         i % every === 0 ? (
           <text key={`l:${b.key}`} x={i * slot + slot / 2} y={H - 3} textAnchor="middle" className="plate-caption">
@@ -111,7 +115,11 @@ export function ClockPlates({ catalog }: { catalog: Catalog }) {
           {Math.max(...catalog.coverage.map((b) => b.n))}
         </figcaption>
         <div ref={covRef} className="clock-canvas">
-          <Bars buckets={catalog.coverage} width={covW} markIndex={catalog.registerOpenedIndex} />
+          <Bars
+          buckets={catalog.coverage}
+          width={covW}
+          marks={catalog.sourceChanges.map((c) => ({ index: c.index, date: c.date }))}
+        />
         </div>
         <p className="clock-note">
           <span className="mono">{before}</span> of these files are reconstructed from
@@ -120,6 +128,16 @@ export function ClockPlates({ catalog }: { catalog: Catalog }) {
           <span className="mono">{after}</span> were observed as they happened. The
           climb at the right is therefore partly the world and partly the scanner
           switching on, and this plate cannot tell you the proportion.
+        </p>
+        <p className="clock-note">
+          Each dashed rule is a dated change to the source list, and each one
+          changed what the register could see from that day forward. A trend
+          read across one of them is not a trend.{" "}
+          {catalog.sourceChanges.map((c) => (
+            <span key={c.date}>
+              <span className="mono">{c.date}</span> {c.note}{" "}
+            </span>
+          ))}
         </p>
       </figure>
       <figure className="clock-figure clock-figure--narrow">

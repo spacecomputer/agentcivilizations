@@ -32,12 +32,51 @@ export function statusFromSilence(
   return "active";
 }
 
+// The source list, as a dated record.
+//
+// Adding a source changes what the register can see, which changes its
+// sensitivity on that date exactly as switching the scanner on did. An
+// unmarked change quietly corrupts every trend drawn across it, so the
+// list is kept as an append-only log and drawn onto the coverage plate as
+// a rule. Editing this array is a governance act: it ships in its own
+// commit and explains itself.
+export interface SourceChange {
+  date: string; // YYYY-MM-DD, the day the change took effect
+  note: string; // what changed, in one line, for the plate's caption
+  added?: string[];
+  removed?: string[];
+}
+
+export const SOURCE_CHANGELOG: SourceChange[] = [
+  {
+    date: "2026-09-01",
+    note: "The register opens: research indexes, vulnerability data, security reporting and English news.",
+  },
+  {
+    date: "2026-09-07",
+    note: "Framework release feeds added — eight agent projects' own release notes.",
+    added: ["github releases: langgraph, autogen, crewai, autogpt, openai-agents, mcp servers, openhands, browser-use"],
+  },
+  {
+    date: "2026-09-08",
+    note: "Chinese and Russian sources added; coverage before this date is English-language only.",
+    added: [
+      "zh: qbitai, anquanke, infoq.cn, Google News (zh-Hans)",
+      "ru: habr (AI and infosecurity), securelist.ru, xakep, Google News (ru)",
+    ],
+  },
+];
+
 export const SourceTier = z.enum([
   "primary", // authoritative first-party (arxiv, nvd, github repo, official blog)
   "primary-trade", // named investigative journalist beat (krebs)
   "secondary", // reputable secondary press (The Register, TechCrunch)
   "aggregator", // aggregators that link to primaries (HN, Google News)
   "aggregator-drop", // aggregators whose peerhood must be ignored for corroboration
+  // State-controlled or state-directed outlets. Authoritative for what
+  // that state and its institutions claim, and reportable as such, but
+  // two of them are not independent of each other: see corroborates().
+  "state-affiliated",
 ]);
 export type SourceTier = z.infer<typeof SourceTier>;
 
@@ -64,6 +103,11 @@ export const Source = z.object({
   canonicalUrl: z.string().url().optional(),
   canonicalDomain: z.string().optional(),
   sourceTier: SourceTier.optional(),
+  // BCP-47 tag of the language this source publishes in, declared by the
+  // feed rather than detected, so it is a fact about the source and not a
+  // guess about the text. Absent means "en" on documents written before
+  // the register read anything else.
+  language: z.string().optional(),
   resolvedAt: z.string().datetime().optional(),
   fingerprints: Fingerprints.optional(),
 });

@@ -9,11 +9,32 @@ import { tierOf } from "./tiers.js";
 export type { Candidate };
 export type FetchAllResult = FetcherResult;
 
-const parser = new XMLParser({
+const PARSER_OPTS = {
   ignoreAttributes: false,
   attributeNamePrefix: "@_",
   parseTagValue: false,
-});
+} as const;
+const parser = new XMLParser(PARSER_OPTS);
+
+// GitHub's releases.atom carries release notes full of HTML entities, and
+// fast-xml-parser's expansion guard trips at a thousand of them: every one
+// of the eight framework release feeds failed with "Entity expansion limit
+// exceeded" from the day they were added, silently, because a per-source
+// error is only a line in the run record. Entity processing is a
+// convenience, not a requirement — the fields we read are titles, links
+// and short excerpts — so a feed that trips the guard is parsed again with
+// it off rather than dropped.
+const parserNoEntities = new XMLParser({ ...PARSER_OPTS, processEntities: false });
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseFeed(xml: string): any {
+  try {
+    return parser.parse(xml);
+  } catch (err) {
+    if (!/entity expansion/i.test(err instanceof Error ? err.message : String(err))) throw err;
+    return parserNoEntities.parse(xml);
+  }
+}
 
 function domainOf(url: string): string {
   try {
@@ -90,7 +111,7 @@ export async function fetchRss(
   source: Extract<SourceSpec, { kind: "rss" }>,
 ): Promise<Candidate[]> {
   const xml = await fetchWithTimeout(source.url);
-  const parsed = parser.parse(xml);
+  const parsed = parseFeed(xml);
 
   // RSS 2.0 shape
   const rssItems = parsed?.rss?.channel?.item;
@@ -155,6 +176,14 @@ export async function fetchRss(
 }
 
 async function fetchOne(source: SourceSpec): Promise<Candidate[]> {
+  const rows = await fetchFor(source);
+  // The language is declared by the feed, so it is stamped once here
+  // rather than guessed per item further down. Absent means English.
+  const language = source.language;
+  return language ? rows.map((c) => ({ ...c, language })) : rows;
+}
+
+async function fetchFor(source: SourceSpec): Promise<Candidate[]> {
   switch (source.kind) {
     case "rss":
       return fetchRss(source);

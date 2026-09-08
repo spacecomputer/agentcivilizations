@@ -42,6 +42,37 @@ export const SOURCES: SourceSpec[] = [
     url: `https://github.com/${repo}/releases.atom`,
   })),
 
+  // -- Chinese-language sources --
+  // The register placed files in Beijing, Hangzhou, Shanghai and Shenzhen
+  // for a week before it could read a word of Chinese; it learned of them
+  // through Western coverage, late and thinned. These are read directly.
+  // Feeds verified live before being added; three candidates (jiqizhixin,
+  // 36kr, freebuf) returned nothing usable and were left out rather than
+  // shipped as dead weight.
+  { kind: "rss", id: "qbitai", name: "量子位 QbitAI", url: "https://www.qbitai.com/feed", language: "zh" },
+  { kind: "rss", id: "anquanke", name: "安全客 Anquanke", url: "https://api.anquanke.com/data/v1/rss", language: "zh" },
+  { kind: "rss", id: "infoq-cn", name: "InfoQ 中国", url: "https://www.infoq.cn/feed", language: "zh" },
+  {
+    kind: "rss",
+    id: "google-news-zh",
+    name: "Google News 智能体 (zh-Hans)",
+    url: "https://news.google.com/rss/search?q=%22AI+agent%22+OR+%22%E6%99%BA%E8%83%BD%E4%BD%93%22+OR+%22%E5%A4%9A%E6%99%BA%E8%83%BD%E4%BD%93%22&hl=zh-CN&gl=CN&ceid=CN:zh-Hans",
+    language: "zh",
+  },
+
+  // -- Russian-language sources --
+  { kind: "rss", id: "habr-ai", name: "Habr — искусственный интеллект", url: "https://habr.com/ru/rss/hub/artificial_intelligence/?fl=ru", language: "ru" },
+  { kind: "rss", id: "habr-infosec", name: "Habr — информационная безопасность", url: "https://habr.com/ru/rss/hub/infosecurity/?fl=ru", language: "ru" },
+  { kind: "rss", id: "securelist-ru", name: "Securelist (RU)", url: "https://securelist.ru/feed/", language: "ru" },
+  { kind: "rss", id: "xakep", name: "Хакер", url: "https://xakep.ru/feed/", language: "ru" },
+  {
+    kind: "rss",
+    id: "google-news-ru",
+    name: "Google News ИИ-агент (ru)",
+    url: "https://news.google.com/rss/search?q=%22%D0%98%D0%98-%D0%B0%D0%B3%D0%B5%D0%BD%D1%82%22+OR+%22AI-%D0%B0%D0%B3%D0%B5%D0%BD%D1%82%22+OR+%22%D0%B0%D0%B2%D1%82%D0%BE%D0%BD%D0%BE%D0%BC%D0%BD%D1%8B%D0%B9+%D0%B0%D0%B3%D0%B5%D0%BD%D1%82%22&hl=ru&gl=RU&ceid=RU:ru",
+    language: "ru",
+  },
+
   // -- aggregators (kept but peerhood dropped in corroboration by
   // default; individual items get their canonical publisher tier via
   // the RSS <source url> unwrap in ingest.ts) --

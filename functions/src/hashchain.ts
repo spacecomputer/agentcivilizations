@@ -239,6 +239,14 @@ export function eventFingerprint(e: Event): Fingerprints {
 }
 
 export function corroborates(a: Event, b: Event): boolean {
+  // Two state-affiliated outlets are not independent of each other: one
+  // state's outlets carrying one state's account is a single source
+  // wearing two mastheads. A state outlet paired with an independent one
+  // still corroborates, which is the pairing that carries information.
+  const stateOnly = (e: Event) =>
+    e.sources.length > 0 && e.sources.every((s) => s.sourceTier === "state-affiliated");
+  if (stateOnly(a) && stateOnly(b)) return false;
+
   const fpA = eventFingerprint(a);
   const fpB = eventFingerprint(b);
   if (sharesFingerprint(fpA, fpB)) return false; // same underlying report

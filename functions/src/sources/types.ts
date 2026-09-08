@@ -19,13 +19,16 @@ export interface Candidate {
   canonicalDomain?: string;
   sourceTier?: SourceTier;
   categoryHint?: Category;
+  // Declared by the feed, never sniffed from the text: a fact about the
+  // source rather than a guess about the item.
+  language?: string;
 }
 
 // Discriminated union — sources.ts holds an array of these.
 export type SourceSpec =
-  | { kind: "rss"; id: string; name: string; url: string; categoryHint?: Category }
-  | { kind: "arxiv-api"; id: string; name: string; categories: string[]; maxResults?: number }
-  | { kind: "nvd"; id: string; name: string; keywords?: string[]; windowHours?: number };
+  | { kind: "rss"; id: string; name: string; url: string; categoryHint?: Category; language?: string }
+  | { kind: "arxiv-api"; id: string; name: string; categories: string[]; maxResults?: number; language?: string }
+  | { kind: "nvd"; id: string; name: string; keywords?: string[]; windowHours?: number; language?: string };
 
 export interface FetcherResult {
   candidates: Candidate[];

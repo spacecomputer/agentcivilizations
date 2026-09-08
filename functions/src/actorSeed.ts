@@ -23,7 +23,7 @@ export interface SeedActor {
 
 // Bump when seed semantics change; written into every curated entry's
 // provenanceRef so a placement can be traced to the seed that made it.
-export const SEED_VERSION = "2026-09-03";
+export const SEED_VERSION = "2026-09-08";
 
 export const ACTOR_SEED: SeedActor[] = [
   // -- frontier labs --
@@ -64,17 +64,22 @@ export const ACTOR_SEED: SeedActor[] = [
   { name: "Sakana AI", kind: "lab", city: "Tokyo", country: "JP", lat: 35.676, lng: 139.65 },
   { name: "Naver", kind: "company", city: "Seongnam", country: "KR", lat: 37.36, lng: 127.105 },
   { name: "Samsung", aliases: ["Samsung Electronics", "Samsung Research"], kind: "company", city: "Suwon", country: "KR", lat: 37.264, lng: 127.029 },
-  { name: "Alibaba", aliases: ["Alibaba Cloud", "Qwen"], kind: "company", city: "Hangzhou", country: "CN", lat: 30.274, lng: 120.155 },
-  { name: "Tencent", kind: "company", city: "Shenzhen", country: "CN", lat: 22.543, lng: 114.058 },
-  { name: "Baidu", aliases: ["ERNIE"], kind: "company", city: "Beijing", country: "CN", lat: 39.904, lng: 116.407 },
-  { name: "ByteDance", aliases: ["TikTok", "Doubao"], kind: "company", city: "Beijing", country: "CN", lat: 39.904, lng: 116.407 },
-  { name: "DeepSeek", kind: "lab", city: "Hangzhou", country: "CN", lat: 30.274, lng: 120.155 },
-  { name: "Moonshot AI", aliases: ["Kimi"], kind: "lab", city: "Beijing", country: "CN", lat: 39.904, lng: 116.407 },
-  { name: "Zhipu AI", aliases: ["Z.ai", "GLM"], kind: "lab", city: "Beijing", country: "CN", lat: 39.904, lng: 116.407 },
-  { name: "MiniMax", kind: "lab", city: "Shanghai", country: "CN", lat: 31.23, lng: 121.474 },
+  { name: "Alibaba", aliases: ["Alibaba Cloud", "Qwen", "阿里巴巴", "阿里", "阿里云", "通义千问", "通义"], kind: "company", city: "Hangzhou", country: "CN", lat: 30.274, lng: 120.155 },
+  { name: "Tencent", aliases: ["腾讯", "混元"], kind: "company", city: "Shenzhen", country: "CN", lat: 22.543, lng: 114.058 },
+  { name: "Baidu", aliases: ["ERNIE", "百度", "文心一言", "文心"], kind: "company", city: "Beijing", country: "CN", lat: 39.904, lng: 116.407 },
+  { name: "ByteDance", aliases: ["TikTok", "Doubao", "字节跳动", "字节", "豆包"], kind: "company", city: "Beijing", country: "CN", lat: 39.904, lng: 116.407 },
+  { name: "DeepSeek", aliases: ["深度求索"], kind: "lab", city: "Hangzhou", country: "CN", lat: 30.274, lng: 120.155 },
+  { name: "Moonshot AI", aliases: ["Kimi", "月之暗面"], kind: "lab", city: "Beijing", country: "CN", lat: 39.904, lng: 116.407 },
+  { name: "Zhipu AI", aliases: ["Z.ai", "GLM", "智谱", "智谱AI", "智谱清言"], kind: "lab", city: "Beijing", country: "CN", lat: 39.904, lng: 116.407 },
+  { name: "MiniMax", aliases: ["稀宇科技"], kind: "lab", city: "Shanghai", country: "CN", lat: 31.23, lng: 121.474 },
   { name: "Technology Innovation Institute", aliases: ["TII", "Falcon"], kind: "lab", city: "Abu Dhabi", country: "AE", lat: 24.454, lng: 54.377 },
   { name: "G42", kind: "company", city: "Abu Dhabi", country: "AE", lat: 24.454, lng: 54.377 },
   { name: "National Payments Corporation of India", aliases: ["NPCI", "UPI", "Unified Payments Interface"], kind: "government", city: "Mumbai", country: "IN", lat: 19.076, lng: 72.878 },
+  { name: "Huawei", aliases: ["华为", "华为技术", "盘古", "Pangu"], kind: "company", city: "Shenzhen", country: "CN", lat: 22.649, lng: 114.055 },
+  { name: "Kaspersky", aliases: ["Лаборатория Касперского", "Касперский", "Kaspersky Lab", "Securelist"], kind: "company", city: "Moscow", country: "RU", lat: 55.796, lng: 37.539 },
+  { name: "Yandex", aliases: ["Яндекс", "YandexGPT", "Алиса"], kind: "company", city: "Moscow", country: "RU", lat: 55.734, lng: 37.588 },
+  { name: "Sber", aliases: ["Сбер", "Сбербанк", "Sberbank", "GigaChat", "ГигаЧат"], kind: "company", city: "Moscow", country: "RU", lat: 55.730, lng: 37.622 },
+  { name: "Positive Technologies", aliases: ["Positive Technologies", "Позитив Текнолоджиз"], kind: "company", city: "Moscow", country: "RU", lat: 55.756, lng: 37.617 },
   { name: "Reserve Bank of India", aliases: ["RBI"], kind: "government", city: "Mumbai", country: "IN", lat: 18.932, lng: 72.837 },
 
   // -- universities --

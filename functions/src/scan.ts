@@ -231,6 +231,7 @@ export async function runScan(opts: { apiKey: string; models: string[] }): Promi
           ...(resolved && { canonicalUrl: resolved.canonicalUrl }),
           canonicalDomain,
           sourceTier,
+          ...(c.language && { language: c.language }),
           ...(resolved && { resolvedAt: resolved.resolvedAt }),
           ...(isEmpty(fp) ? {} : { fingerprints: fp }),
         },

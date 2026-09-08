@@ -168,6 +168,17 @@ export interface Figures {
   latestOccurrence: string | null;
   registerOpened: string | null;
   sealedDays: number;
+  /**
+   * Entries by the declared language of their sources. An entry counts
+   * once per distinct language it cites, so an event carried by an English
+   * and a Chinese source counts in both: that pairing is the strongest
+   * corroboration the register can get, and hiding it would waste it.
+   * Absent language means "en" on anything recorded before the register
+   * could read another.
+   */
+  bySourceLanguage: Record<string, number>;
+  /** Entries whose sources are all in one non-English language. */
+  singleLanguageNonEnglish: number;
 }
 
 export async function buildFigures(): Promise<Figures> {
@@ -187,6 +198,13 @@ export async function buildFigures(): Promise<Figures> {
     byCategory[c.category] = (byCategory[c.category] ?? 0) + 1;
     byStatus[c.status] = (byStatus[c.status] ?? 0) + 1;
   }
+  const bySourceLanguage: Record<string, number> = {};
+  let singleLanguageNonEnglish = 0;
+  for (const e of events) {
+    const langs = new Set((e.sources ?? []).map((s) => s.language ?? "en"));
+    for (const l of langs) bySourceLanguage[l] = (bySourceLanguage[l] ?? 0) + 1;
+    if (langs.size === 1 && !langs.has("en")) singleLanguageNonEnglish++;
+  }
   const occ = events.map((e) => e.occurredAt).filter(Boolean).sort();
   const rec = events.map((e) => e.recordedAt).filter(Boolean).sort();
   return {
@@ -202,6 +220,8 @@ export async function buildFigures(): Promise<Figures> {
     latestOccurrence: occ[occ.length - 1] ?? null,
     registerOpened: rec[0] ?? null,
     sealedDays: roots.length,
+    bySourceLanguage,
+    singleLanguageNonEnglish,
   };
 }
 
@@ -218,6 +238,8 @@ export function figuresToCsv(f: Figures): string {
     ["earliest_occurrence", f.earliestOccurrence ?? ""],
     ["latest_occurrence", f.latestOccurrence ?? ""],
   ];
+  for (const [k, v] of Object.entries(f.bySourceLanguage)) rows.push([`entries_source_language_${k}`, v]);
+  rows.push(["entries_non_english_only", f.singleLanguageNonEnglish]);
   for (const [k, v] of Object.entries(f.byCategory)) rows.push([`files_category_${k}`, v]);
   for (const [k, v] of Object.entries(f.byStatus)) rows.push([`files_status_${k}`, v]);
   return "measure,value\n" + rows.map(([k, v]) => `${k},${String(v).includes(",") ? `"${v}"` : v}`).join("\n") + "\n";

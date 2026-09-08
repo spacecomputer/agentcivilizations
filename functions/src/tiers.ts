@@ -34,6 +34,33 @@ export const SOURCE_TIERS: Record<string, SourceTier> = {
   "hackerone.com": "primary",
   "courtlistener.com": "primary",
 
+  // -- Chinese and Russian outlets --
+  "securelist.ru": "primary-trade",
+  "securelist.com": "primary-trade",
+  "qbitai.com": "secondary",
+  "anquanke.com": "secondary",
+  "infoq.cn": "secondary",
+  "xakep.ru": "secondary",
+  "jiqizhixin.com": "secondary",
+  "36kr.com": "secondary",
+  "freebuf.com": "secondary",
+  "habr.com": "aggregator", // user-submitted posts, like HN
+  // State-controlled or state-directed. Reportable for what the state
+  // claims; two of them cannot corroborate each other. The localised
+  // Google News feeds will surface these, so they are tiered whether or
+  // not the register ever subscribes to them directly.
+  "xinhuanet.com": "state-affiliated",
+  "news.cn": "state-affiliated",
+  "people.cn": "state-affiliated",
+  "globaltimes.cn": "state-affiliated",
+  "chinadaily.com.cn": "state-affiliated",
+  "cctv.com": "state-affiliated",
+  "tass.ru": "state-affiliated",
+  "tass.com": "state-affiliated",
+  "ria.ru": "state-affiliated",
+  "rt.com": "state-affiliated",
+  "sputniknews.com": "state-affiliated",
+
   // -- primary-trade: named investigative journalism beats --
   "krebsonsecurity.com": "primary-trade",
   "schneier.com": "primary-trade",
