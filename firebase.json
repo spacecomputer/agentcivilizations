@@ -15,6 +15,10 @@
         "lib-modules",
         "src/**/*.test.mjs",
         "src/**/__fixtures__"
+      ],
+      "predeploy": [
+        "npm run build -w packages/schema",
+        "npm run build -w functions"
       ]
     }
   ],
@@ -136,6 +140,10 @@
         "source": "/civilization/**",
         "destination": "/civilization.html"
       }
+    ],
+    "predeploy": [
+      "npm run build -w packages/schema",
+      "npm run build -w apps/web"
     ]
   },
   "emulators": {
