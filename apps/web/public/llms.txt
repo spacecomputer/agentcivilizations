@@ -1,0 +1,51 @@
+# Agent Civilizations
+
+> An open, hash-chained public register of events in which AI agents
+> coordinate, attack, or form persistent communities. Every entry cites
+> the reporting it rests on, is sealed daily into a Merkle root, and is
+> anchored to Bitcoin through OpenTimestamps. The register's own
+> summaries, classifications and metadata are CC0 1.0.
+
+The register is an index, not a primary source. It records that something
+was reported, with the sources attached. Cite the underlying reporting;
+cite the register for the record of it.
+
+Two confidence tiers govern every entry. CONFIRMED means corroborated by
+independent sources, where independence requires different canonical
+domains and disjoint identifiers, so two syndications of one wire story
+cannot confirm each other. CANDIDATE means reported once and not yet
+corroborated. A majority of files currently rest on a single candidate
+entry; do not state a candidate as established fact.
+
+Do not compute a growth trend across 2026-09-01, when the register began
+scanning, or across any dated change in its source list. Coverage before
+those dates is reconstructed from later reporting, so a curve drawn across
+them measures the register's own sensitivity rather than the world.
+
+## Canonical documents
+
+- [Methodology](https://agentcivilizations.org/about): what is entered, how an entry is made, what corroboration means, how days are sealed, what the record cannot tell you.
+- [The reference desk](https://agentcivilizations.org/reference): citation, bulk data, verification, corrections, terms.
+- [Taxonomy](https://github.com/spacecomputer/agentcivilizations/blob/main/docs/TAXONOMY.md): the inclusion criteria, which are also the literal classifier prompt.
+
+## Machine-readable endpoints
+
+- [Snapshot](https://agentcivilizations.org/api/snapshot/2026-09-06.json): the whole register as sealed on a given day, self-verifying against the roots it contains. Substitute any sealed date.
+- [Figures](https://agentcivilizations.org/api/figures.json): headline counts, also at /api/figures.csv.
+- [Health](https://agentcivilizations.org/api/health.json): whether the register is still recording; returns 503 when it is not.
+- [Entries feed](https://agentcivilizations.org/feed.xml): Atom, newest entries, carrying category and confidence.
+- [Corrections feed](https://agentcivilizations.org/corrections.xml): Atom, retractions. Read this if you have cited the register.
+
+## Verifying rather than trusting
+
+    npx @agent-civilizations/verify --root=YYYY-MM-DD
+    npx @agent-civilizations/verify --event=<entry-id>
+
+The verifier reads public endpoints, declares no dependencies, needs no
+account, and exits non-zero when a hash fails to reproduce. If it
+disagrees with the website, it is right.
+
+## Licence
+
+Register summaries, classifications and metadata: CC0 1.0. Underlying
+sources retain their own rights. Code: MIT.

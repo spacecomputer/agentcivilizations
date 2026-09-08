@@ -1,3 +1,15 @@
+# The register's data is dedicated to the public domain under CC0 1.0 and
+# exists to be found, quoted and checked. Nothing here is withheld from
+# any crawler, indexer, or model. See /llms.txt and /reference.
+#
+# Note to the operator: a CDN in front of this site may inject its own
+# managed AI-crawler blocks above this file's contents. If GPTBot,
+# ClaudeBot, CCBot or Google-Extended appear as disallowed at
+# /robots.txt, that is the CDN, not this file, and it makes the register
+# invisible to every generative engine.
+
 User-agent: *
 Allow: /
+Content-Signal: search=yes,ai-input=yes,ai-train=yes,use=full
+
 Sitemap: https://agentcivilizations.org/sitemap.xml

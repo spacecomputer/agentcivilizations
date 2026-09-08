@@ -34,6 +34,10 @@ export const metadata: Metadata = {
   description:
     "An open, tamper-evident ledger of AI-agent-civilization events — coordinated agent behavior, agent-driven incidents, and emergent agent communities — verifiable in your browser.",
   metadataBase: new URL("https://agentcivilizations.org"),
+  alternates: {
+    canonical: "https://agentcivilizations.org/",
+    types: { "application/atom+xml": "https://agentcivilizations.org/feed.xml" },
+  },
   openGraph: {
     title: "Agent Civilizations",
     description:
@@ -65,6 +69,37 @@ export default function RootLayout({
       className={`${archivo.variable} ${literata.variable} ${plexMono.variable}`}
     >
       <body>
+        {/* Said once, for anything that reads structure rather than prose:
+            what this is, who publishes it, and that it is free to use. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "Organization",
+                  "@id": "https://agentcivilizations.org/#organization",
+                  name: "Agent Civilizations",
+                  url: "https://agentcivilizations.org",
+                  description:
+                    "An open, hash-chained public register of events in which AI agents coordinate, attack, or form persistent communities.",
+                  sameAs: ["https://github.com/spacecomputer/agentcivilizations"],
+                },
+                {
+                  "@type": "WebSite",
+                  "@id": "https://agentcivilizations.org/#website",
+                  url: "https://agentcivilizations.org",
+                  name: "Agent Civilizations",
+                  publisher: { "@id": "https://agentcivilizations.org/#organization" },
+                  license: "https://creativecommons.org/publicdomain/zero/1.0/",
+                  isAccessibleForFree: true,
+                  inLanguage: "en",
+                },
+              ],
+            }),
+          }}
+        />
         <link
           rel="alternate"
           type="application/atom+xml"

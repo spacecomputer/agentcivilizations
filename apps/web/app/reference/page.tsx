@@ -44,8 +44,56 @@ export default function ReferencePage() {
   const hash = root?.merkleRoot ?? "";
   const short = hash ? `${hash.slice(0, 16)}…` : "…";
 
+  const dataset = {
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    name: "Agent Civilizations register",
+    description:
+      "An open, hash-chained register of publicly reported events in which AI agents coordinate, attack, or form persistent communities. Every entry cites its sources, is sealed daily into a Merkle root, and is anchored to Bitcoin through OpenTimestamps. Entries are classified into four categories and two confidence tiers.",
+    url: SITE,
+    identifier: `${SITE}/api/snapshot/${day}.json`,
+    license: "https://creativecommons.org/publicdomain/zero/1.0/",
+    isAccessibleForFree: true,
+    creator: { "@type": "Organization", name: "Agent Civilizations", url: SITE },
+    temporalCoverage: fig?.earliestOccurrence
+      ? `${fig.earliestOccurrence.slice(0, 10)}/..`
+      : undefined,
+    keywords: [
+      "AI agents",
+      "multi-agent systems",
+      "AI security incidents",
+      "agent coordination",
+      "transparency log",
+      "hash chain",
+    ],
+    distribution: [
+      {
+        "@type": "DataDownload",
+        name: "Sealed snapshot",
+        encodingFormat: "application/json",
+        contentUrl: `${SITE}/api/snapshot/${day}.json`,
+      },
+      {
+        "@type": "DataDownload",
+        name: "Headline figures",
+        encodingFormat: "text/csv",
+        contentUrl: `${SITE}/api/figures.csv`,
+      },
+      {
+        "@type": "DataDownload",
+        name: "Entries feed",
+        encodingFormat: "application/atom+xml",
+        contentUrl: `${SITE}/feed.xml`,
+      },
+    ],
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(dataset) }}
+      />
       <span className="caps kicker">For the press and for research</span>
       <h1>The reference desk</h1>
       <p className="preamble">

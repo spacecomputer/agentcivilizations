@@ -62,11 +62,9 @@ export async function buildSitemap(): Promise<string> {
   const db = getFirestore();
   const [civSnap, eventSnap] = await Promise.all([
     db.collection("civilizations").get(),
-    db
-      .collection("events")
-      .orderBy("recordedAt", "desc")
-      .limit(1000)
-      .get(),
+    // No cap. A sitemap that silently stops at a thousand entries drops
+    // pages from the index as the register grows, and says nothing.
+    db.collection("events").orderBy("recordedAt", "desc").get(),
   ]);
   const civs = civSnap.docs.map((d) => d.data() as Civilization);
   const events = eventSnap.docs.map((d) => d.data() as Event);
@@ -75,19 +73,22 @@ export async function buildSitemap(): Promise<string> {
   const urls: Array<{ loc: string; lastmod: string; priority: string }> = [
     { loc: `${SITE}/`, lastmod: now, priority: "1.0" },
     { loc: `${SITE}/civilizations`, lastmod: now, priority: "0.8" },
+    { loc: `${SITE}/survey`, lastmod: now, priority: "0.7" },
+    { loc: `${SITE}/reference`, lastmod: now, priority: "0.7" },
+    { loc: `${SITE}/about`, lastmod: now, priority: "0.6" },
     { loc: `${SITE}/verify`, lastmod: now, priority: "0.6" },
-    { loc: `${SITE}/about`, lastmod: now, priority: "0.5" },
+    { loc: `${SITE}/stats`, lastmod: now, priority: "0.4" },
   ];
   for (const c of civs) {
     urls.push({
-      loc: `${SITE}/civilization?id=${encodeURIComponent(c.id)}`,
+      loc: `${SITE}/civilization/${encodeURIComponent(c.id)}`,
       lastmod: c.lastEventAt,
       priority: "0.7",
     });
   }
   for (const e of events) {
     urls.push({
-      loc: `${SITE}/event?id=${encodeURIComponent(e.id)}`,
+      loc: `${SITE}/event/${encodeURIComponent(e.id)}`,
       lastmod: e.recordedAt,
       priority: "0.6",
     });
