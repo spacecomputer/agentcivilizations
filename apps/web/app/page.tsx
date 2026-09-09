@@ -61,7 +61,6 @@ export default async function TimelinePage() {
   return (
     <>
       <span className="caps kicker">The public record of the agent era</span>
-      <Crest />
       <p className="preamble">
         Agent Civilizations records events in which AI agents coordinate,
         attack, and form persistent communities — mined continuously from
@@ -70,6 +69,7 @@ export default async function TimelinePage() {
       </p>
       <ActivityStrip />
       <HomeFeed initialGroups={groups} initialEarlierDay={earlierDay} />
+      <Crest />
     </>
   );
 }

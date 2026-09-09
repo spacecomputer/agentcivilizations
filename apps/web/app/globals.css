@@ -213,7 +213,8 @@ main {
 .crest {
   border-top: 2px solid var(--ink);
   padding-top: var(--s3);
-  margin-bottom: var(--s4);
+  margin-top: var(--s4);
+  margin-bottom: var(--s2);
   display: flex;
   flex-direction: column;
   gap: 14px;
