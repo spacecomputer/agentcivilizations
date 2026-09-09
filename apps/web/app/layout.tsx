@@ -137,7 +137,6 @@ export default function RootLayout({
             </a>
             <a href="/feed.xml">ATOM FEED</a>
             <a href="/corrections.xml">CORRECTIONS</a>
-            <span>SET IN ARCHIVO · LITERATA · IBM PLEX MONO</span>
           </div>
         </footer>
       </body>
