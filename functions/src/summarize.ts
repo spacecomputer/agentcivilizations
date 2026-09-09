@@ -82,15 +82,23 @@ export async function regenerateStaleSummaries(
   // Priority order: no summary yet, then oldest lastEventAt (still active).
   const snap = await db.collection("civilizations").get();
   const all = snap.docs.map((d) => d.data() as Civilization);
-  const missing = all.filter((c) => !c.summary || c.summary.length < 40);
+  // A summary that contains the file's own URL slug was written before the
+  // prompt was given a readable name, and reads "aepd-agentic-guidance is a
+  // speculative thread…" in a search result. That is stale by definition, so
+  // it is picked up with the genuinely missing ones rather than waiting its
+  // turn in the refresh rotation.
+  const isStale = (c: Civilization) =>
+    !c.summary || c.summary.length < 40 || c.summary.includes(c.id);
+  const missing = all.filter(isStale);
   const rest = all
-    .filter((c) => c.summary && c.summary.length >= 40)
+    .filter((c) => !isStale(c))
     .sort((a, b) => a.lastEventAt.localeCompare(b.lastEventAt));
   const targets = [...missing, ...rest].slice(0, perRun);
 
   const errors: string[] = [];
   let updated = 0;
   let deadlineHit = false;
+  const done = new Set<string>();
   for (const civ of targets) {
     if (Date.now() - startedAt > RUN_DEADLINE_MS) {
       deadlineHit = true;
@@ -111,6 +119,7 @@ export async function regenerateStaleSummaries(
         .collection("civilizations")
         .doc(civ.id)
         .update({ summary, summaryUpdatedAt: new Date().toISOString() });
+      done.add(civ.id);
       updated++;
     } catch (err) {
       errors.push(
@@ -118,5 +127,8 @@ export async function regenerateStaleSummaries(
       );
     }
   }
-  return { attempted: targets.length, updated, errors, deadlineHit, remaining: missing.length - updated };
+  // Recount rather than subtract: `updated` includes routine refreshes of
+  // files that were never stale, so subtracting drove this negative.
+  const stillStale = missing.filter((c) => !done.has(c.id)).length;
+  return { attempted: targets.length, updated, errors, deadlineHit, remaining: stillStale };
 }
