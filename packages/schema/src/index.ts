@@ -429,6 +429,7 @@ const ACRONYMS = new Set([
   "eu", "us", "uk", "un", "gdpr", "nist", "oecd", "ietf", "aaai", "adk",
   "acl", "arxiv", "hn", "faq", "dao", "nft", "sre", "ceo", "cto",
   "aepd", "cnil", "ico", "fbi", "cisa", "enisa", "nsa", "sec", "ftc", "nhtsa",
+  "mmo", "js", "ts", "css", "html", "gpt", "ocr", "rl", "gan", "vm", "cdn", "dsl",
 ]);
 
 // Names the world spells a particular way and no rule would recover.
