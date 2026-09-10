@@ -6,7 +6,7 @@ import { Stamp } from "@/components/Stamp";
 import { CategoryLabel } from "@/components/Glyph";
 import { ClockPlates } from "@/components/catalog/ClockPlates";
 import { Lifeline, LifelineAxis } from "@/components/catalog/Lifeline";
-import { utcDay } from "@/lib/format";
+import { utcDay, fileName } from "@/lib/format";
 import {
   buildCatalog,
   sortRows,
@@ -80,7 +80,7 @@ export default function CivilizationsPage() {
         cats.has(r.civ.category) &&
         states.has(r.civ.status) &&
         eras.has(r.era.key) &&
-        (!q || r.civ.name.toLowerCase().includes(q) || r.civ.id.toLowerCase().includes(q)),
+        (!q || fileName(r.civ.id, r.civ.name).toLowerCase().includes(q) || r.civ.id.toLowerCase().includes(q)),
     );
     const civsKept = kept.map((r) => r.civ);
     const rebuilt = civsKept.length ? buildCatalog(civsKept, now) : null;
@@ -295,7 +295,7 @@ function Row({ row, axis, maxEntries }: { row: CatalogRow; axis: Axis; maxEntrie
           <CivSeal id={c.id} category={c.category} size={34} />
           <span>
             <a className="rowlink" href={`/civilization/${encodeURIComponent(c.id)}`}>
-              {c.name}
+              {fileName(c.id, c.name)}
             </a>
             <br />
             <span className="mono dim" style={{ fontSize: "12px" }}>

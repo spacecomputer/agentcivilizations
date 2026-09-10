@@ -13,7 +13,7 @@ import {
   type LaidNode,
 } from "@/lib/survey-layout";
 import { placeLabels, type Box, type PlacedLabel } from "@/lib/labels";
-import { callNumber } from "@/lib/format";
+import { callNumber, fileName } from "@/lib/format";
 import { Mark } from "./Mark";
 
 export { TIE_STROKE };
@@ -540,7 +540,7 @@ function renderReading(
     return (
       <>
         <div className="reading-head">
-          <a href={`/civilization/${encodeURIComponent(n.id)}`}>{n.name}</a> · {callNumber(n.id)} ·{" "}
+          <a href={`/civilization/${encodeURIComponent(n.id)}`}>{fileName(n.id, n.name)}</a> · {callNumber(n.id)} ·{" "}
           {n.category.toUpperCase()} · {n.confirmed ? CONFIDENCE_LINE.confirmed : CONFIDENCE_LINE.candidate} ·{" "}
           {n.entries} {n.entries === 1 ? "entry" : "entries"} · {n.degreeAll} {n.degreeAll === 1 ? "tie" : "ties"},{" "}
           {n.degree} drawn in full
@@ -575,7 +575,7 @@ function renderReading(
     if (!f) return "Mark a file to read its ties.";
     return (
       <div className="reading-head">
-        <a href={`/civilization/${encodeURIComponent(f.id)}`}>{f.name}</a> · {callNumber(f.id)} has no tie: its{" "}
+        <a href={`/civilization/${encodeURIComponent(f.id)}`}>{fileName(f.id, f.name)}</a> · {callNumber(f.id)} has no tie: its{" "}
         {f.entries} {f.entries === 1 ? "entry shares" : "entries share"} no two actors with another file.
       </div>
     );

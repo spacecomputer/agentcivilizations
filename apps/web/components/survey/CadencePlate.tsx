@@ -1,5 +1,6 @@
 "use client";
 import type { Cadence } from "@/lib/survey";
+import { fileName } from "@/lib/format";
 
 // Plate III — cadence. One row per file, one bar per week, sorted by
 // last entry. Quiet stretches stay visibly empty: dormancy is legible
@@ -40,7 +41,7 @@ export function CadencePlate({ cadence }: { cadence: Cadence }) {
       {cadence.rows.map((row) => (
         <div key={row.id} className={`cadence-row status-${row.status}`}>
           <a className="name rowlink" href={`/civilization/${encodeURIComponent(row.id)}`}>
-            {row.name}
+            {fileName(row.id, row.name)}
           </a>
           <svg
             viewBox={`0 0 ${W} ${H}`}
