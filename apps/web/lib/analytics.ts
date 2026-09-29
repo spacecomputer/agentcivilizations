@@ -49,9 +49,26 @@ export function readerOptedOut(): boolean {
  */
 function automatedClient(): boolean {
   const nav = window.navigator as Navigator & { webdriver?: boolean };
+  // Measured, not assumed: Chrome's --headless=new reports webdriver=false
+  // but still carries "HeadlessChrome" in the UA, so the UA test is the one
+  // that catches build-time screenshot runs. webdriver covers WebDriver and
+  // Puppeteer-style control, which sets it and may spoof the UA.
   if (nav.webdriver === true) return true;
-  // Headless builds still identify themselves in the UA string.
-  return /\bHeadless/i.test(nav.userAgent || "");
+  if (/\bHeadless/i.test(nav.userAgent || "")) return true;
+  // An explicit opt-out for driving the live site on purpose — an automated
+  // browser session that looks exactly like a reader is otherwise
+  // indistinguishable from one, and we are the ones who know the difference.
+  // Sticky for the tab, so it survives client-side navigation.
+  try {
+    if (new URLSearchParams(window.location.search).has("nometrics")) {
+      window.sessionStorage.setItem("ac:nometrics", "1");
+    }
+    if (window.sessionStorage.getItem("ac:nometrics") === "1") return true;
+  } catch {
+    // Storage can throw in a private window; a failure here must not stop
+    // an ordinary reader being counted, so fall through.
+  }
+  return false;
 }
 
 function enabled(): boolean {
