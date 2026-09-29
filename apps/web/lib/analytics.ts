@@ -33,12 +33,37 @@ export function readerOptedOut(): boolean {
   return dnt === "1" || dnt === "yes" || nav.globalPrivacyControl === true;
 }
 
+/**
+ * Automated clients are not readers.
+ *
+ * Three weeks of GA showed 79% of sessions with zero engagement, a spike on
+ * the day a build-and-audit run drove headless Chrome over every page, and
+ * /contact — which does not exist — as the second most landed-on address.
+ * None of that is people, and all of it was being counted, which makes the
+ * only number that matters unreadable.
+ *
+ * navigator.webdriver is set by every WebDriver-controlled browser, headless
+ * Chrome included, and is not set for ordinary readers. It is the cheapest
+ * honest cut available client-side. It will not catch a crawler that spoofs
+ * it, and it does not need to: the point is to stop measuring ourselves.
+ */
+function automatedClient(): boolean {
+  const nav = window.navigator as Navigator & { webdriver?: boolean };
+  if (nav.webdriver === true) return true;
+  // Headless builds still identify themselves in the UA string.
+  return /\bHeadless/i.test(nav.userAgent || "");
+}
+
 function enabled(): boolean {
   if (typeof window === "undefined") return false;
   if (!firebaseConfig.measurementId) return false;
   // Local development and emulator runs must not report.
   const host = window.location.hostname;
   if (host === "localhost" || host === "127.0.0.1" || host === "") return false;
+  // Only the canonical host. The web.app mirror and any preview deployment
+  // would otherwise double-count the same page against the same property.
+  if (host !== "agentcivilizations.org") return false;
+  if (automatedClient()) return false;
   return !readerOptedOut();
 }
 

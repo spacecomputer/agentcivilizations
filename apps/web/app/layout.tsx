@@ -137,6 +137,7 @@ export default function RootLayout({
             </a>
             <a href="/feed.xml">ATOM FEED</a>
             <a href="/corrections.xml">CORRECTIONS</a>
+            <a href="/contact">CONTACT</a>
           </div>
         </footer>
       </body>
