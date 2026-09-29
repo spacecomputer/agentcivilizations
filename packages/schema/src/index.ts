@@ -65,6 +65,21 @@ export const SOURCE_CHANGELOG: SourceChange[] = [
       "ru: habr (AI and infosecurity), securelist.ru, xakep, Google News (ru)",
     ],
   },
+  {
+    date: "2026-09-29",
+    note:
+      "A lab's own safety disclosure and two independent analysts added. " +
+      "The register held thirteen confirmed entries on the OpenAI agent-swarm " +
+      "incident while citing none of the primary documents the people arguing " +
+      "about it were actually reading.",
+    added: [
+      "alignment.openai.com — OpenAI's alignment and safety research feed, " +
+        "separate from the newsroom; canonicalised to openai.com so the two " +
+        "cannot corroborate each other",
+      "planned-obsolescence.org — technical analysis of agent incidents",
+      "dwarkesh.com — long-form interviews and analysis",
+    ],
+  },
 ];
 
 export const SourceTier = z.enum([

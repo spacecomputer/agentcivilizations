@@ -7,7 +7,7 @@
   "main": "lib/index.js",
   "scripts": {
     "build": "tsc --noEmit -p tsconfig.json && node build.mjs && tsc -p tsconfig.test.json",
-    "test": "node src/fingerprint.test.mjs",
+    "test": "node src/fingerprint.test.mjs && node src/corroborate.test.mjs && node src/origins.test.mjs && node src/retract.test.mjs && node src/tiers.test.mjs",
     "lint": "tsc --noEmit",
     "serve": "npm run build && firebase emulators:start --only functions",
     "deploy": "firebase deploy --only functions",

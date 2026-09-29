@@ -42,6 +42,38 @@ export const SOURCES: SourceSpec[] = [
     url: `https://github.com/${repo}/releases.atom`,
   })),
 
+  // -- primary: a lab's own safety and alignment disclosure --
+  // openai.com/news is the newsroom; this is where OpenAI publishes the
+  // technical account of an incident, and it is a different feed entirely.
+  // It carried "Measuring Reward-Seeking by Instilling Contrastive Beliefs"
+  // — the primary document behind the agent-swarm story the register
+  // already holds thirteen entries on, and which it was not citing.
+  // canonicalHostname maps this to openai.com so it cannot corroborate the
+  // newsroom; same publisher, one voice.
+  {
+    kind: "rss",
+    id: "openai-alignment",
+    name: "OpenAI Alignment",
+    url: "https://alignment.openai.com/rss.xml",
+  },
+
+  // -- expert analysis of agent incidents --
+  // Low volume, high signal, and the reference class informed readers
+  // actually check. Most of what these publish is not an event and the
+  // classifier will drop it; that is the classifier working.
+  {
+    kind: "rss",
+    id: "planned-obsolescence",
+    name: "Planned Obsolescence",
+    url: "https://www.planned-obsolescence.org/feed",
+  },
+  {
+    kind: "rss",
+    id: "dwarkesh",
+    name: "Dwarkesh Patel",
+    url: "https://www.dwarkesh.com/feed",
+  },
+
   // -- Chinese-language sources --
   // The register placed files in Beijing, Hangzhou, Shanghai and Shenzhen
   // for a week before it could read a word of Chinese; it learned of them

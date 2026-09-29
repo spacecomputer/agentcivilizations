@@ -104,8 +104,23 @@ const COLLAPSIBLE = new Set([
   "amp",
 ]);
 
+// Subdomains that are the same publisher under another name. COLLAPSIBLE
+// handles generic prefixes; this handles the specific ones, where guessing
+// from the label would be wrong.
+//
+// This is a corroboration control, not cosmetics. Two sources corroborate
+// only when their canonicalDomain differs, so leaving alignment.openai.com
+// distinct from openai.com would let OpenAI's safety blog confirm OpenAI's
+// newsroom and mark the entry CONFIRMED on one company's word. A lab's own
+// disclosure is a primary source and is never a second one.
+const PUBLISHER_ALIASES: Record<string, string> = {
+  "alignment.openai.com": "openai.com",
+};
+
 export function canonicalHostname(host: string): string {
   const lower = host.toLowerCase();
+  const aliased = PUBLISHER_ALIASES[lower];
+  if (aliased) return aliased;
   const parts = lower.split(".");
   if (parts.length >= 3 && COLLAPSIBLE.has(parts[0])) return parts.slice(1).join(".");
   return lower;
